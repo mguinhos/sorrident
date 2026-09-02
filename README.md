@@ -2,6 +2,12 @@
 
 Um assistente autonômo e plataforma web de teleatendimento para clinicas ortodônticas desenvolvido para o consultorio ortodôntico Dra. Mônica.
 
+<p align="center">
+  <img src="assets/sorridente_logo.svg" alt="Logo do SorriDent" width="200">
+</p>
+
+<h2 align="center">SorriDent</h2>
+
 Projeto Integrador da UNICAP, Recife, Pernambuco.
 
 | Disciplina | Professor | Turno | Turma | Período |
