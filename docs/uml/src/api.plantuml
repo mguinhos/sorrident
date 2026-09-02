@@ -1,311 +1,185 @@
 @startuml api
-skinparam classAttributeIconSize 0
-skinparam packageStyle folder
-skinparam monospace true
-hide empty members
-
-package "core" {
-  package "domain.services.interfaces" {
-    interface IService <<interface>> {
-      + name() -> str
-    }
-    interface IPatientService <<interface>> {
-      + create() -> Patient
-      + update(patient_id: str) -> Patient
-      + delete(patient_id: str) -> bool
-      + get(patient_id: str) -> Patient
-      + list_all(search: str) -> list[Patient]
-      + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
-    }
-    interface IDentistService <<interface>> {
-      + create() -> Dentist
-      + update(dentist_id: str) -> Dentist
-      + delete(dentist_id: str) -> bool
-      + get(dentist_id: str) -> Dentist
-      + list_all(only_active: bool) -> list[Dentist]
-    }
-    interface IProcedureService <<interface>> {
-      + create() -> Procedure
-      + update(procedure_id: str) -> Procedure
-      + delete(procedure_id: str) -> bool
-      + list_all(only_active: bool) -> list[Procedure]
-    }
-    interface ISchedulingService <<interface>> {
-      + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
-      + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
-      + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
-    }
-    interface IAppointmentService <<interface>> {
-      + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
-      + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
-      + reschedule(appointment_id: str, start: datetime) -> Appointment
-      + cancel(appointment_id: str, reason: str) -> Appointment
-      + set_status(appointment_id: str, status: str) -> Appointment
-      + get(appointment_id: str) -> Appointment
-      + list_all() -> list[Appointment]
-      + agenda(start: date, end: date) -> list[Appointment]
-      + due_reminders(window_hours: int) -> list[Appointment]
-      + mark_reminder_sent(appointment_id: str) -> Appointment
-    }
-    interface IConversationService <<interface>> {
-      + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
-      + append(conversation_id: str, author: str, content: str) -> ChatMessage
-      + history(conversation_id: str, limit: int) -> list[ChatMessage]
-      + list_all(limit: int) -> list[Conversation]
-      + mark_read(conversation_id: str) -> Conversation
-      + set_handoff(conversation_id: str, handoff: bool) -> Conversation
-      + get(conversation_id: str) -> Conversation
-      + link_patient(conversation_id: str, patient_id: str) -> Conversation
-      + mark_handoff_notice(conversation_id: str) -> Conversation
-      + close(conversation_id: str, reason: str) -> Conversation
-      + reopen(conversation_id: str) -> Conversation
-      + idle_conversations(minutes: int) -> list[Conversation]
-    }
-    interface INotificationService <<interface>> {
-      + notify(title: str, message: str, level: str) -> Notification
-      + list_all(only_unread: bool, limit: int) -> list[Notification]
-      + mark_read(notification_id: str) -> Notification
-      + mark_all_read() -> int
-    }
-    interface IFAQService <<interface>> {
-      + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
-      + update(faq_id: str) -> FAQ
-      + delete(faq_id: str) -> bool
-      + list_all() -> list[FAQ]
-      + search(term: str, limit: int) -> list[FAQ]
-    }
-    interface ISettingsService <<interface>> {
-      + get() -> ClinicSettings
-      + update() -> ClinicSettings
-    }
-    interface IAuthService <<interface>> {
-      + authenticate(username: str, password: str) -> tuple[User, str]
-      + register(username: str, password: str, role: str, display_name: str) -> User
-      + resolve_token(token: str) -> User
-      + list_users() -> list[User]
-    }
-    interface IAnalyticsService <<interface>> {
-      + dashboard() -> dict[str, Any]
-    }
-    IService <|-- IPatientService
-    IService <|-- IDentistService
-    IService <|-- IProcedureService
-    IService <|-- ISchedulingService
-    IService <|-- IAppointmentService
-    IService <|-- IConversationService
-    IService <|-- INotificationService
-    IService <|-- IFAQService
-    IService <|-- ISettingsService
-    IService <|-- IAuthService
-    IService <|-- IAnalyticsService
-  }
-}
+!include _estilo.puml
+left to right direction
 
 package "api (FastAPI)" {
   class ApplicationFactory {
-    - __init__(config: Optional[AppConfig]) -> None
-    - _lifespan()
-    + create() -> FastAPI
+  - _lifespan()
+  + create() -> FastAPI
   }
   class RoleChecker {
-    - __init__() -> None
-    - __call__(user: User) -> User
-  }
-  interface IDependencyProvider <<interface>>
-  IDependencyProvider <|.. RoleChecker
-
-  package "api.schemas.dto (Pydantic)" {
-    class LoginRequest {
-    + username: str
-    + password: str
-    }
-    class RegisterRequest {
-    + username: str
-    + password: str
-    + role: str
-    + display_name: str
-    }
-    class PatientRequest {
-    + name: str
-    + phone: str
-    + email: str
-    + birth_date: str
-    + document: str
-    + insurance_provider: str
-    + insurance_card: str
-    + responsible_name: str
-    + notes: str
-    + treatment: str
-    + telegram_id: str
-    + active: bool
-    }
-    class PatientUpdateRequest {
-    + name: Optional[str]
-    + phone: Optional[str]
-    + email: Optional[str]
-    + birth_date: Optional[str]
-    + document: Optional[str]
-    + insurance_provider: Optional[str]
-    + insurance_card: Optional[str]
-    + responsible_name: Optional[str]
-    + notes: Optional[str]
-    + treatment: Optional[str]
-    + telegram_id: Optional[str]
-    + active: Optional[bool]
-    }
-    class DentistRequest {
-    + name: str
-    + cro: str
-    + specialty: str
-    + email: str
-    + phone: str
-    + color: str
-    + active: bool
-    + availability: dict[str, list[list[str]]]
-    }
-    class DentistUpdateRequest {
-    + name: Optional[str]
-    + cro: Optional[str]
-    + specialty: Optional[str]
-    + email: Optional[str]
-    + phone: Optional[str]
-    + color: Optional[str]
-    + active: Optional[bool]
-    + availability: Optional[dict[str, list[list[str]]]]
-    }
-    class ProcedureRequest {
-    + name: str
-    + description: str
-    + duration_minutes: int
-    + price: float
-    + active: bool
-    }
-    class ProcedureUpdateRequest {
-    + name: Optional[str]
-    + description: Optional[str]
-    + duration_minutes: Optional[int]
-    + price: Optional[float]
-    + active: Optional[bool]
-    }
-    class AppointmentRequest {
-    + patient_id: str
-    + start: datetime
-    + dentist_id: str
-    + procedure_id: str
-    + notes: str
-    + allow_overbook: bool
-    + priority: str
-    }
-    class EmergencyAppointmentRequest {
-    + patient_id: str
-    + reason: str
-    + start: Optional[datetime]
-    }
-    class RescheduleRequest {
-    + start: datetime
-    }
-    class StatusRequest {
-    + status: str
-    }
-    class CancelRequest {
-    + reason: str
-    }
-    class ChatRequest {
-    + session_id: str
-    + message: str
-    + display_name: str
-    }
-    class StaffReplyRequest {
-    + message: str
-    }
-    class HandoffRequest {
-    + handoff: bool
-    }
-    class FAQRequest {
-    + question: str
-    + answer: str
-    + tags: list[str]
-    }
-    class FAQUpdateRequest {
-    + question: Optional[str]
-    + answer: Optional[str]
-    + tags: Optional[list[str]]
-    + active: Optional[bool]
-    }
-    class KnowledgeDocumentRequest {
-    + title: str
-    + content: str
-    + tags: list[str]
-    }
-    class KnowledgeDocumentUpdateRequest {
-    + title: Optional[str]
-    + content: Optional[str]
-    + tags: Optional[list[str]]
-    + active: Optional[bool]
-    }
-    class SettingsRequest {
-    + clinic_name: Optional[str]
-    + address: Optional[str]
-    + phone: Optional[str]
-    + email: Optional[str]
-    + opening_hour: Optional[str]
-    + closing_hour: Optional[str]
-    + lunch_start: Optional[str]
-    + lunch_end: Optional[str]
-    + working_days: Optional[list[int]]
-    + slot_minutes: Optional[int]
-    + inactivity_minutes: Optional[int]
-    + emergency_slot_minutes: Optional[int]
-    + max_emergency_per_day: Optional[int]
-    + handoff_notice_cooldown_minutes: Optional[int]
-    + persona: Optional[str]
-    }
-    class IntegrationCredentialsRequest {
-    + values: dict[str, Any]
-    + enable: Optional[bool]
-    }
+  - __call__(user: User) -> User
   }
 
-  package "api routers" {
-    class AuthRouter
-    class ChatRouter
-    class ConversationsRouter
-    class DashboardRouter
-    class IntegrationsRouter
-    class PatientsRouter
-    class DentistsRouter
-    class ProceduresRouter
-    class AppointmentsRouter
-    class FAQRouter
-    class KnowledgeRouter
-    class SettingsRouter
-    AuthRouter ..> IAuthService
-    ChatRouter ..> IConversationService
-    ChatRouter ..> IAgent
-    ConversationsRouter ..> IConversationService
-    DashboardRouter ..> IAnalyticsService
-    IntegrationsRouter ..> IIntegrationRegistry
-    PatientsRouter ..> IPatientService
-    DentistsRouter ..> IDentistService
-    ProceduresRouter ..> IProcedureService
-    AppointmentsRouter ..> IAppointmentService
-    FAQRouter ..> IFAQService
-    KnowledgeRouter ..> IKnowledgeService
-    SettingsRouter ..> ISettingsService
-  }
 
-  ApplicationFactory *-- AuthRouter
-  ApplicationFactory *-- ChatRouter
-  ApplicationFactory *-- ConversationsRouter
-  ApplicationFactory *-- DashboardRouter
-  ApplicationFactory *-- IntegrationsRouter
-  ApplicationFactory *-- PatientsRouter
-  ApplicationFactory *-- DentistsRouter
-  ApplicationFactory *-- ProceduresRouter
-  ApplicationFactory *-- AppointmentsRouter
-  ApplicationFactory *-- FAQRouter
-  ApplicationFactory *-- KnowledgeRouter
-  ApplicationFactory *-- SettingsRouter
+
+}
+
+package "api.schemas.dto (Pydantic)" {
+  class LoginRequest {
+  + username: str
+  + password: str
+  }
+  class RegisterRequest {
+  + username: str
+  + password: str
+  + role: str
+  + display_name: str
+  }
+  class PatientRequest {
+  + name: str
+  + phone: str
+  + email: str
+  + birth_date: str
+  + document: str
+  + insurance_provider: str
+  + insurance_card: str
+  + responsible_name: str
+  + notes: str
+  + treatment: str
+  + telegram_id: str
+  + active: bool
+  }
+  class PatientUpdateRequest {
+  + name: Optional[str]
+  + phone: Optional[str]
+  + email: Optional[str]
+  + birth_date: Optional[str]
+  + document: Optional[str]
+  + insurance_provider: Optional[str]
+  + insurance_card: Optional[str]
+  + responsible_name: Optional[str]
+  + notes: Optional[str]
+  + treatment: Optional[str]
+  + telegram_id: Optional[str]
+  + active: Optional[bool]
+  }
+  class DentistRequest {
+  + name: str
+  + cro: str
+  + specialty: str
+  + email: str
+  + phone: str
+  + color: str
+  + active: bool
+  + availability: dict[str, list[list[str]]]
+  }
+  class DentistUpdateRequest {
+  + name: Optional[str]
+  + cro: Optional[str]
+  + specialty: Optional[str]
+  + email: Optional[str]
+  + phone: Optional[str]
+  + color: Optional[str]
+  + active: Optional[bool]
+  + availability: Optional[dict[str, list[list[str]]]]
+  }
+  class ProcedureRequest {
+  + name: str
+  + description: str
+  + duration_minutes: int
+  + price: float
+  + active: bool
+  }
+  class ProcedureUpdateRequest {
+  + name: Optional[str]
+  + description: Optional[str]
+  + duration_minutes: Optional[int]
+  + price: Optional[float]
+  + active: Optional[bool]
+  }
+  class AppointmentRequest {
+  + patient_id: str
+  + start: datetime
+  + dentist_id: str
+  + procedure_id: str
+  + notes: str
+  + allow_overbook: bool
+  + priority: str
+  }
+  class EmergencyAppointmentRequest {
+  + patient_id: str
+  + reason: str
+  + start: Optional[datetime]
+  }
+  class RescheduleRequest {
+  + start: datetime
+  }
+  class StatusRequest {
+  + status: str
+  }
+  class CancelRequest {
+  + reason: str
+  }
+  class ChatRequest {
+  + session_id: str
+  + message: str
+  + display_name: str
+  }
+  class StaffReplyRequest {
+  + message: str
+  }
+  class HandoffRequest {
+  + handoff: bool
+  }
+  class FAQRequest {
+  + question: str
+  + answer: str
+  + tags: list[str]
+  }
+  class FAQUpdateRequest {
+  + question: Optional[str]
+  + answer: Optional[str]
+  + tags: Optional[list[str]]
+  + active: Optional[bool]
+  }
+  class KnowledgeDocumentRequest {
+  + title: str
+  + content: str
+  + tags: list[str]
+  }
+  class KnowledgeDocumentUpdateRequest {
+  + title: Optional[str]
+  + content: Optional[str]
+  + tags: Optional[list[str]]
+  + active: Optional[bool]
+  }
+  class SettingsRequest {
+  + clinic_name: Optional[str]
+  + address: Optional[str]
+  + phone: Optional[str]
+  + email: Optional[str]
+  + opening_hour: Optional[str]
+  + closing_hour: Optional[str]
+  + lunch_start: Optional[str]
+  + lunch_end: Optional[str]
+  + working_days: Optional[list[int]]
+  + slot_minutes: Optional[int]
+  + inactivity_minutes: Optional[int]
+  + emergency_slot_minutes: Optional[int]
+  + max_emergency_per_day: Optional[int]
+  + handoff_notice_cooldown_minutes: Optional[int]
+  + persona: Optional[str]
+  }
+  class IntegrationCredentialsRequest {
+  + values: dict[str, Any]
+  + enable: Optional[bool]
+  }
+}
+
+package "api routers" {
+  class AuthRouter
+  class ChatRouter
+  class ConversationsRouter
+  class DashboardRouter
+  class IntegrationsRouter
+  class PatientsRouter
+  class DentistsRouter
+  class ProceduresRouter
+  class AppointmentsRouter
+  class FAQRouter
+  class KnowledgeRouter
+  class SettingsRouter
 }
 
 package "composition root" {
@@ -323,14 +197,54 @@ package "composition root" {
   + inactivity_check_seconds: int
   + reindex_seconds: int
   + autostart_telegram: bool
-    + from_env() -> 'AppConfig'
+  + from_env() -> 'AppConfig'
   }
   class ApplicationContainer {
-    - __init__(config: Optional[AppConfig]) -> None
-    - _build_tools() -> ToolRegistry
-    + startup() -> None
-    + shutdown() -> None
+  - _build_tools() -> ToolRegistry
+  + startup() -> None
+  + shutdown() -> None
   }
-  ApplicationFactory ..> ApplicationContainer : usa
 }
+
+package "contexto" <<Frame>> {
+  class IAgent
+  class IAnalyticsService
+  class IAppointmentService
+  class IAuthService
+  class IConversationService
+  class IDentistService
+  class IFAQService
+  class IIntegrationRegistry
+  class IKnowledgeService
+  class IPatientService
+  class IProcedureService
+  class ISettingsService
+}
+
+ApplicationFactory *-- AppointmentsRouter
+ApplicationFactory *-- AuthRouter
+ApplicationFactory *-- ChatRouter
+ApplicationFactory *-- ConversationsRouter
+ApplicationFactory *-- DashboardRouter
+ApplicationFactory *-- DentistsRouter
+ApplicationFactory *-- FAQRouter
+ApplicationFactory *-- IntegrationsRouter
+ApplicationFactory *-- KnowledgeRouter
+ApplicationFactory *-- PatientsRouter
+ApplicationFactory *-- ProceduresRouter
+ApplicationFactory *-- SettingsRouter
+ApplicationFactory ..> ApplicationContainer : usa
+AppointmentsRouter ..> IAppointmentService
+AuthRouter ..> IAuthService
+ChatRouter ..> IAgent
+ChatRouter ..> IConversationService
+ConversationsRouter ..> IConversationService
+DashboardRouter ..> IAnalyticsService
+DentistsRouter ..> IDentistService
+FAQRouter ..> IFAQService
+IntegrationsRouter ..> IIntegrationRegistry
+KnowledgeRouter ..> IKnowledgeService
+PatientsRouter ..> IPatientService
+ProceduresRouter ..> IProcedureService
+SettingsRouter ..> ISettingsService
 @enduml

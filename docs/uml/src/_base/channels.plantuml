@@ -1,13 +1,29 @@
 @startuml channels
-!include _estilo.puml
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
 
 package "core" {
   package "core.interfaces" {
-    interface IAgent <<interface>>
-    interface IMessagingChannel <<interface>>
+    interface IAgent <<interface>> {
+      + reply(context: 'AgentContext', user_message: str) -> str
+    }
+    interface IMessagingChannel <<interface>> {
+      + channel_type() -> str
+      + is_running() -> bool
+      + start() -> None
+      + stop() -> None
+      + send(external_id: str, text: str) -> bool
+      + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+    }
   }
   package "core.models" {
-    enum ChannelType <<enum>>
+    enum ChannelType <<enum>> {
+      WEB
+      TELEGRAM
+      WHATSAPP
+    }
     class Conversation {
     + channel: str
     + external_id: str
@@ -23,7 +39,20 @@ package "core" {
     }
   }
   package "domain.services.interfaces" {
-    interface IConversationService <<interface>>
+    interface IConversationService <<interface>> {
+      + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+      + append(conversation_id: str, author: str, content: str) -> ChatMessage
+      + history(conversation_id: str, limit: int) -> list[ChatMessage]
+      + list_all(limit: int) -> list[Conversation]
+      + mark_read(conversation_id: str) -> Conversation
+      + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+      + get(conversation_id: str) -> Conversation
+      + link_patient(conversation_id: str, patient_id: str) -> Conversation
+      + mark_handoff_notice(conversation_id: str) -> Conversation
+      + close(conversation_id: str, reason: str) -> Conversation
+      + reopen(conversation_id: str) -> Conversation
+      + idle_conversations(minutes: int) -> list[Conversation]
+    }
     interface IPatientService <<interface>> {
       + create() -> Patient
       + update(patient_id: str) -> Patient
@@ -41,17 +70,20 @@ package "core" {
 
 package "channels" {
   class InboundMessage {
+    - __init__(channel: str, external_id: str, text: str, display_name: str, metadata: Optional[dict[str, Any]]) -> None
   }
   interface IMessageDispatcher <<interface>> {
     + handle(inbound: InboundMessage) -> Optional[str]
   }
   class MessageDispatcher {
   + ESPERA: str
+    - __init__(agent: IAgent, conversations: IConversationService, patients: IPatientService, settings: ISettingsService) -> None
     - _should_send_waiting_notice(conversation: Any) -> bool
     - _registration_summary(patient_id: str) -> str
     + handle(inbound: InboundMessage) -> Optional[str]
   }
   abstract class BaseChannel <<abstract>> {
+    - __init__(dispatcher: MessageDispatcher) -> None
     + is_running() -> bool
     + channel_type() -> str
     + process(inbound: InboundMessage) -> Optional[str]
@@ -68,6 +100,7 @@ package "channels" {
   }
   class TelegramChannel {
   + WELCOME: str
+    - __init__(dispatcher: MessageDispatcher, token: str) -> None
     + channel_type() -> str
     + bot_username() -> str
     + last_error() -> str
@@ -81,6 +114,7 @@ package "channels" {
     - _handle_update(update: dict[str, Any]) -> None
   }
   class TelegramClient {
+    - __init__(token: str, timeout: float) -> None
     + close() -> None
     + call(method: str) -> dict[str, Any]
     + get_me() -> dict[str, Any]
@@ -90,6 +124,7 @@ package "channels" {
     + send_chat_action(chat_id: str, action: str) -> None
   }
   class WhatsAppChannel {
+    - __init__(dispatcher: MessageDispatcher, token: str, phone_number_id: str, verify_token: str) -> None
     + channel_type() -> str
     + verify_token() -> str
     + configure(token: str, phone_number_id: str, verify_token: str) -> None
@@ -111,6 +146,7 @@ package "channels" {
     + status() -> list[dict[str, Any]]
   }
   class ChannelManager {
+    - __init__() -> None
     + register(channel: IMessagingChannel) -> 'ChannelManager'
     + get(channel_type: str) -> IMessagingChannel
     + find(channel_type: str) -> Optional[IMessagingChannel]
@@ -124,7 +160,7 @@ package "channels" {
   }
 
   IMessageDispatcher <|.. MessageDispatcher
-  IMessagingChannel <|.. BaseChannel
+  IMessagingChannel <|-- BaseChannel
   BaseChannel <|-- WebChannel
   BaseChannel <|-- TelegramChannel
   BaseChannel <|-- WhatsAppChannel

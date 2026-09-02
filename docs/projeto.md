@@ -52,7 +52,17 @@ testar.
 
 ---
 
-## 1. Os modelos de domínio
+## 1. Visão geral
+
+Antes de olhar classe por classe, vale ver o desenho das camadas. As setas
+apontam sempre para dentro: o núcleo não conhece ninguém, e quem está de
+fora é que depende dele.
+
+[![visão geral](uml/svg/projeto.svg)](uml/svg/projeto.svg)
+
+---
+
+## 2. Os modelos de domínio
 
 São as entidades do negócio, escritas de um jeito simples e sem depender
 de nenhum framework. Aqui fica também a entidade base, que traz o id e as
@@ -66,52 +76,82 @@ Referência: `core/models.py`.
 
 ---
 
-## 2. Os contratos do núcleo
+## 3. Os contratos do núcleo
 
-Os contratos que o sistema inteiro enxerga. São as promessas de
-como cada parte se comporta, como a base de dados, o repositório, o
-provedor de IA, as ferramentas, o agente, o canal de mensagem, o guardador
-de credenciais e a fila de eventos. Também ficam aqui os erros do domínio
-e as interfaces de serviço de cada parte do negócio.
+Os contratos que o sistema inteiro enxerga. São as promessas de como cada
+parte se comporta: a base de dados, o repositório, o provedor de IA, as
+ferramentas, o agente, o canal de mensagem, o guardador de credenciais e a
+fila de eventos.
 
 Esses contratos têm um arquivo de tipos ao lado, para que quem usa o
-sistema saiba o que cada coisa devolve. Eles estão em `core/interfaces.py`,
-`core/exceptions.py` e `domain/services/interfaces.py`.
+sistema saiba o que cada coisa devolve. Estão em `core/interfaces.py`.
 
 [![core_interfaces](uml/svg/core_interfaces.svg)](uml/svg/core_interfaces.svg)
 
 ---
 
-## 3. O agente de IA
+## 4. O agente de IA
 
 Esta é a parte que atende o usuário. O agente roda um laço em que ele usa
-as ferramentas uma a uma, passando sempre pelo provedor de IA. Aqui também
-fica o controle da conversa, com regras para a memória não crescer demais
-(como a janela deslizante e o limite de tokens), o rastreio de tarefas, o
-catálogo de modelos, o montador do prompt clínico e as ferramentas,
-organizadas por assunto: cadastro, agenda, consulta ao conhecimento e
-suporte.
+as ferramentas uma a uma, passando sempre pelo provedor de IA. Aqui fica
+também o montador do prompt clínico e a base das ferramentas.
 
-Referência: `agent/`.
+Referência: `agent/agent.py`, `agent/base.py` e `agent/prompt.py`.
 
 [![agent](uml/svg/agent.svg)](uml/svg/agent.svg)
 
 ---
 
-## 4. Serviços e repositórios
+## 5. A memória da conversa
 
-Esta é a camada dos casos de uso. Cada serviço cumpre o que a interface
-pede e usa os repositórios por baixo. Os repositórios de cada parte do
-negócio estendem o repositório da base de dados e somam as consultas
-próprias, guardando as entidades do domínio.
+O agente precisa lembrar do que já foi dito, mas sem deixar a conversa
+crescer sem limite. A janela deslizante corta as mensagens antigas e o
+limite de tokens respeita o tamanho que o modelo aguenta. Cada resposta
+vira uma tarefa, com uma subtarefa por ferramenta chamada, o que ajuda a
+enxergar o que o agente fez.
 
-Referência: `domain/`.
+Referência: `agent/context.py`, `agent/task.py` e `agent/models.py`.
 
-[![services_repositories](uml/svg/services_repositories.svg)](uml/svg/services_repositories.svg)
+[![agent_contexto](uml/svg/agent_contexto.svg)](uml/svg/agent_contexto.svg)
 
 ---
 
-## 5. Os canais de mensagem
+## 6. As ferramentas do agente
+
+É o que o agente sabe fazer, organizado por assunto: cadastro do paciente,
+agenda (incluindo o encaixe de urgência), consulta à base de conhecimento
+e suporte, como chamar um atendente ou exportar a conversa.
+
+Referência: `agent/tools/`.
+
+[![agent_ferramentas](uml/svg/agent_ferramentas.svg)](uml/svg/agent_ferramentas.svg)
+
+---
+
+## 7. Os serviços
+
+Esta é a camada dos casos de uso: marcar consulta, cadastrar paciente,
+avisar a equipe. Cada serviço cumpre o que a interface pede e não sabe
+como os dados são guardados.
+
+Referência: `domain/services/`.
+
+[![servicos](uml/svg/servicos.svg)](uml/svg/servicos.svg)
+
+---
+
+## 8. Os repositórios
+
+Quem conversa com o banco. Cada repositório estende o repositório genérico
+e soma as consultas próprias, guardando as entidades do domínio.
+
+Referência: `domain/repositories/`.
+
+[![repositorios](uml/svg/repositorios.svg)](uml/svg/repositorios.svg)
+
+---
+
+## 9. Os canais de mensagem
 
 Aqui está a parte que cuida de onde a mensagem entra. Há um contrato de
 canal e uma classe base comum, com três formas de comunicação: uma pela
@@ -125,7 +165,7 @@ Referência: `channels/`.
 
 ---
 
-## 6. O RAG, ou a base de conhecimento
+## 10. O RAG, ou a base de conhecimento
 
 O projeto recupera informações de um jeito misto, tudo dentro do próprio
 processo e sem depender de um serviço de fora. Um quebrador divide o texto
@@ -141,27 +181,37 @@ Referência: `rag/`.
 
 ---
 
-## 7. Infraestrutura, integrações, exportação e tarefas
+## 11. A infraestrutura
 
-Versões concretas dos contratos do núcleo. O pacote de banco
-de dados (desenhado como um cilindro) junta a base de dados e o
-repositório. Também estão aqui o guardador de credenciais, a fila de
-eventos em memória e o provedor de IA. A camada de integrações iguala
-provedores de IA, canais e credenciais, com um registro geral e um
-provedor de rota. Esta seção documenta ainda os exportadores de conversa
-(texto, marcação e página) e os trabalhos que rodam de tempos em tempos,
-como os lembretes, o controle de inatividade e a atualização do índice.
+As versões concretas dos contratos do núcleo. O pacote do banco aparece
+como um cilindro e junta a base de dados com o repositório genérico.
+Também estão aqui o guardador de credenciais, a fila de eventos em
+memória, o provedor de IA da Groq (desenhado como uma nuvem, porque é um
+serviço de fora), a carga inicial de dados e os trabalhos que rodam de
+tempos em tempos: os lembretes, o controle de inatividade e a atualização
+do índice.
 
-Referências:
+Referência: `infrastructure/` e `scheduler.py`.
 
-`infrastructure/`, `integrations/` e
-`export/`, além do arquivo `scheduler.py`.
-
-[![infrastructure](uml/svg/infrastructure.svg)](uml/svg/infrastructure.svg)
+[![infraestrutura](uml/svg/infraestrutura.svg)](uml/svg/infraestrutura.svg)
 
 ---
 
-## 8. A API REST
+## 12. As integrações e a exportação
+
+A camada de integrações trata provedores de IA e canais do mesmo jeito:
+cada um declara quais credenciais precisa, e a interface web monta o
+formulário sozinha a partir disso. O provedor de rota deixa trocar de IA
+sem mexer no agente. Nesta parte estão também os exportadores de conversa,
+em texto, marcação e página.
+
+Referência: `integrations/` e `export/`.
+
+[![integracoes](uml/svg/integracoes.svg)](uml/svg/integracoes.svg)
+
+---
+
+## 13. A API REST
 
 A fábrica de aplicação monta o servidor com as rotas, e um verificador de
 papel garante quem pode ou não entrar em cada recurso. Os objetos de
@@ -173,4 +223,25 @@ Tudo isso está na pasta `api/`, feita com FastAPI.
 
 [![api](uml/svg/api.svg)](uml/svg/api.svg)
 
-2026 - UNICAP - RECIFE - PE
+---
+
+## Como os desenhos são gerados
+
+Os fontes ficam em `docs/uml/src/` e viram imagem com o PlantUML rodando
+em Docker:
+
+```bash
+cd docs/uml
+make all        # gera os SVG e depois os PNG
+```
+
+Três scripts em `docs/uml/tools/` cuidam do resto:
+
+| script | para que serve |
+|---|---|
+| `dividir.py` | recorta os diagramas grandes em diagramas menores, por pacote |
+| `ajustar_layout.py` | aplica o estilo comum e escolhe a orientação que deixa o desenho mais quadrado |
+| `checar_relacoes.py` | compara as setas com o código e avisa quando alguma está errada |
+
+O estilo de todos os diagramas está em `docs/uml/src/_estilo.puml`: mudar
+lá muda em todos.

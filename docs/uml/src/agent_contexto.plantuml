@@ -1,0 +1,165 @@
+@startuml agent_contexto
+!include _estilo.puml
+left to right direction
+
+package "agent.context" {
+  enum MessageRole <<enum>> {
+  SYSTEM
+  USER
+  ASSISTANT
+  TOOL
+  }
+  class PromptMessage {
+  + role: MessageRole
+  + content: str
+  + tool_calls: list[dict[str, Any]]
+  + tool_call_id: str
+  + name: str
+  + to_payload() -> dict[str, Any]
+  + estimated_tokens() -> int
+  }
+  interface IContextPolicy <<interface>> {
+  + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+  }
+  class SlidingWindowPolicy {
+  + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+  }
+  class TokenBudgetPolicy {
+  + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+  }
+  class CompositePolicy {
+  + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+  }
+  class ConversationContext {
+  + system(content: str) -> 'ConversationContext'
+  + user(content: str) -> 'ConversationContext'
+  + assistant(content: str, tool_calls: Optional[list[dict[str, Any]]]) -> 'ConversationContext'
+  + tool_result(tool_call_id: str, name: str, content: str) -> 'ConversationContext'
+  + extend(messages: Sequence[PromptMessage]) -> 'ConversationContext'
+  + render(model: Model) -> list[dict[str, Any]]
+  + messages() -> list[PromptMessage]
+  + estimated_tokens() -> int
+  - __len__() -> int
+  - __iter__() -> Iterator[PromptMessage]
+  }
+}
+
+package "agent.task" {
+  enum TaskStatus <<enum>> {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  CANCELLED
+  }
+  enum TaskKind <<enum>> {
+  CONVERSATION_TURN
+  TOOL_CALL
+  INFERENCE
+  }
+  class SubTask {
+  + name: str
+  + kind: TaskKind
+  + status: TaskStatus
+  + arguments: dict[str, Any]
+  + result: Any
+  + error: str
+  + id: str
+  + started_at: float
+  + finished_at: Optional[float]
+  + start() -> 'SubTask'
+  + complete(result: Any) -> 'SubTask'
+  + fail(error: str) -> 'SubTask'
+  + duration_ms() -> int
+  + to_dict() -> dict[str, Any]
+  }
+  class Task {
+  + conversation_id: str
+  + prompt: str
+  + kind: TaskKind
+  + status: TaskStatus
+  + subtasks: list[SubTask]
+  + answer: str
+  + error: str
+  + iterations: int
+  + id: str
+  + started_at: float
+  + finished_at: Optional[float]
+  + start() -> 'Task'
+  + add_subtask(name: str, kind: TaskKind) -> SubTask
+  + complete(answer: str) -> 'Task'
+  + fail(error: str) -> 'Task'
+  + pending_subtasks() -> list[SubTask]
+  + failed_subtasks() -> list[SubTask]
+  + duration_ms() -> int
+  + to_dict() -> dict[str, Any]
+  }
+  interface ITaskTracker <<interface>> {
+  + track(task: 'Task') -> 'Task'
+  + recent(limit: int) -> list['Task']
+  + by_conversation(conversation_id: str) -> list['Task']
+  }
+  class TaskTracker {
+  + track(task: Task) -> Task
+  + recent(limit: int) -> list[Task]
+  + by_conversation(conversation_id: str) -> list[Task]
+  - __len__() -> int
+  - __iter__() -> Iterator[Task]
+  }
+}
+
+package "agent.models" {
+  enum Supports <<enum>> {
+  NONE
+  TEXT
+  TOOLS
+  STREAMING
+  IMAGE
+  AUDIO
+  JSON_MODE
+  REASONING
+  PARALLEL_TOOLS
+  }
+  class Model {
+  + id: str
+  + provider: str
+  + supports: Supports
+  + context_window: int
+  + max_output_tokens: int
+  + display_name: str
+  + notes: str
+  + capable_of(capability: Supports) -> bool
+  + name() -> str
+  + to_dict() -> dict[str, Any]
+  }
+  interface IModelCatalog <<interface>> {
+  + register(model: Model) -> 'IModelCatalog'
+  + get(model_id: str, provider: str) -> Model
+  }
+  class ModelCatalog {
+  - _defaults() -> list[Model]
+  + register(model: Model) -> 'ModelCatalog'
+  + get(model_id: str, provider: str) -> Model
+  - __iter__() -> Iterator[Model]
+  }
+}
+
+package "contexto" <<Frame>> {
+  class AgentContext
+  class SorriDenteAgent
+}
+
+CompositePolicy o-- IContextPolicy
+ConversationContext *-- "0..*" PromptMessage
+ConversationContext ..> AgentContext
+IContextPolicy <|.. CompositePolicy
+IContextPolicy <|.. SlidingWindowPolicy
+IContextPolicy <|.. TokenBudgetPolicy
+IModelCatalog <|.. ModelCatalog
+ITaskTracker <|.. TaskTracker
+SorriDenteAgent o-- "1" IContextPolicy
+SorriDenteAgent o-- "1" ModelCatalog
+SorriDenteAgent o-- "1" TaskTracker
+Task *-- "0..*" SubTask
+Task ..> TaskStatus
+@enduml

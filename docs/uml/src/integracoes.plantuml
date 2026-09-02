@@ -1,0 +1,236 @@
+@startuml integracoes
+!include _estilo.puml
+
+package "integrations" {
+  enum IntegrationKind <<enum>> {
+  INFERENCE_PROVIDER
+  MESSAGING_CHANNEL
+  CALENDAR
+  PAYMENT
+  }
+  class CredentialField {
+  + key: str
+  + label: str
+  + secret: bool
+  + required: bool
+  + placeholder: str
+  + help_text: str
+  + default: Any
+  + to_dict() -> dict[str, Any]
+  }
+  class IntegrationStatus {
+  + key: str
+  + kind: str
+  + name: str
+  + description: str
+  + configured: bool
+  + enabled: bool
+  + running: bool
+  + detail: str
+  + last_error: str
+  + extra: dict[str, Any]
+  + to_dict() -> dict[str, Any]
+  }
+  interface IIntegration <<interface>> {
+  + key() -> str
+  + kind() -> IntegrationKind
+  + name() -> str
+  + description() -> str
+  + credential_fields() -> tuple[CredentialField, ...]
+  + configure(credentials: dict[str, Any]) -> None
+  + enable() -> None
+  + disable() -> None
+  + test() -> dict[str, Any]
+  + status() -> IntegrationStatus
+  + describe() -> dict[str, Any]
+  }
+  abstract class BaseIntegration <<abstract>> {
+  + credentials() -> dict[str, Any]
+  + last_error() -> str
+  - _remember(credentials: dict[str, Any]) -> None
+  + masked_credentials() -> dict[str, Any]
+  + is_configured() -> bool
+  }
+  abstract class BaseInferenceIntegration <<abstract>> {
+  + kind() -> IntegrationKind
+  + provider() -> ILLMProvider
+  + default_model() -> str
+  + test() -> dict[str, Any]
+  }
+  package "Groq Cloud" <<Cloud>> {
+    class GroqInferenceIntegration {
+    + KEY: str
+    + key() -> str
+    + name() -> str
+    + description() -> str
+    + default_model() -> str
+    + provider() -> ILLMProvider
+    + credential_fields() -> tuple[CredentialField, ...]
+    + configure(credentials: dict[str, Any]) -> None
+    + enable() -> None
+    + disable() -> None
+    + is_configured() -> bool
+    + status() -> IntegrationStatus
+    }
+  }
+  abstract class InferenceResolver <<abstract>> {
+  + active_integration() -> Optional[BaseInferenceIntegration]
+  + active_provider() -> Optional[ILLMProvider]
+  }
+  class InferenceRegistry {
+  + kind
+  + register(integration: BaseInferenceIntegration) -> 'InferenceRegistry'
+  + active_key() -> str
+  + active_integration() -> Optional[BaseInferenceIntegration]
+  + activate(key: str) -> BaseInferenceIntegration
+  }
+  abstract class BaseChannelIntegration <<abstract>> {
+  + kind() -> IntegrationKind
+  }
+  class TelegramIntegration {
+  + KEY: str
+  + key() -> str
+  + name() -> str
+  + description() -> str
+  + credential_fields() -> tuple[CredentialField, ...]
+  + configure(credentials: dict[str, Any]) -> None
+  + enable() -> None
+  + disable() -> None
+  + test() -> dict[str, Any]
+  + is_configured() -> bool
+  + status() -> IntegrationStatus
+  }
+  class WhatsAppIntegration {
+  + KEY: str
+  + key() -> str
+  + name() -> str
+  + description() -> str
+  + credential_fields() -> tuple[CredentialField, ...]
+  + configure(credentials: dict[str, Any]) -> None
+  + enable() -> None
+  + disable() -> None
+  + test() -> dict[str, Any]
+  + is_configured() -> bool
+  + status() -> IntegrationStatus
+  }
+  class RoutingLLMProvider {
+  + model() -> str
+  + configured() -> bool
+  - _provider() -> ILLMProvider
+  + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+  + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+  }
+  abstract class BaseIntegrationRegistry <<abstract>> {
+  + kind: IntegrationKind
+  + register(integration: T) -> 'BaseIntegrationRegistry[T]'
+  + get(key: str) -> T
+  + find(key: str) -> Optional[T]
+  + keys() -> list[str]
+  - __iter__() -> Iterator[T]
+  - __len__() -> int
+  - __contains__(key: object) -> bool
+  }
+  class MessagingRegistry {
+  + kind
+  + start_enabled() -> None
+  + stop_all() -> None
+  + running() -> list[BaseChannelIntegration]
+  }
+  class IntegrationRegistry {
+  + registries() -> tuple[BaseIntegrationRegistry[Any], ...]
+  + register(integration: IIntegration) -> 'IntegrationRegistry'
+  + get(key: str) -> IIntegration
+  + all() -> list[IIntegration]
+  + load_all() -> None
+  + save(key: str, values: dict[str, Any]) -> IIntegration
+  + enable(key: str) -> IIntegration
+  + disable(key: str) -> IIntegration
+  + set_active_inference(key: str) -> BaseInferenceIntegration
+  + autostart() -> None
+  + shutdown() -> None
+  + describe_all() -> list[dict[str, Any]]
+  - __iter__() -> Iterator[IIntegration]
+  - __len__() -> int
+  }
+
+}
+
+package "export" {
+  class ExportedFile {
+  + filename: str
+  + content_type: str
+  + data: bytes
+  + size_kb() -> int
+  }
+  interface IConversationExporter <<interface>> {
+  + format() -> str
+  + content_type() -> str
+  + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  interface IExportService <<interface>> {
+  + formats() -> list[str]
+  + export(conversation_id: str, export_format: str) -> ExportedFile
+  + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+  }
+  abstract class BaseExporter <<abstract>> {
+  + VISIBLE_AUTHORS: tuple
+  - _visible(messages: Sequence[ChatMessage]) -> list[ChatMessage]
+  - _stamp(value: str) -> str
+  - _author(message: ChatMessage) -> str
+  - _basename(conversation: Conversation) -> str
+  }
+  class TextExporter {
+  + format() -> str
+  + content_type() -> str
+  + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class MarkdownExporter {
+  + format() -> str
+  + content_type() -> str
+  + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class HtmlExporter {
+  + format() -> str
+  + content_type() -> str
+  + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class ConversationExportService {
+  + formats() -> list[str]
+  - _exporter(export_format: str) -> IConversationExporter
+  + export(conversation_id: str, export_format: str) -> ExportedFile
+  + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+  }
+}
+
+package "contexto" <<Frame>> {
+  class CredentialsNotConfiguredError
+  class GroqLLMProvider
+  class ICredentialStore
+  class ILLMProvider
+}
+
+BaseChannelIntegration <|-- TelegramIntegration
+BaseChannelIntegration <|-- WhatsAppIntegration
+BaseExporter <|-- HtmlExporter
+BaseExporter <|-- MarkdownExporter
+BaseExporter <|-- TextExporter
+BaseInferenceIntegration <|-- GroqInferenceIntegration
+BaseIntegration ..> CredentialField
+BaseIntegration ..> IntegrationKind
+BaseIntegration ..> IntegrationStatus
+BaseIntegration <|-- BaseChannelIntegration
+BaseIntegration <|-- BaseInferenceIntegration
+BaseIntegrationRegistry <|-- MessagingRegistry
+ConversationExportService o-- IConversationExporter
+GroqInferenceIntegration ..> CredentialsNotConfiguredError
+GroqInferenceIntegration o-- GroqLLMProvider
+IConversationExporter <|.. BaseExporter
+IExportService <|.. ConversationExportService
+IIntegration <|.. BaseIntegration
+ILLMProvider <|.. RoutingLLMProvider
+InferenceResolver <|-- InferenceRegistry
+IntegrationRegistry *-- InferenceRegistry
+IntegrationRegistry *-- MessagingRegistry
+IntegrationRegistry o-- ICredentialStore
+RoutingLLMProvider ..> InferenceResolver
+@enduml

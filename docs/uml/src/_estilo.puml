@@ -1,0 +1,32 @@
+' Estilo comum dos diagramas do SorriDente.
+' Incluído por todos os fontes: mudar aqui muda em todos.
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+
+' Linhas em ângulo reto: acaba com as diagonais que se cruzavam.
+skinparam linetype ortho
+
+' Junta as setas quando um pai tem 3+ filhos, em vez de uma seta por filho.
+skinparam groupInheritance 3
+
+' Quebra assinaturas longas em vez de esticar a caixa.
+skinparam wrapWidth 220
+
+skinparam nodesep 25
+skinparam ranksep 55
+skinparam shadowing false
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #4A6785
+  ArrowColor #4A6785
+  FontSize 12
+}
+skinparam package {
+  BackgroundColor #F7F9FC
+  BorderColor #9AA7BD
+}
+
+hide empty members

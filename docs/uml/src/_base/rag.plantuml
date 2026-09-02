@@ -1,20 +1,32 @@
 @startuml rag
-!include _estilo.puml
-left to right direction
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
 
 package "core" {
   package "domain.repositories" {
-    class KnowledgeRepository
-    class FAQRepository
+    class KnowledgeRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[KnowledgeDocument]
+    }
+    class FAQRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[FAQ]
+      + search(term: str, limit: int) -> list[FAQ]
+    }
     class ProcedureRepository {
+      - __init__(database: IDatabase) -> None
       + active() -> list[Procedure]
       + find_by_name(name: str) -> Optional[Procedure]
     }
     class DentistRepository {
+      - __init__(database: IDatabase) -> None
       + active() -> list[Dentist]
     }
     class SettingsRepository {
     + SINGLETON_ID: str
+      - __init__(database: IDatabase) -> None
       + current() -> ClinicSettings
     }
   }
@@ -76,6 +88,7 @@ package "rag" {
     }
   }
   class ParagraphChunker {
+    - __init__(max_chars: int, min_chars: int) -> None
     + split(document: KnowledgeDocument) -> list[Chunk]
     - _explode(paragraph: str) -> list[str]
   }
@@ -83,6 +96,7 @@ package "rag" {
     + split(document: KnowledgeDocument) -> list[Chunk]
   }
   class TfIdfEmbedder {
+    - __init__(use_bigrams: bool) -> None
     + is_fitted() -> bool
     + vocabulary_size() -> int
     - _terms(text: str) -> list[str]
@@ -90,6 +104,7 @@ package "rag" {
     + embed(text: str) -> Vector
   }
   class InMemoryVectorStore {
+    - __init__() -> None
     + index(entries: Iterable[tuple[Chunk, Vector]]) -> None
     + clear() -> None
     + search(query: Vector, limit: int) -> list[ScoredChunk]
@@ -97,21 +112,26 @@ package "rag" {
     - __len__() -> int
   }
   abstract class BaseRetriever <<abstract>> {
+    - __init__(chunker: IChunker) -> None
     - _explode(documents: Sequence[KnowledgeDocument]) -> list[Chunk]
   }
   class VectorRetriever {
+    - __init__(chunker: IChunker, embedder: IEmbedder, store: IVectorStore) -> None
     + reindex(documents: Sequence[KnowledgeDocument]) -> int
     + retrieve(query: str, limit: int) -> list[ScoredChunk]
   }
   class BM25Retriever {
+    - __init__(chunker: IChunker, k1: float, b: float) -> None
     + reindex(documents: Sequence[KnowledgeDocument]) -> int
     + retrieve(query: str, limit: int) -> list[ScoredChunk]
   }
   class HybridRetriever {
+    - __init__(retrievers: Sequence[IRetriever], k: int) -> None
     + reindex(documents: Sequence[KnowledgeDocument]) -> int
     + retrieve(query: str, limit: int) -> list[ScoredChunk]
   }
   class KnowledgeBaseService {
+    - __init__(documents: KnowledgeRepository, faqs: FAQRepository, procedures: ProcedureRepository, dentists: DentistRepository, settings: SettingsRepository, retriever: IRetriever) -> None
     + indexed_chunks() -> int
     + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
     + update(document_id: str) -> KnowledgeDocument

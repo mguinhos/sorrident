@@ -1,0 +1,195 @@
+@startuml infraestrutura
+!include _estilo.puml
+
+package "infrastructure" {
+  class JsonCredentialStore {
+  - _read_sync() -> dict[str, Any]
+  - _write_sync(data: dict[str, Any]) -> None
+  - _load() -> dict[str, Any]
+  + all() -> dict[str, Any]
+  + get(key: str, default: Any) -> Any
+  + set(key: str, value: Any) -> None
+  + update(values: dict[str, Any]) -> dict[str, Any]
+  + delete(key: str) -> None
+  }
+  class InMemoryEventBus {
+  + publish(event: str, payload: dict[str, Any]) -> None
+  + subscribe() -> asyncio.Queue
+  + unsubscribe(queue: asyncio.Queue) -> None
+  + subscriber_count() -> int
+  }
+  package "Groq Cloud" <<Cloud>> {
+    class GroqLLMProvider {
+    + model() -> str
+    + configured() -> bool
+    + configure(api_key: str, model: Optional[str]) -> None
+    + client() -> AsyncGroq
+    + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+    + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+    - _clean(text: str) -> str
+    }
+  }
+
+}
+
+package "db" <<Database>> {
+  class TinyDBDatabase {
+  + connect() -> None
+  + disconnect() -> None
+  - _table(table: str)
+  - _matches(document: dict[str, Any], filters: dict[str, Any]) -> bool
+  + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+  + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+  + delete(table: str, doc_id: str) -> bool
+  + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+  + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+  + all(table: str) -> list[dict[str, Any]]
+  + count(table: str, filters: Optional[dict[str, Any]]) -> int
+  }
+  abstract class TinyDBRepository <<abstract>> {
+  + table_name() -> str
+  + entity_type() -> Type[T]
+  - _to_entity(row: dict[str, Any]) -> T
+  + add(entity: T) -> T
+  + update(entity: T) -> T
+  + remove(entity_id: str) -> bool
+  + get(entity_id: str) -> Optional[T]
+  + list(filters: Optional[dict[str, Any]]) -> list[T]
+  + find_one(filters: dict[str, Any]) -> Optional[T]
+  + count(filters: Optional[dict[str, Any]]) -> int
+  }
+}
+
+package "scheduler" {
+  interface IBackgroundJob <<interface>> {
+  + interval_seconds() -> int
+  + job_name() -> str
+  + run_once() -> None
+  }
+  interface IScheduler <<interface>> {
+  + register(job: IBackgroundJob) -> 'IScheduler'
+  + start() -> None
+  + stop() -> None
+  + jobs() -> Sequence[IBackgroundJob]
+  }
+  class AppointmentReminderJob {
+  + interval_seconds() -> int
+  + run_once() -> None
+  }
+  class ConversationTimeoutJob {
+  + DESPEDIDA: str
+  + interval_seconds() -> int
+  + run_once() -> None
+  }
+  class KnowledgeReindexJob {
+  + interval_seconds() -> int
+  + run_once() -> None
+  }
+  class BackgroundScheduler {
+  + jobs() -> Sequence[IBackgroundJob]
+  + register(job: IBackgroundJob) -> 'BackgroundScheduler'
+  + start() -> None
+  + stop() -> None
+  - _loop(job: IBackgroundJob) -> None
+  }
+  interface IAppointmentService <<interface>> {
+  + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+  + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+  + reschedule(appointment_id: str, start: datetime) -> Appointment
+  + cancel(appointment_id: str, reason: str) -> Appointment
+  + set_status(appointment_id: str, status: str) -> Appointment
+  + get(appointment_id: str) -> Appointment
+  + list_all() -> list[Appointment]
+  + agenda(start: date, end: date) -> list[Appointment]
+  + due_reminders(window_hours: int) -> list[Appointment]
+  + mark_reminder_sent(appointment_id: str) -> Appointment
+  }
+  interface IConversationService <<interface>> {
+  + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+  + append(conversation_id: str, author: str, content: str) -> ChatMessage
+  + history(conversation_id: str, limit: int) -> list[ChatMessage]
+  + list_all(limit: int) -> list[Conversation]
+  + mark_read(conversation_id: str) -> Conversation
+  + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+  + get(conversation_id: str) -> Conversation
+  + link_patient(conversation_id: str, patient_id: str) -> Conversation
+  + mark_handoff_notice(conversation_id: str) -> Conversation
+  + close(conversation_id: str, reason: str) -> Conversation
+  + reopen(conversation_id: str) -> Conversation
+  + idle_conversations(minutes: int) -> list[Conversation]
+  }
+  interface IKnowledgeService <<interface>> {
+  + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+  + update(document_id: str) -> KnowledgeDocument
+  + delete(document_id: str) -> bool
+  + list_all() -> list[KnowledgeDocument]
+  + reindex() -> int
+  + search(question: str, limit: int) -> list[ScoredChunk]
+  + answer_context(question: str, limit: int) -> dict[str, Any]
+  }
+}
+
+package "seed" {
+  interface ISeeder <<interface>> {
+  + run() -> None
+  }
+  class DataSeeder {
+  + run() -> None
+  }
+  class UserRepository {
+  + find_by_username(username: str) -> Optional[User]
+  }
+  class FAQRepository {
+  + active() -> list[FAQ]
+  + search(term: str, limit: int) -> list[FAQ]
+  }
+  class KnowledgeRepository {
+  + active() -> list[KnowledgeDocument]
+  }
+  class SettingsRepository {
+  + SINGLETON_ID: str
+  + current() -> ClinicSettings
+  }
+  class AuthService {
+  + hash_password(password: str, salt: str) -> str
+  + register(username: str, password: str, role: str, display_name: str) -> User
+  + authenticate(username: str, password: str) -> tuple[User, str]
+  + resolve_token(token: str) -> User
+  + logout(token: str) -> None
+  + list_users() -> list[User]
+  }
+}
+
+package "contexto" <<Frame>> {
+  class GroqInferenceIntegration
+  class ICredentialStore
+  class IDatabase
+  class IEventBus
+  class ILLMError
+  class ILLMProvider
+  class IRepository
+}
+
+AppointmentReminderJob ..> IAppointmentService : due_reminders()
+BackgroundScheduler o-- IBackgroundJob
+ConversationTimeoutJob ..> IConversationService : idle_conversations()
+DataSeeder --> FAQRepository
+DataSeeder --> KnowledgeRepository
+DataSeeder --> SettingsRepository
+DataSeeder --> UserRepository
+DataSeeder ..> AuthService
+GroqInferenceIntegration o-- GroqLLMProvider
+GroqLLMProvider ..> ILLMError : levanta
+IBackgroundJob <|.. AppointmentReminderJob
+IBackgroundJob <|.. ConversationTimeoutJob
+IBackgroundJob <|.. KnowledgeReindexJob
+ICredentialStore <|.. JsonCredentialStore
+IDatabase <|.. TinyDBDatabase
+IEventBus <|.. InMemoryEventBus
+ILLMProvider <|.. GroqLLMProvider
+IRepository <|.. TinyDBRepository
+IScheduler <|.. BackgroundScheduler
+ISeeder <|.. DataSeeder
+KnowledgeReindexJob ..> IKnowledgeService : reindex()
+TinyDBRepository o-- "1" IDatabase
+@enduml

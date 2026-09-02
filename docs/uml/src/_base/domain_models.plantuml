@@ -1,5 +1,8 @@
 @startuml domain_models
-!include _estilo.puml
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
 
 package "core" {
   package "core.models" {
@@ -8,7 +11,10 @@ package "core" {
       GESTOR
       MEDICO
     }
-    enum SlotType <<enum>>
+    enum SlotType <<enum>> {
+      REGULAR
+      ENCAIXE
+    }
     enum Priority <<enum>> {
       NORMAL
       URGENTE

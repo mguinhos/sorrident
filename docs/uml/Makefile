@@ -21,7 +21,7 @@ PLANTUML  := plantuml/plantuml:latest
 PYTHON    := $(PROJ_ROOT)/.venv/bin/python
 SCRIPT    := $(PROJ_ROOT)/render_svg_to_png.py
 
-# fontes: os 8 fragmentos + master projeto.plantuml
+# fontes: os fragmentos de src/ + o master projeto.plantuml
 SRCS      := $(wildcard $(SRC_DIR)/*.plantuml) $(UML_DIR)projeto.plantuml
 SVGS      := $(patsubst $(SRC_DIR)/%.plantuml,$(SVG_DIR)/%.svg,$(wildcard $(SRC_DIR)/*.plantuml)) \
              $(SVG_DIR)/projeto.svg

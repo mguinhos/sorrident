@@ -1,0 +1,1707 @@
+@startuml SorriDente-Projeto
+' ============================================================
+' Diagrama UML mestre do backend SorriDente (Clean Architecture)
+' Gerado a partir do inventário AST de backend/sorridente/
+' Este arquivo é a fonte; os fragmentos em docs/uml/src/
+' são extrações deste master, um por diagrama/render SVG.
+' ============================================================
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
+
+package "core (domínio puro)" {
+    package "core.models" {
+        enum Role <<enum>> {
+          CLIENTE
+          GESTOR
+          MEDICO
+        }
+        enum SlotType <<enum>> {
+          REGULAR
+          ENCAIXE
+        }
+        enum Priority <<enum>> {
+          NORMAL
+          URGENTE
+        }
+        enum AppointmentStatus <<enum>> {
+          AGENDADO
+          CONFIRMADO
+          CONCLUIDO
+          CANCELADO
+          FALTOU
+        }
+        enum ChannelType <<enum>> {
+          WEB
+          TELEGRAM
+          WHATSAPP
+        }
+        enum MessageAuthor <<enum>> {
+          USER
+          ASSISTANT
+          SYSTEM
+          TOOL
+          HUMAN_AGENT
+        }
+        enum NotificationLevel <<enum>> {
+          INFO
+          SUCESSO
+          ALERTA
+          ERRO
+        }
+
+        class Entity {
+        + id: str
+        + created_at: str
+        + updated_at: str
+          + to_dict() -> dict[str, Any]
+          + from_dict(data: dict[str, Any])
+          + touch() -> None
+        }
+        class Patient {
+        + name: str
+        + phone: str
+        + email: str
+        + birth_date: str
+        + document: str
+        + insurance_provider: str
+        + insurance_card: str
+        + responsible_name: str
+        + notes: str
+        + telegram_id: str
+        + whatsapp_id: str
+        + treatment: str
+        + active: bool
+        }
+        class Dentist {
+        + name: str
+        + cro: str
+        + specialty: str
+        + email: str
+        + phone: str
+        + color: str
+        + active: bool
+        + availability: dict[str, list[list[str]]]
+        }
+        class Procedure {
+        + name: str
+        + description: str
+        + duration_minutes: int
+        + price: float
+        + active: bool
+        }
+        class Appointment {
+        + patient_id: str
+        + patient_name: str
+        + dentist_id: str
+        + dentist_name: str
+        + procedure_id: str
+        + procedure_name: str
+        + start: str
+        + end: str
+        + status: str
+        + slot_type: str
+        + priority: str
+        + notes: str
+        + origin: str
+        + reminder_sent: bool
+          + is_encaixe() -> bool
+          + is_urgent() -> bool
+          + duration_minutes() -> int
+          + start_dt() -> datetime
+          + end_dt() -> datetime
+        }
+        class ChatMessage {
+        + conversation_id: str
+        + author: str
+        + content: str
+        + tool_name: str
+        + tool_payload: dict[str, Any]
+        }
+        class Conversation {
+        + channel: str
+        + external_id: str
+        + patient_id: str
+        + display_name: str
+        + last_message_at: str
+        + unread_for_staff: int
+        + handoff: bool
+        + open: bool
+        + closed_at: str
+        + closed_reason: str
+        + handoff_notice_at: str
+        }
+        class Notification {
+        + title: str
+        + message: str
+        + level: str
+        + read: bool
+        + link: str
+        + meta: dict[str, Any]
+        }
+        class FAQ {
+        + question: str
+        + answer: str
+        + tags: list[str]
+        + active: bool
+        }
+        class KnowledgeDocument {
+        + title: str
+        + content: str
+        + source: str
+        + source_id: str
+        + tags: list[str]
+        + active: bool
+        }
+        class ClinicSettings {
+        + clinic_name: str
+        + address: str
+        + phone: str
+        + email: str
+        + opening_hour: str
+        + closing_hour: str
+        + lunch_start: str
+        + lunch_end: str
+        + working_days: list[int]
+        + slot_minutes: int
+        + inactivity_minutes: int
+        + emergency_slot_minutes: int
+        + max_emergency_per_day: int
+        + handoff_notice_cooldown_minutes: int
+        + persona: str
+        }
+        class User {
+        + username: str
+        + password_hash: str
+        + role: str
+        + display_name: str
+        + linked_id: str
+        + active: bool
+        }
+
+        Entity <|-- Patient
+        Entity <|-- Dentist
+        Entity <|-- Procedure
+        Entity <|-- Appointment
+        Entity <|-- ChatMessage
+        Entity <|-- Conversation
+        Entity <|-- Notification
+        Entity <|-- FAQ
+        Entity <|-- KnowledgeDocument
+        Entity <|-- ClinicSettings
+        Entity <|-- User
+        Conversation "1" *-- "0..*" ChatMessage
+        Patient "1" o-- "0..*" Appointment
+        Dentist "1" o-- "0..*" Appointment
+        Procedure "1" o-- "0..*" Appointment
+        Appointment ..> AppointmentStatus
+        Appointment ..> SlotType
+        Appointment ..> Priority
+        Appointment ..> ChannelType
+        ChatMessage ..> MessageAuthor
+        Conversation ..> ChannelType
+        Notification ..> NotificationLevel
+        User ..> Role
+    }
+
+    package "core.interfaces (contratos ABC)" {
+        interface IDatabase <<interface>> {
+          + connect() -> None
+          + disconnect() -> None
+          + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+          + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+          + delete(table: str, doc_id: str) -> bool
+          + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+          + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+          + all(table: str) -> list[dict[str, Any]]
+          + count(table: str, filters: Optional[dict[str, Any]]) -> int
+        }
+        interface IRepository <<interface>> {
+          + table_name() -> str
+          + add(entity: T) -> T
+          + update(entity: T) -> T
+          + remove(entity_id: str) -> bool
+          + get(entity_id: str) -> Optional[T]
+          + list(filters: Optional[dict[str, Any]]) -> list[T]
+        }
+        interface ICredentialStore <<interface>> {
+          + get(key: str, default: Any) -> Any
+          + set(key: str, value: Any) -> None
+          + all() -> dict[str, Any]
+          + delete(key: str) -> None
+        }
+        interface ILLMProvider <<interface>> {
+          + model() -> str
+          + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+          + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+        }
+        interface ITool <<interface>> {
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + execute(context: 'AgentContext') -> Any
+          + to_schema() -> dict[str, Any]
+        }
+        interface IAgent <<interface>> {
+          + reply(context: 'AgentContext', user_message: str) -> str
+        }
+        interface IMessagingChannel <<interface>> {
+          + channel_type() -> str
+          + is_running() -> bool
+          + start() -> None
+          + stop() -> None
+          + send(external_id: str, text: str) -> bool
+          + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+        }
+        interface IEventBus <<interface>> {
+          + publish(event: str, payload: dict[str, Any]) -> None
+          + subscribe() -> Any
+          + unsubscribe(queue: Any) -> None
+        }
+        class AgentContext {
+          - __init__(conversation_id: str, channel: str, external_id: str, patient_id: str, display_name: str, metadata: Optional[dict[str, Any]]) -> None
+          + to_dict() -> dict[str, Any]
+        }
+    }
+
+    package "core.exceptions" {
+        class SorriDenteError {
+        + status_code: int
+          - __init__(message: str) -> None
+        }
+        class NotFoundError {
+        + status_code: int
+        }
+        class ValidationError {
+        + status_code: int
+        }
+        class ConflictError {
+        + status_code: int
+        }
+        class AuthenticationError {
+        + status_code: int
+        }
+        class CredentialsNotConfiguredError {
+        + status_code: int
+        }
+        class LLMError {
+        + status_code: int
+        }
+        Exception <|-- SorriDenteError
+        SorriDenteError <|-- NotFoundError
+        SorriDenteError <|-- ValidationError
+        SorriDenteError <|-- ConflictError
+        SorriDenteError <|-- AuthenticationError
+        SorriDenteError <|-- CredentialsNotConfiguredError
+        SorriDenteError <|-- LLMError
+    }
+}
+
+package "domain" {
+    package "domain.services.interfaces" {
+        interface IService <<interface>> {
+          + name() -> str
+        }
+        interface IPatientService <<interface>> {
+          + create() -> Patient
+          + update(patient_id: str) -> Patient
+          + delete(patient_id: str) -> bool
+          + get(patient_id: str) -> Patient
+          + list_all(search: str) -> list[Patient]
+          + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
+        }
+        interface IDentistService <<interface>> {
+          + create() -> Dentist
+          + update(dentist_id: str) -> Dentist
+          + delete(dentist_id: str) -> bool
+          + get(dentist_id: str) -> Dentist
+          + list_all(only_active: bool) -> list[Dentist]
+        }
+        interface IProcedureService <<interface>> {
+          + create() -> Procedure
+          + update(procedure_id: str) -> Procedure
+          + delete(procedure_id: str) -> bool
+          + list_all(only_active: bool) -> list[Procedure]
+        }
+        interface ISchedulingService <<interface>> {
+          + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
+          + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
+          + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
+        }
+        interface IAppointmentService <<interface>> {
+          + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+          + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+          + reschedule(appointment_id: str, start: datetime) -> Appointment
+          + cancel(appointment_id: str, reason: str) -> Appointment
+          + set_status(appointment_id: str, status: str) -> Appointment
+          + get(appointment_id: str) -> Appointment
+          + list_all() -> list[Appointment]
+          + agenda(start: date, end: date) -> list[Appointment]
+          + due_reminders(window_hours: int) -> list[Appointment]
+          + mark_reminder_sent(appointment_id: str) -> Appointment
+        }
+        interface IConversationService <<interface>> {
+          + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+          + append(conversation_id: str, author: str, content: str) -> ChatMessage
+          + history(conversation_id: str, limit: int) -> list[ChatMessage]
+          + list_all(limit: int) -> list[Conversation]
+          + mark_read(conversation_id: str) -> Conversation
+          + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+          + get(conversation_id: str) -> Conversation
+          + link_patient(conversation_id: str, patient_id: str) -> Conversation
+          + mark_handoff_notice(conversation_id: str) -> Conversation
+          + close(conversation_id: str, reason: str) -> Conversation
+          + reopen(conversation_id: str) -> Conversation
+          + idle_conversations(minutes: int) -> list[Conversation]
+        }
+        interface INotificationService <<interface>> {
+          + notify(title: str, message: str, level: str) -> Notification
+          + list_all(only_unread: bool, limit: int) -> list[Notification]
+          + mark_read(notification_id: str) -> Notification
+          + mark_all_read() -> int
+        }
+        interface IFAQService <<interface>> {
+          + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
+          + update(faq_id: str) -> FAQ
+          + delete(faq_id: str) -> bool
+          + list_all() -> list[FAQ]
+          + search(term: str, limit: int) -> list[FAQ]
+        }
+        interface ISettingsService <<interface>> {
+          + get() -> ClinicSettings
+          + update() -> ClinicSettings
+        }
+        interface IAuthService <<interface>> {
+          + authenticate(username: str, password: str) -> tuple[User, str]
+          + register(username: str, password: str, role: str, display_name: str) -> User
+          + resolve_token(token: str) -> User
+          + list_users() -> list[User]
+        }
+        interface IAnalyticsService <<interface>> {
+          + dashboard() -> dict[str, Any]
+        }
+        IService <|-- IPatientService
+        IService <|-- IDentistService
+        IService <|-- IProcedureService
+        IService <|-- ISchedulingService
+        IService <|-- IAppointmentService
+        IService <|-- IConversationService
+        IService <|-- INotificationService
+        IService <|-- IFAQService
+        IService <|-- ISettingsService
+        IService <|-- IAuthService
+        IService <|-- IAnalyticsService
+    }
+
+    package "domain.services (implementações)" {
+        class PatientService {
+          - __init__(patients: PatientRepository, notifications: 'NotificationService') -> None
+          + create() -> Patient
+          + update(patient_id: str) -> Patient
+          + delete(patient_id: str) -> bool
+          + get(patient_id: str) -> Patient
+          + list_all(search: str) -> list[Patient]
+          + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
+        }
+        class DentistService {
+          - __init__(dentists: DentistRepository) -> None
+          + create() -> Dentist
+          + update(dentist_id: str) -> Dentist
+          + delete(dentist_id: str) -> bool
+          + get(dentist_id: str) -> Dentist
+          + list_all(only_active: bool) -> list[Dentist]
+        }
+        class ProcedureService {
+          - __init__(procedures: ProcedureRepository) -> None
+          + create() -> Procedure
+          + update(procedure_id: str) -> Procedure
+          + delete(procedure_id: str) -> bool
+          + list_all(only_active: bool) -> list[Procedure]
+        }
+        class SchedulingService {
+          - __init__(appointments: AppointmentRepository, dentists: DentistRepository, settings: SettingsRepository) -> None
+          - _parse_time(value: str, fallback: time) -> time
+          - _windows(dentist: Optional[Dentist], day: date, settings: ClinicSettings) -> list[tuple[time, time]]
+          + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
+          + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
+          + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
+        }
+        class AppointmentService {
+          - __init__(appointments: AppointmentRepository, patients: PatientRepository, dentists: DentistRepository, procedures: ProcedureRepository, scheduling: SchedulingService, notifications: 'NotificationService', settings: SettingsRepository) -> None
+          - _resolve_duration(procedure_id: str) -> tuple[int, str, str]
+          + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+          + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+          + reschedule(appointment_id: str, start: datetime) -> Appointment
+          + cancel(appointment_id: str, reason: str) -> Appointment
+          + set_status(appointment_id: str, status: str) -> Appointment
+          + get(appointment_id: str) -> Appointment
+          + list_all() -> list[Appointment]
+          + agenda(start: date, end: date) -> list[Appointment]
+          + due_reminders(window_hours: int) -> list[Appointment]
+          + mark_reminder_sent(appointment_id: str) -> Appointment
+        }
+        class ConversationService {
+          - __init__(conversations: ConversationRepository, messages: MessageRepository, event_bus: IEventBus) -> None
+          + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+          + get(conversation_id: str) -> Conversation
+          + append(conversation_id: str, author: str, content: str) -> ChatMessage
+          + history(conversation_id: str, limit: int) -> list[ChatMessage]
+          + list_all(limit: int) -> list[Conversation]
+          + mark_read(conversation_id: str) -> Conversation
+          + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+          + link_patient(conversation_id: str, patient_id: str) -> Conversation
+          + mark_handoff_notice(conversation_id: str) -> Conversation
+          + close(conversation_id: str, reason: str) -> Conversation
+          + reopen(conversation_id: str) -> Conversation
+          + idle_conversations(minutes: int) -> list[Conversation]
+        }
+        class NotificationService {
+          - __init__(notifications: NotificationRepository, event_bus: IEventBus) -> None
+          + notify(title: str, message: str, level: str) -> Notification
+          + list_all(only_unread: bool, limit: int) -> list[Notification]
+          + mark_read(notification_id: str) -> Notification
+          + mark_all_read() -> int
+        }
+        class FAQService {
+          - __init__(faqs: FAQRepository) -> None
+          + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
+          + update(faq_id: str) -> FAQ
+          + delete(faq_id: str) -> bool
+          + list_all() -> list[FAQ]
+          + search(term: str, limit: int) -> list[FAQ]
+        }
+        class SettingsService {
+          - __init__(settings: SettingsRepository) -> None
+          + get() -> ClinicSettings
+          + update() -> ClinicSettings
+        }
+        class AuthService {
+          - __init__(users: UserRepository) -> None
+          + hash_password(password: str, salt: str) -> str
+          + register(username: str, password: str, role: str, display_name: str) -> User
+          + authenticate(username: str, password: str) -> tuple[User, str]
+          + resolve_token(token: str) -> User
+          + logout(token: str) -> None
+          + list_users() -> list[User]
+        }
+        class AnalyticsService {
+          - __init__(appointments: AppointmentRepository, patients: PatientRepository, conversations: ConversationRepository, notifications: NotificationRepository) -> None
+          + dashboard() -> dict[str, Any]
+        }
+        IPatientService <|.. PatientService
+        IDentistService <|.. DentistService
+        IProcedureService <|.. ProcedureService
+        ISchedulingService <|.. SchedulingService
+        IAppointmentService <|.. AppointmentService
+        IConversationService <|.. ConversationService
+        INotificationService <|.. NotificationService
+        IFAQService <|.. FAQService
+        ISettingsService <|.. SettingsService
+        IAuthService <|.. AuthService
+        IAnalyticsService <|.. AnalyticsService
+    }
+
+    package "domain.repositories" {
+        class PatientRepository {
+          - __init__(database: IDatabase) -> None
+          + find_by_telegram(telegram_id: str) -> Optional[Patient]
+          + find_by_phone(phone: str) -> Optional[Patient]
+          + find_by_document(document: str) -> Optional[Patient]
+          + search(term: str) -> list[Patient]
+        }
+        class DentistRepository {
+          - __init__(database: IDatabase) -> None
+          + active() -> list[Dentist]
+        }
+        class ProcedureRepository {
+          - __init__(database: IDatabase) -> None
+          + active() -> list[Procedure]
+          + find_by_name(name: str) -> Optional[Procedure]
+        }
+        class AppointmentRepository {
+          - __init__(database: IDatabase) -> None
+          + by_patient(patient_id: str) -> list[Appointment]
+          + by_dentist(dentist_id: str) -> list[Appointment]
+          + in_range(start: datetime, end: datetime) -> list[Appointment]
+          + upcoming(reference: Optional[datetime]) -> list[Appointment]
+        }
+        class ConversationRepository {
+          - __init__(database: IDatabase) -> None
+          + find_by_external(channel: str, external_id: str) -> Optional[Conversation]
+          + recent(limit: int) -> list[Conversation]
+          + open_conversations() -> list[Conversation]
+        }
+        class MessageRepository {
+          - __init__(database: IDatabase) -> None
+          + by_conversation(conversation_id: str, limit: int) -> list[ChatMessage]
+        }
+        class NotificationRepository {
+          - __init__(database: IDatabase) -> None
+          + unread() -> list[Notification]
+          + recent(limit: int) -> list[Notification]
+        }
+        class FAQRepository {
+          - __init__(database: IDatabase) -> None
+          + active() -> list[FAQ]
+          + search(term: str, limit: int) -> list[FAQ]
+        }
+        class KnowledgeRepository {
+          - __init__(database: IDatabase) -> None
+          + active() -> list[KnowledgeDocument]
+        }
+        class UserRepository {
+          - __init__(database: IDatabase) -> None
+          + find_by_username(username: str) -> Optional[User]
+        }
+        class SettingsRepository {
+        + SINGLETON_ID: str
+          - __init__(database: IDatabase) -> None
+          + current() -> ClinicSettings
+        }
+    }
+}
+
+package "agent" {
+    package "agent (núcleo)" {
+        class SorriDenteAgent {
+          - __init__(llm: ILLMProvider, tools: ToolRegistry, prompt_builder: IPromptBuilder, conversations: IConversationService, catalog: Optional[ModelCatalog], policy: Optional[IContextPolicy], tracker: Optional[TaskTracker], max_iterations: int, history_limit: int, temperature: float) -> None
+          + tools() -> ToolRegistry
+          + tracker() -> TaskTracker
+          + model() -> Model
+          + reply(context: AgentContext, user_message: str) -> str
+          - _run(context: AgentContext, user_message: str, task: Task) -> str
+          - _load_history(conversation_id: str) -> list[PromptMessage]
+          - _call_tool(context: AgentContext, task: Task, call: dict[str, Any]) -> Any
+          - _parse_arguments(raw: Any) -> dict[str, Any]
+        }
+        class EchoAgent {
+          - __init__(message: Optional[str]) -> None
+          + reply(context: AgentContext, user_message: str) -> str
+        }
+        IAgent <|.. SorriDenteAgent
+        IAgent <|.. EchoAgent
+    }
+    package "agent.base" {
+        abstract class BaseTool <<abstract>> {
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext) -> Any
+          + execute(context: AgentContext) -> Any
+          + parse_datetime(value: str) -> datetime
+          + dump(value: Any) -> str
+        }
+        interface IToolRegistry <<interface>> {
+          + register(tool: ITool) -> 'IToolRegistry'
+          + unregister(name: str) -> None
+          + get(name: str) -> Optional[ITool]
+          + schemas() -> list[dict[str, Any]]
+          + names() -> list[str]
+        }
+        class ToolRegistry {
+          - __init__(tools: Optional[Iterable[ITool]]) -> None
+          + register(tool: ITool) -> 'ToolRegistry'
+          + unregister(name: str) -> None
+          + get(name: str) -> Optional[ITool]
+          + schemas() -> list[dict[str, Any]]
+          + names() -> list[str]
+          - __len__() -> int
+          - __iter__() -> Iterator[ITool]
+          - __contains__(name: object) -> bool
+        }
+        ITool <|-- BaseTool
+        IToolRegistry <|.. ToolRegistry
+    }
+    package "agent.context" {
+        enum MessageRole <<enum>> {
+          SYSTEM
+          USER
+          ASSISTANT
+          TOOL
+        }
+        class PromptMessage {
+        + role: MessageRole
+        + content: str
+        + tool_calls: list[dict[str, Any]]
+        + tool_call_id: str
+        + name: str
+          + to_payload() -> dict[str, Any]
+          + estimated_tokens() -> int
+        }
+        interface IContextPolicy <<interface>> {
+          + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+        }
+        class SlidingWindowPolicy {
+          - __init__(max_messages: int) -> None
+          + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+        }
+        class TokenBudgetPolicy {
+          - __init__(usage_ratio: float, min_messages: int) -> None
+          + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+        }
+        class CompositePolicy {
+          - __init__() -> None
+          + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
+        }
+        class ConversationContext {
+          - __init__(system_prompt: str, policy: Optional[IContextPolicy]) -> None
+          + system(content: str) -> 'ConversationContext'
+          + user(content: str) -> 'ConversationContext'
+          + assistant(content: str, tool_calls: Optional[list[dict[str, Any]]]) -> 'ConversationContext'
+          + tool_result(tool_call_id: str, name: str, content: str) -> 'ConversationContext'
+          + extend(messages: Sequence[PromptMessage]) -> 'ConversationContext'
+          + render(model: Model) -> list[dict[str, Any]]
+          + messages() -> list[PromptMessage]
+          + estimated_tokens() -> int
+          - __len__() -> int
+          - __iter__() -> Iterator[PromptMessage]
+        }
+        IContextPolicy <|-- SlidingWindowPolicy
+        IContextPolicy <|-- TokenBudgetPolicy
+        IContextPolicy <|-- CompositePolicy
+        ConversationContext *-- "0..*" PromptMessage
+        ConversationContext o-- "1" IContextPolicy
+    }
+    package "agent.task" {
+        enum TaskStatus <<enum>> {
+          PENDING
+          RUNNING
+          DONE
+          FAILED
+          CANCELLED
+        }
+        enum TaskKind <<enum>> {
+          CONVERSATION_TURN
+          TOOL_CALL
+          INFERENCE
+        }
+        class SubTask {
+        + name: str
+        + kind: TaskKind
+        + status: TaskStatus
+        + arguments: dict[str, Any]
+        + result: Any
+        + error: str
+        + id: str
+        + started_at: float
+        + finished_at: Optional[float]
+          + start() -> 'SubTask'
+          + complete(result: Any) -> 'SubTask'
+          + fail(error: str) -> 'SubTask'
+          + duration_ms() -> int
+          + to_dict() -> dict[str, Any]
+        }
+        class Task {
+        + conversation_id: str
+        + prompt: str
+        + kind: TaskKind
+        + status: TaskStatus
+        + subtasks: list[SubTask]
+        + answer: str
+        + error: str
+        + iterations: int
+        + id: str
+        + started_at: float
+        + finished_at: Optional[float]
+          + start() -> 'Task'
+          + add_subtask(name: str, kind: TaskKind) -> SubTask
+          + complete(answer: str) -> 'Task'
+          + fail(error: str) -> 'Task'
+          + pending_subtasks() -> list[SubTask]
+          + failed_subtasks() -> list[SubTask]
+          + duration_ms() -> int
+          + to_dict() -> dict[str, Any]
+        }
+        interface ITaskTracker <<interface>> {
+          + track(task: 'Task') -> 'Task'
+          + recent(limit: int) -> list['Task']
+          + by_conversation(conversation_id: str) -> list['Task']
+        }
+        class TaskTracker {
+          - __init__(max_size: int) -> None
+          + track(task: Task) -> Task
+          + recent(limit: int) -> list[Task]
+          + by_conversation(conversation_id: str) -> list[Task]
+          - __len__() -> int
+          - __iter__() -> Iterator[Task]
+        }
+        Task *-- "0..*" SubTask
+        ITaskTracker <|.. TaskTracker
+    }
+    package "agent.models" {
+        enum Supports <<enum>> {
+          NONE
+          TEXT
+          TOOLS
+          STREAMING
+          IMAGE
+          AUDIO
+          JSON_MODE
+          REASONING
+          PARALLEL_TOOLS
+        }
+        class Model {
+        + id: str
+        + provider: str
+        + supports: Supports
+        + context_window: int
+        + max_output_tokens: int
+        + display_name: str
+        + notes: str
+          + capable_of(capability: Supports) -> bool
+          + name() -> str
+          + to_dict() -> dict[str, Any]
+        }
+        interface IModelCatalog <<interface>> {
+          + register(model: Model) -> 'IModelCatalog'
+          + get(model_id: str, provider: str) -> Model
+        }
+        class ModelCatalog {
+          - __init__(models: Optional[list[Model]]) -> None
+          - _defaults() -> list[Model]
+          + register(model: Model) -> 'ModelCatalog'
+          + get(model_id: str, provider: str) -> Model
+          - __iter__() -> Iterator[Model]
+        }
+        IModelCatalog <|.. ModelCatalog
+    }
+    package "agent.prompt" {
+        interface IPromptBuilder <<interface>> {
+          + build(context: AgentContext) -> str
+        }
+        class ClinicPromptBuilder {
+          - __init__(settings: ISettingsService) -> None
+          + build(context: AgentContext) -> str
+        }
+        IPromptBuilder <|.. ClinicPromptBuilder
+    }
+    package "agent.tools" {
+        abstract class PatientAwareTool <<abstract>> {
+          - __init__(patients: IPatientService, conversations: IConversationService) -> None
+          + current_patient(context: AgentContext) -> Optional[Patient]
+          + bind(context: AgentContext, patient: Patient) -> Patient
+          + resolve_patient(context: AgentContext, name: str, phone: str) -> Patient
+          + summarize(patient: Patient) -> dict[str, Any]
+        }
+        class KnowledgeBaseTool {
+          - __init__(knowledge: IKnowledgeService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, pergunta: str, limite: int) -> Any
+        }
+        class ClinicInfoTool {
+          - __init__(settings: ISettingsService) -> None
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class CadastrarClienteTool {
+          - __init__(patients: IPatientService, conversations: IConversationService, notifications: INotificationService, repository: PatientRepository) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext) -> Any
+        }
+        class AtualizarInformacoesClienteTool {
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext) -> Any
+        }
+        class ConsultarCadastroTool {
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class ListProceduresTool {
+          - __init__(procedures: IProcedureService) -> None
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class ListDentistsTool {
+          - __init__(dentists: IDentistService) -> None
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class AvailableSlotsTool {
+          - __init__(scheduling: ISchedulingService, procedures: IProcedureService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, data: str, profissional_id: str, procedimento_id: str, periodo: str) -> Any
+        }
+        class MarcarAgendamentoTool {
+          - __init__(appointments: IAppointmentService, patients: IPatientService, procedures: IProcedureService, conversations: IConversationService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          - _resolve_procedure(name: str) -> str
+          + run(context: AgentContext, data_hora: str, procedimento_id: str, procedimento: str, profissional_id: str, nome_paciente: str, telefone: str, observacoes: str) -> Any
+        }
+        class MyAppointmentsTool {
+          - __init__(appointments: IAppointmentService, patients: IPatientService, conversations: IConversationService) -> None
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class CancelAppointmentTool {
+          - __init__(appointments: IAppointmentService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, agendamento_id: str, motivo: str) -> Any
+        }
+        class RescheduleAppointmentTool {
+          - __init__(appointments: IAppointmentService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, agendamento_id: str, nova_data_hora: str) -> Any
+        }
+        class ConsultarEncaixeUrgenciaTool {
+          - __init__(scheduling: ISchedulingService) -> None
+          + name() -> str
+          + description() -> str
+          + run(context: AgentContext) -> Any
+        }
+        class AgendarEncaixeUrgenciaTool {
+          - __init__(appointments: IAppointmentService, patients: IPatientService, conversations: IConversationService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, motivo: str, data_hora: str, nome_paciente: str, telefone: str) -> Any
+        }
+        class HumanHandoffTool {
+          - __init__(notifications: INotificationService, conversations: IConversationService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, motivo: str, urgente: bool, assumir_conversa: bool) -> Any
+        }
+        class EncerrarAtendimentoTool {
+          - __init__(conversations: IConversationService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, resumo: str) -> Any
+        }
+        class ExportarConversaTool {
+          - __init__(exports: IExportService) -> None
+          + name() -> str
+          + description() -> str
+          + parameters() -> dict[str, Any]
+          + run(context: AgentContext, formato: str) -> Any
+        }
+        BaseTool <|-- PatientAwareTool
+        PatientAwareTool <|-- CadastrarClienteTool
+        PatientAwareTool <|-- AtualizarInformacoesClienteTool
+        PatientAwareTool <|-- ConsultarCadastroTool
+        PatientAwareTool <|-- MarcarAgendamentoTool
+        PatientAwareTool <|-- MyAppointmentsTool
+        PatientAwareTool <|-- AgendarEncaixeUrgenciaTool
+        BaseTool <|-- KnowledgeBaseTool
+        BaseTool <|-- ClinicInfoTool
+        BaseTool <|-- ListProceduresTool
+        BaseTool <|-- ListDentistsTool
+        BaseTool <|-- AvailableSlotsTool
+        BaseTool <|-- CancelAppointmentTool
+        BaseTool <|-- RescheduleAppointmentTool
+        BaseTool <|-- ConsultarEncaixeUrgenciaTool
+        BaseTool <|-- HumanHandoffTool
+        BaseTool <|-- EncerrarAtendimentoTool
+        BaseTool <|-- ExportarConversaTool
+    }
+    SorriDenteAgent o-- "1" ToolRegistry
+    SorriDenteAgent o-- "1" ILLMProvider
+    SorriDenteAgent o-- "1" IPromptBuilder
+    SorriDenteAgent o-- "1" IConversationService
+    SorriDenteAgent o-- "1" ModelCatalog
+    SorriDenteAgent o-- "1" IContextPolicy
+    SorriDenteAgent o-- "1" TaskTracker
+    ToolRegistry o-- "0..*" ITool
+}
+
+package "channels" {
+    class InboundMessage {
+      - __init__(channel: str, external_id: str, text: str, display_name: str, metadata: Optional[dict[str, Any]]) -> None
+    }
+    interface IMessageDispatcher <<interface>> {
+      + handle(inbound: InboundMessage) -> Optional[str]
+    }
+    class MessageDispatcher {
+    + ESPERA: str
+      - __init__(agent: IAgent, conversations: IConversationService, patients: IPatientService, settings: ISettingsService) -> None
+      - _should_send_waiting_notice(conversation: Any) -> bool
+      - _registration_summary(patient_id: str) -> str
+      + handle(inbound: InboundMessage) -> Optional[str]
+    }
+    abstract class BaseChannel <<abstract>> {
+      - __init__(dispatcher: MessageDispatcher) -> None
+      + is_running() -> bool
+      + channel_type() -> str
+      + process(inbound: InboundMessage) -> Optional[str]
+      + start() -> None
+      + stop() -> None
+      + send(external_id: str, text: str) -> bool
+      + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+    }
+    class WebChannel {
+      + channel_type() -> str
+      + start() -> None
+      + stop() -> None
+      + send(external_id: str, text: str) -> bool
+    }
+    class TelegramChannel {
+    + WELCOME: str
+      - __init__(dispatcher: MessageDispatcher, token: str) -> None
+      + channel_type() -> str
+      + bot_username() -> str
+      + last_error() -> str
+      + set_token(token: str) -> None
+      + status() -> dict[str, Any]
+      + start() -> None
+      + stop() -> None
+      + send(external_id: str, text: str) -> bool
+      + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+      - _poll_loop() -> None
+      - _handle_update(update: dict[str, Any]) -> None
+    }
+    class TelegramClient {
+      - __init__(token: str, timeout: float) -> None
+      + close() -> None
+      + call(method: str) -> dict[str, Any]
+      + get_me() -> dict[str, Any]
+      + get_updates(offset: int, timeout: int) -> list[dict[str, Any]]
+      + send_message(chat_id: str, text: str) -> dict[str, Any]
+      + send_document(chat_id: str, filename: str, data: bytes, content_type: str, caption: str) -> dict[str, Any]
+      + send_chat_action(chat_id: str, action: str) -> None
+    }
+    class WhatsAppChannel {
+      - __init__(dispatcher: MessageDispatcher, token: str, phone_number_id: str, verify_token: str) -> None
+      + channel_type() -> str
+      + verify_token() -> str
+      + configure(token: str, phone_number_id: str, verify_token: str) -> None
+      + status() -> dict[str, Any]
+      + start() -> None
+      + stop() -> None
+      + send(external_id: str, text: str) -> bool
+      + handle_webhook(payload: dict[str, Any]) -> None
+    }
+    interface IChannelManager <<interface>> {
+      + register(channel: IMessagingChannel) -> 'IChannelManager'
+      + get(channel_type: str) -> IMessagingChannel
+      + find(channel_type: str) -> Optional[IMessagingChannel]
+      + send(channel_type: str, external_id: str, text: str) -> bool
+      + send_document(channel_type: str, external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+      + start(channel_type: str) -> None
+      + stop(channel_type: str) -> None
+      + stop_all() -> None
+      + status() -> list[dict[str, Any]]
+    }
+    class ChannelManager {
+      - __init__() -> None
+      + register(channel: IMessagingChannel) -> 'ChannelManager'
+      + get(channel_type: str) -> IMessagingChannel
+      + find(channel_type: str) -> Optional[IMessagingChannel]
+      + send(channel_type: str, external_id: str, text: str) -> bool
+      + send_document(channel_type: str, external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+      + start(channel_type: str) -> None
+      + stop(channel_type: str) -> None
+      + stop_all() -> None
+      + status() -> list[dict[str, Any]]
+      - __iter__() -> Iterator[IMessagingChannel]
+    }
+    IMessageDispatcher <|.. MessageDispatcher
+    IMessagingChannel <|-- BaseChannel
+    BaseChannel <|-- WebChannel
+    BaseChannel <|-- TelegramChannel
+    BaseChannel <|-- WhatsAppChannel
+    IChannelManager <|.. ChannelManager
+    ChannelManager o-- "0..*" IMessagingChannel
+    MessageDispatcher o-- "1" IAgent
+    TelegramChannel o-- "1" TelegramClient
+}
+
+package "rag" {
+    package "rag.documents" {
+        class Chunk {
+        + id: str
+        + document_id: str
+        + title: str
+        + content: str
+        + source: str
+        + position: int
+        + metadata: dict[str, Any]
+          + searchable_text() -> str
+          + to_dict() -> dict[str, Any]
+        }
+        class ScoredChunk {
+        + chunk: Chunk
+        + score: float
+          + to_dict() -> dict[str, Any]
+        }
+        class Vector {
+        + values: dict[str, float]
+        + norm: float
+          + from_weights(weights: dict[str, float]) -> 'Vector'
+          + cosine(other: 'Vector') -> float
+        }
+    }
+    package "rag.interfaces" {
+        interface IChunker <<interface>> {
+          + split(document: KnowledgeDocument) -> list[Chunk]
+        }
+        interface IEmbedder <<interface>> {
+          + fit(chunks: Sequence[Chunk]) -> None
+          + embed(text: str) -> Vector
+          + is_fitted() -> bool
+        }
+        interface IVectorStore <<interface>> {
+          + index(entries: Iterable[tuple[Chunk, Vector]]) -> None
+          + clear() -> None
+          + search(query: Vector, limit: int) -> list[ScoredChunk]
+          + chunks() -> list[Chunk]
+          - __len__() -> int
+        }
+        interface IRetriever <<interface>> {
+          + retrieve(query: str, limit: int) -> list[ScoredChunk]
+          + reindex(documents: Sequence[KnowledgeDocument]) -> int
+        }
+        interface IKnowledgeService <<interface>> {
+          + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+          + update(document_id: str) -> KnowledgeDocument
+          + delete(document_id: str) -> bool
+          + list_all() -> list[KnowledgeDocument]
+          + reindex() -> int
+          + search(question: str, limit: int) -> list[ScoredChunk]
+          + answer_context(question: str, limit: int) -> dict[str, Any]
+        }
+    }
+    class ParagraphChunker {
+      - __init__(max_chars: int, min_chars: int) -> None
+      + split(document: KnowledgeDocument) -> list[Chunk]
+      - _explode(paragraph: str) -> list[str]
+    }
+    class WholeDocumentChunker {
+      + split(document: KnowledgeDocument) -> list[Chunk]
+    }
+    class TfIdfEmbedder {
+      - __init__(use_bigrams: bool) -> None
+      + is_fitted() -> bool
+      + vocabulary_size() -> int
+      - _terms(text: str) -> list[str]
+      + fit(chunks: Sequence[Chunk]) -> None
+      + embed(text: str) -> Vector
+    }
+    class InMemoryVectorStore {
+      - __init__() -> None
+      + index(entries: Iterable[tuple[Chunk, Vector]]) -> None
+      + clear() -> None
+      + search(query: Vector, limit: int) -> list[ScoredChunk]
+      + chunks() -> list[Chunk]
+      - __len__() -> int
+    }
+    abstract class BaseRetriever <<abstract>> {
+      - __init__(chunker: IChunker) -> None
+      - _explode(documents: Sequence[KnowledgeDocument]) -> list[Chunk]
+    }
+    class VectorRetriever {
+      - __init__(chunker: IChunker, embedder: IEmbedder, store: IVectorStore) -> None
+      + reindex(documents: Sequence[KnowledgeDocument]) -> int
+      + retrieve(query: str, limit: int) -> list[ScoredChunk]
+    }
+    class BM25Retriever {
+      - __init__(chunker: IChunker, k1: float, b: float) -> None
+      + reindex(documents: Sequence[KnowledgeDocument]) -> int
+      + retrieve(query: str, limit: int) -> list[ScoredChunk]
+    }
+    class HybridRetriever {
+      - __init__(retrievers: Sequence[IRetriever], k: int) -> None
+      + reindex(documents: Sequence[KnowledgeDocument]) -> int
+      + retrieve(query: str, limit: int) -> list[ScoredChunk]
+    }
+    class KnowledgeBaseService {
+      - __init__(documents: KnowledgeRepository, faqs: FAQRepository, procedures: ProcedureRepository, dentists: DentistRepository, settings: SettingsRepository, retriever: IRetriever) -> None
+      + indexed_chunks() -> int
+      + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+      + update(document_id: str) -> KnowledgeDocument
+      + delete(document_id: str) -> bool
+      + list_all() -> list[KnowledgeDocument]
+      + sources() -> list[KnowledgeDocument]
+      + reindex() -> int
+      + search(question: str, limit: int) -> list[ScoredChunk]
+      + answer_context(question: str, limit: int) -> dict[str, Any]
+    }
+    IChunker <|.. ParagraphChunker
+    IChunker <|.. WholeDocumentChunker
+    IEmbedder <|.. TfIdfEmbedder
+    IVectorStore <|.. InMemoryVectorStore
+    IRetriever <|-- BaseRetriever
+    BaseRetriever <|-- VectorRetriever
+    BaseRetriever <|-- BM25Retriever
+    IRetriever <|.. HybridRetriever
+    IKnowledgeService <|.. KnowledgeBaseService
+    HybridRetriever o-- "0..*" IRetriever
+    VectorRetriever o-- "1" IChunker
+    VectorRetriever o-- "1" IEmbedder
+    VectorRetriever o-- "1" IVectorStore
+}
+
+package "infrastructure" {
+    package "db" <<Database>> {
+        class TinyDBDatabase {
+          - __init__(path: str | Path) -> None
+          + connect() -> None
+          + disconnect() -> None
+          - _table(table: str)
+          - _matches(document: dict[str, Any], filters: dict[str, Any]) -> bool
+          + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+          + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+          + delete(table: str, doc_id: str) -> bool
+          + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+          + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+          + all(table: str) -> list[dict[str, Any]]
+          + count(table: str, filters: Optional[dict[str, Any]]) -> int
+        }
+        abstract class TinyDBRepository <<abstract>> {
+          - __init__(database: IDatabase, entity_type: Type[T], table_name: str) -> None
+          + table_name() -> str
+          + entity_type() -> Type[T]
+          - _to_entity(row: dict[str, Any]) -> T
+          + add(entity: T) -> T
+          + update(entity: T) -> T
+          + remove(entity_id: str) -> bool
+          + get(entity_id: str) -> Optional[T]
+          + list(filters: Optional[dict[str, Any]]) -> list[T]
+          + find_one(filters: dict[str, Any]) -> Optional[T]
+          + count(filters: Optional[dict[str, Any]]) -> int
+        }
+        IDatabase <|.. TinyDBDatabase
+        IRepository <|.. TinyDBRepository
+        TinyDBRepository o-- "1" IDatabase
+    }
+    class JsonCredentialStore {
+      - __init__(path: str | Path) -> None
+      - _read_sync() -> dict[str, Any]
+      - _write_sync(data: dict[str, Any]) -> None
+      - _load() -> dict[str, Any]
+      + all() -> dict[str, Any]
+      + get(key: str, default: Any) -> Any
+      + set(key: str, value: Any) -> None
+      + update(values: dict[str, Any]) -> dict[str, Any]
+      + delete(key: str) -> None
+    }
+    class InMemoryEventBus {
+      - __init__(max_queue: int) -> None
+      + publish(event: str, payload: dict[str, Any]) -> None
+      + subscribe() -> asyncio.Queue
+      + unsubscribe(queue: asyncio.Queue) -> None
+      + subscriber_count() -> int
+    }
+    class GroqLLMProvider {
+      - __init__(api_key: Optional[str], model: str, timeout: float) -> None
+      + model() -> str
+      + configured() -> bool
+      + configure(api_key: str, model: Optional[str]) -> None
+      + client() -> AsyncGroq
+      + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+      + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+      - _clean(text: str) -> str
+    }
+    ICredentialStore <|.. JsonCredentialStore
+    IEventBus <|.. InMemoryEventBus
+    ILLMProvider <|.. GroqLLMProvider
+    domain.repositories ..> TinyDBRepository
+}
+
+package "integrations" {
+    enum IntegrationKind <<enum>> {
+      INFERENCE_PROVIDER
+      MESSAGING_CHANNEL
+      CALENDAR
+      PAYMENT
+    }
+    class CredentialField {
+    + key: str
+    + label: str
+    + secret: bool
+    + required: bool
+    + placeholder: str
+    + help_text: str
+    + default: Any
+      + to_dict() -> dict[str, Any]
+    }
+    class IntegrationStatus {
+    + key: str
+    + kind: str
+    + name: str
+    + description: str
+    + configured: bool
+    + enabled: bool
+    + running: bool
+    + detail: str
+    + last_error: str
+    + extra: dict[str, Any]
+      + to_dict() -> dict[str, Any]
+    }
+    interface IIntegration <<interface>> {
+      + key() -> str
+      + kind() -> IntegrationKind
+      + name() -> str
+      + description() -> str
+      + credential_fields() -> tuple[CredentialField, ...]
+      + configure(credentials: dict[str, Any]) -> None
+      + enable() -> None
+      + disable() -> None
+      + test() -> dict[str, Any]
+      + status() -> IntegrationStatus
+      + describe() -> dict[str, Any]
+    }
+    abstract class BaseIntegration <<abstract>> {
+      - __init__() -> None
+      + credentials() -> dict[str, Any]
+      + last_error() -> str
+      - _remember(credentials: dict[str, Any]) -> None
+      + masked_credentials() -> dict[str, Any]
+      + is_configured() -> bool
+    }
+    abstract class BaseInferenceIntegration <<abstract>> {
+      + kind() -> IntegrationKind
+      + provider() -> ILLMProvider
+      + default_model() -> str
+      + test() -> dict[str, Any]
+    }
+    class GroqInferenceIntegration {
+    + KEY: str
+      - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
+      + key() -> str
+      + name() -> str
+      + description() -> str
+      + default_model() -> str
+      + provider() -> ILLMProvider
+      + credential_fields() -> tuple[CredentialField, ...]
+      + configure(credentials: dict[str, Any]) -> None
+      + enable() -> None
+      + disable() -> None
+      + is_configured() -> bool
+      + status() -> IntegrationStatus
+    }
+    class RoutingLLMProvider {
+      - __init__(resolver: 'InferenceResolver') -> None
+      + model() -> str
+      + configured() -> bool
+      - _provider() -> ILLMProvider
+      + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+      + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+    }
+    abstract class InferenceResolver <<abstract>> {
+      + active_integration() -> Optional[BaseInferenceIntegration]
+      + active_provider() -> Optional[ILLMProvider]
+    }
+    abstract class BaseChannelIntegration <<abstract>> {
+      + kind() -> IntegrationKind
+    }
+    class TelegramIntegration {
+    + KEY: str
+      - __init__(channel: TelegramChannel) -> None
+      + key() -> str
+      + name() -> str
+      + description() -> str
+      + credential_fields() -> tuple[CredentialField, ...]
+      + configure(credentials: dict[str, Any]) -> None
+      + enable() -> None
+      + disable() -> None
+      + test() -> dict[str, Any]
+      + is_configured() -> bool
+      + status() -> IntegrationStatus
+    }
+    class WhatsAppIntegration {
+    + KEY: str
+      - __init__(channel: WhatsAppChannel) -> None
+      + key() -> str
+      + name() -> str
+      + description() -> str
+      + credential_fields() -> tuple[CredentialField, ...]
+      + configure(credentials: dict[str, Any]) -> None
+      + enable() -> None
+      + disable() -> None
+      + test() -> dict[str, Any]
+      + is_configured() -> bool
+      + status() -> IntegrationStatus
+    }
+    abstract class BaseIntegrationRegistry <<abstract>> {
+    + kind: IntegrationKind
+      - __init__() -> None
+      + register(integration: T) -> 'BaseIntegrationRegistry[T]'
+      + get(key: str) -> T
+      + find(key: str) -> Optional[T]
+      + keys() -> list[str]
+      - __iter__() -> Iterator[T]
+      - __len__() -> int
+      - __contains__(key: object) -> bool
+    }
+    class InferenceRegistry {
+    + kind
+      - __init__() -> None
+      + register(integration: BaseInferenceIntegration) -> 'InferenceRegistry'
+      + active_key() -> str
+      + active_integration() -> Optional[BaseInferenceIntegration]
+      + activate(key: str) -> BaseInferenceIntegration
+    }
+    class MessagingRegistry {
+    + kind
+      + start_enabled() -> None
+      + stop_all() -> None
+      + running() -> list[BaseChannelIntegration]
+    }
+    class IntegrationRegistry {
+      - __init__(credentials: ICredentialStore) -> None
+      + registries() -> tuple[BaseIntegrationRegistry[Any], ...]
+      + register(integration: IIntegration) -> 'IntegrationRegistry'
+      + get(key: str) -> IIntegration
+      + all() -> list[IIntegration]
+      + load_all() -> None
+      + save(key: str, values: dict[str, Any]) -> IIntegration
+      + enable(key: str) -> IIntegration
+      + disable(key: str) -> IIntegration
+      + set_active_inference(key: str) -> BaseInferenceIntegration
+      + autostart() -> None
+      + shutdown() -> None
+      + describe_all() -> list[dict[str, Any]]
+      - __iter__() -> Iterator[IIntegration]
+      - __len__() -> int
+    }
+    IIntegration <|-- BaseIntegration
+    BaseIntegration <|-- BaseInferenceIntegration
+    BaseInferenceIntegration <|-- GroqInferenceIntegration
+    BaseIntegration <|-- BaseChannelIntegration
+    BaseChannelIntegration <|-- TelegramIntegration
+    BaseChannelIntegration <|-- WhatsAppIntegration
+    ILLMProvider <|.. RoutingLLMProvider
+    RoutingLLMProvider ..> InferenceResolver
+    InferenceResolver <|.. InferenceRegistry
+    IntegrationRegistry *-- "0..*" InferenceRegistry
+    IntegrationRegistry *-- "0..*" MessagingRegistry
+    IntegrationRegistry o-- "1" ICredentialStore
+    GroqInferenceIntegration o-- "1" GroqLLMProvider
+    TelegramIntegration o-- "1" TelegramChannel
+    WhatsAppIntegration o-- "1" WhatsAppChannel
+}
+
+package "export" {
+    class ExportedFile {
+    + filename: str
+    + content_type: str
+    + data: bytes
+      + size_kb() -> int
+    }
+    interface IConversationExporter <<interface>> {
+      + format() -> str
+      + content_type() -> str
+      + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+    }
+    interface IExportService <<interface>> {
+      + formats() -> list[str]
+      + export(conversation_id: str, export_format: str) -> ExportedFile
+      + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+    }
+    abstract class BaseExporter <<abstract>> {
+    + VISIBLE_AUTHORS: tuple
+      - _visible(messages: Sequence[ChatMessage]) -> list[ChatMessage]
+      - _stamp(value: str) -> str
+      - _author(message: ChatMessage) -> str
+      - _basename(conversation: Conversation) -> str
+    }
+    class TextExporter {
+      + format() -> str
+      + content_type() -> str
+      + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+    }
+    class MarkdownExporter {
+      + format() -> str
+      + content_type() -> str
+      + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+    }
+    class HtmlExporter {
+      + format() -> str
+      + content_type() -> str
+      + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+    }
+    class ConversationExportService {
+      - __init__(conversations: IConversationService, settings: ISettingsService, channels: IChannelManager, exporters: Iterable[IConversationExporter]) -> None
+      + formats() -> list[str]
+      - _exporter(export_format: str) -> IConversationExporter
+      + export(conversation_id: str, export_format: str) -> ExportedFile
+      + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+    }
+    IConversationExporter <|-- BaseExporter
+    BaseExporter <|-- TextExporter
+    BaseExporter <|-- MarkdownExporter
+    BaseExporter <|-- HtmlExporter
+    IExportService <|.. ConversationExportService
+    ConversationExportService o-- "0..*" IConversationExporter
+    ConversationExportService o-- "1" IConversationService
+    ConversationExportService o-- "1" IChannelManager
+    ConversationExportService o-- "1" ISettingsService
+}
+
+package "scheduler" {
+    interface IBackgroundJob <<interface>> {
+      + interval_seconds() -> int
+      + job_name() -> str
+      + run_once() -> None
+    }
+    interface IScheduler <<interface>> {
+      + register(job: IBackgroundJob) -> 'IScheduler'
+      + start() -> None
+      + stop() -> None
+      + jobs() -> Sequence[IBackgroundJob]
+    }
+    class AppointmentReminderJob {
+      - __init__(appointments: IAppointmentService, patients: PatientRepository, channels: IChannelManager, notifications: INotificationService, interval_seconds: int, window_hours: int) -> None
+      + interval_seconds() -> int
+      + run_once() -> None
+    }
+    class ConversationTimeoutJob {
+    + DESPEDIDA: str
+      - __init__(conversations: IConversationService, channels: IChannelManager, settings: ISettingsService, interval_seconds: int) -> None
+      + interval_seconds() -> int
+      + run_once() -> None
+    }
+    class KnowledgeReindexJob {
+      - __init__(knowledge: IKnowledgeService, interval_seconds: int) -> None
+      + interval_seconds() -> int
+      + run_once() -> None
+    }
+    class BackgroundScheduler {
+      - __init__() -> None
+      + jobs() -> Sequence[IBackgroundJob]
+      + register(job: IBackgroundJob) -> 'BackgroundScheduler'
+      + start() -> None
+      + stop() -> None
+      - _loop(job: IBackgroundJob) -> None
+    }
+    IBackgroundJob <|.. AppointmentReminderJob
+    IBackgroundJob <|.. ConversationTimeoutJob
+    IBackgroundJob <|.. KnowledgeReindexJob
+    IScheduler <|.. BackgroundScheduler
+    BackgroundScheduler o-- "0..*" IBackgroundJob
+}
+
+package "api (FastAPI)" {
+    class ApplicationFactory {
+      - __init__(config: Optional[AppConfig]) -> None
+      - _lifespan()
+      + create() -> FastAPI
+    }
+    class RoleChecker {
+      - __init__() -> None
+      - __call__(user: User) -> User
+    }
+    package "api.schemas.dto (Pydantic)" {
+        class LoginRequest {
+        + username: str
+        + password: str
+        }
+        class RegisterRequest {
+        + username: str
+        + password: str
+        + role: str
+        + display_name: str
+        }
+        class PatientRequest {
+        + name: str
+        + phone: str
+        + email: str
+        + birth_date: str
+        + document: str
+        + insurance_provider: str
+        + insurance_card: str
+        + responsible_name: str
+        + notes: str
+        + treatment: str
+        + telegram_id: str
+        + active: bool
+        }
+        class PatientUpdateRequest {
+        + name: Optional[str]
+        + phone: Optional[str]
+        + email: Optional[str]
+        + birth_date: Optional[str]
+        + document: Optional[str]
+        + insurance_provider: Optional[str]
+        + insurance_card: Optional[str]
+        + responsible_name: Optional[str]
+        + notes: Optional[str]
+        + treatment: Optional[str]
+        + telegram_id: Optional[str]
+        + active: Optional[bool]
+        }
+        class DentistRequest {
+        + name: str
+        + cro: str
+        + specialty: str
+        + email: str
+        + phone: str
+        + color: str
+        + active: bool
+        + availability: dict[str, list[list[str]]]
+        }
+        class DentistUpdateRequest {
+        + name: Optional[str]
+        + cro: Optional[str]
+        + specialty: Optional[str]
+        + email: Optional[str]
+        + phone: Optional[str]
+        + color: Optional[str]
+        + active: Optional[bool]
+        + availability: Optional[dict[str, list[list[str]]]]
+        }
+        class ProcedureRequest {
+        + name: str
+        + description: str
+        + duration_minutes: int
+        + price: float
+        + active: bool
+        }
+        class ProcedureUpdateRequest {
+        + name: Optional[str]
+        + description: Optional[str]
+        + duration_minutes: Optional[int]
+        + price: Optional[float]
+        + active: Optional[bool]
+        }
+        class AppointmentRequest {
+        + patient_id: str
+        + start: datetime
+        + dentist_id: str
+        + procedure_id: str
+        + notes: str
+        + allow_overbook: bool
+        + priority: str
+        }
+        class EmergencyAppointmentRequest {
+        + patient_id: str
+        + reason: str
+        + start: Optional[datetime]
+        }
+        class RescheduleRequest {
+        + start: datetime
+        }
+        class StatusRequest {
+        + status: str
+        }
+        class CancelRequest {
+        + reason: str
+        }
+        class ChatRequest {
+        + session_id: str
+        + message: str
+        + display_name: str
+        }
+        class StaffReplyRequest {
+        + message: str
+        }
+        class HandoffRequest {
+        + handoff: bool
+        }
+        class FAQRequest {
+        + question: str
+        + answer: str
+        + tags: list[str]
+        }
+        class FAQUpdateRequest {
+        + question: Optional[str]
+        + answer: Optional[str]
+        + tags: Optional[list[str]]
+        + active: Optional[bool]
+        }
+        class KnowledgeDocumentRequest {
+        + title: str
+        + content: str
+        + tags: list[str]
+        }
+        class KnowledgeDocumentUpdateRequest {
+        + title: Optional[str]
+        + content: Optional[str]
+        + tags: Optional[list[str]]
+        + active: Optional[bool]
+        }
+        class SettingsRequest {
+        + clinic_name: Optional[str]
+        + address: Optional[str]
+        + phone: Optional[str]
+        + email: Optional[str]
+        + opening_hour: Optional[str]
+        + closing_hour: Optional[str]
+        + lunch_start: Optional[str]
+        + lunch_end: Optional[str]
+        + working_days: Optional[list[int]]
+        + slot_minutes: Optional[int]
+        + inactivity_minutes: Optional[int]
+        + emergency_slot_minutes: Optional[int]
+        + max_emergency_per_day: Optional[int]
+        + handoff_notice_cooldown_minutes: Optional[int]
+        + persona: Optional[str]
+        }
+        class IntegrationCredentialsRequest {
+        + values: dict[str, Any]
+        + enable: Optional[bool]
+        }
+    }
+}
+
+package "composition root" {
+    class AppConfig {
+    + database_path: Path
+    + credentials_path: Path
+    + groq_api_key: str
+    + groq_model: str
+    + host: str
+    + port: int
+    + cors_origins: tuple[str, ...]
+    + reminder_interval_seconds: int
+    + reminder_window_hours: int
+    + agent_max_iterations: int
+    + inactivity_check_seconds: int
+    + reindex_seconds: int
+    + autostart_telegram: bool
+      + from_env() -> 'AppConfig'
+    }
+    class ApplicationContainer {
+      - __init__(config: Optional[AppConfig]) -> None
+      - _build_tools() -> ToolRegistry
+      + startup() -> None
+      + shutdown() -> None
+    }
+    class ISeeder <<interface>> {
+      + run() -> None
+    }
+    class DataSeeder {
+      - __init__(settings: SettingsRepository, users: UserRepository, dentists: DentistRepository, procedures: ProcedureRepository, faqs: FAQRepository, knowledge: KnowledgeRepository, auth: AuthService) -> None
+      + run() -> None
+    }
+    ISeeder <|.. DataSeeder
+    ApplicationContainer *-- "1" SorriDenteAgent
+    ApplicationContainer *-- "1" ChannelManager
+    ApplicationContainer *-- "1" IntegrationRegistry
+    ApplicationContainer *-- "1" ConversationExportService
+    ApplicationContainer *-- "1" KnowledgeBaseService
+    ApplicationContainer *-- "1" BackgroundScheduler
+    ApplicationContainer *-- "1" TinyDBDatabase
+    ApplicationContainer *-- "1" JsonCredentialStore
+}
+
+note right of IToolRegistry
+  Os stubs **.pyi** declaram o mesmo
+  contrato público das classes reais
+  (BaseTool, ToolRegistry, ConversationContext,
+  MessageDispatcher, ChannelManager, TinyDBDatabase,
+  IIntegration, BaseExporter, BackgroundScheduler...).
+end note
+
+@enduml

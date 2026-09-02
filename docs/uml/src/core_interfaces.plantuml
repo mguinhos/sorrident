@@ -1,195 +1,64 @@
 @startuml core_interfaces
-skinparam classAttributeIconSize 0
-skinparam packageStyle folder
-skinparam monospace true
-hide empty members
+!include _estilo.puml
+left to right direction
 
-package "core" {
-  package "core.interfaces (contratos ABC)" {
-    interface IDatabase <<interface>> {
-      + connect() -> None
-      + disconnect() -> None
-      + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
-      + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
-      + delete(table: str, doc_id: str) -> bool
-      + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
-      + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
-      + all(table: str) -> list[dict[str, Any]]
-      + count(table: str, filters: Optional[dict[str, Any]]) -> int
-    }
-    interface IRepository <<interface>> {
-      + table_name() -> str
-      + add(entity: T) -> T
-      + update(entity: T) -> T
-      + remove(entity_id: str) -> bool
-      + get(entity_id: str) -> Optional[T]
-      + list(filters: Optional[dict[str, Any]]) -> list[T]
-    }
-    interface ICredentialStore <<interface>> {
-      + get(key: str, default: Any) -> Any
-      + set(key: str, value: Any) -> None
-      + all() -> dict[str, Any]
-      + delete(key: str) -> None
-    }
-    interface ILLMProvider <<interface>> {
-      + model() -> str
-      + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
-      + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
-    }
-    interface ITool <<interface>> {
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + execute(context: 'AgentContext') -> Any
-      + to_schema() -> dict[str, Any]
-    }
-    interface IAgent <<interface>> {
-      + reply(context: 'AgentContext', user_message: str) -> str
-    }
-    interface IMessagingChannel <<interface>> {
-      + channel_type() -> str
-      + is_running() -> bool
-      + start() -> None
-      + stop() -> None
-      + send(external_id: str, text: str) -> bool
-      + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
-    }
-    interface IEventBus <<interface>> {
-      + publish(event: str, payload: dict[str, Any]) -> None
-      + subscribe() -> Any
-      + unsubscribe(queue: Any) -> None
-    }
-    class AgentContext {
-      - __init__(conversation_id: str, channel: str, external_id: str, patient_id: str, display_name: str, metadata: Optional[dict[str, Any]]) -> None
-      + to_dict() -> dict[str, Any]
-    }
+package "core.interfaces (contratos ABC)" {
+  interface IDatabase <<interface>> {
+  + connect() -> None
+  + disconnect() -> None
+  + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+  + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+  + delete(table: str, doc_id: str) -> bool
+  + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+  + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+  + all(table: str) -> list[dict[str, Any]]
+  + count(table: str, filters: Optional[dict[str, Any]]) -> int
   }
-
-  package "core.exceptions" {
-    class SorriDenteError {
-    + status_code: int
-      - __init__(message: str) -> None
-    }
-    class NotFoundError {
-    + status_code: int
-    }
-    class ValidationError {
-    + status_code: int
-    }
-    class ConflictError {
-    + status_code: int
-    }
-    class AuthenticationError {
-    + status_code: int
-    }
-    class CredentialsNotConfiguredError {
-    + status_code: int
-    }
-    class LLMError {
-    + status_code: int
-    }
-    Exception <|-- SorriDenteError
-    SorriDenteError <|-- NotFoundError
-    SorriDenteError <|-- ValidationError
-    SorriDenteError <|-- ConflictError
-    SorriDenteError <|-- AuthenticationError
-    SorriDenteError <|-- CredentialsNotConfiguredError
-    SorriDenteError <|-- LLMError
+  interface IRepository <<interface>> {
+  + table_name() -> str
+  + add(entity: T) -> T
+  + update(entity: T) -> T
+  + remove(entity_id: str) -> bool
+  + get(entity_id: str) -> Optional[T]
+  + list(filters: Optional[dict[str, Any]]) -> list[T]
   }
-
-  package "domain.services.interfaces" {
-    interface IService <<interface>> {
-      + name() -> str
-    }
-    interface IPatientService <<interface>> {
-      + create() -> Patient
-      + update(patient_id: str) -> Patient
-      + delete(patient_id: str) -> bool
-      + get(patient_id: str) -> Patient
-      + list_all(search: str) -> list[Patient]
-      + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
-    }
-    interface IDentistService <<interface>> {
-      + create() -> Dentist
-      + update(dentist_id: str) -> Dentist
-      + delete(dentist_id: str) -> bool
-      + get(dentist_id: str) -> Dentist
-      + list_all(only_active: bool) -> list[Dentist]
-    }
-    interface IProcedureService <<interface>> {
-      + create() -> Procedure
-      + update(procedure_id: str) -> Procedure
-      + delete(procedure_id: str) -> bool
-      + list_all(only_active: bool) -> list[Procedure]
-    }
-    interface ISchedulingService <<interface>> {
-      + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
-      + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
-      + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
-    }
-    interface IAppointmentService <<interface>> {
-      + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
-      + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
-      + reschedule(appointment_id: str, start: datetime) -> Appointment
-      + cancel(appointment_id: str, reason: str) -> Appointment
-      + set_status(appointment_id: str, status: str) -> Appointment
-      + get(appointment_id: str) -> Appointment
-      + list_all() -> list[Appointment]
-      + agenda(start: date, end: date) -> list[Appointment]
-      + due_reminders(window_hours: int) -> list[Appointment]
-      + mark_reminder_sent(appointment_id: str) -> Appointment
-    }
-    interface IConversationService <<interface>> {
-      + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
-      + append(conversation_id: str, author: str, content: str) -> ChatMessage
-      + history(conversation_id: str, limit: int) -> list[ChatMessage]
-      + list_all(limit: int) -> list[Conversation]
-      + mark_read(conversation_id: str) -> Conversation
-      + set_handoff(conversation_id: str, handoff: bool) -> Conversation
-      + get(conversation_id: str) -> Conversation
-      + link_patient(conversation_id: str, patient_id: str) -> Conversation
-      + mark_handoff_notice(conversation_id: str) -> Conversation
-      + close(conversation_id: str, reason: str) -> Conversation
-      + reopen(conversation_id: str) -> Conversation
-      + idle_conversations(minutes: int) -> list[Conversation]
-    }
-    interface INotificationService <<interface>> {
-      + notify(title: str, message: str, level: str) -> Notification
-      + list_all(only_unread: bool, limit: int) -> list[Notification]
-      + mark_read(notification_id: str) -> Notification
-      + mark_all_read() -> int
-    }
-    interface IFAQService <<interface>> {
-      + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
-      + update(faq_id: str) -> FAQ
-      + delete(faq_id: str) -> bool
-      + list_all() -> list[FAQ]
-      + search(term: str, limit: int) -> list[FAQ]
-    }
-    interface ISettingsService <<interface>> {
-      + get() -> ClinicSettings
-      + update() -> ClinicSettings
-    }
-    interface IAuthService <<interface>> {
-      + authenticate(username: str, password: str) -> tuple[User, str]
-      + register(username: str, password: str, role: str, display_name: str) -> User
-      + resolve_token(token: str) -> User
-      + list_users() -> list[User]
-    }
-    interface IAnalyticsService <<interface>> {
-      + dashboard() -> dict[str, Any]
-    }
-    IService <|-- IPatientService
-    IService <|-- IDentistService
-    IService <|-- IProcedureService
-    IService <|-- ISchedulingService
-    IService <|-- IAppointmentService
-    IService <|-- IConversationService
-    IService <|-- INotificationService
-    IService <|-- IFAQService
-    IService <|-- ISettingsService
-    IService <|-- IAuthService
-    IService <|-- IAnalyticsService
+  interface ICredentialStore <<interface>> {
+  + get(key: str, default: Any) -> Any
+  + set(key: str, value: Any) -> None
+  + all() -> dict[str, Any]
+  + delete(key: str) -> None
+  }
+  interface ILLMProvider <<interface>> {
+  + model() -> str
+  + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+  + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+  }
+  interface ITool <<interface>> {
+  + name() -> str
+  + description() -> str
+  + parameters() -> dict[str, Any]
+  + execute(context: 'AgentContext') -> Any
+  + to_schema() -> dict[str, Any]
+  }
+  interface IAgent <<interface>> {
+  + reply(context: 'AgentContext', user_message: str) -> str
+  }
+  interface IMessagingChannel <<interface>> {
+  + channel_type() -> str
+  + is_running() -> bool
+  + start() -> None
+  + stop() -> None
+  + send(external_id: str, text: str) -> bool
+  + send_document(external_id: str, filename: str, data: bytes, content_type: str, caption: str) -> bool
+  }
+  interface IEventBus <<interface>> {
+  + publish(event: str, payload: dict[str, Any]) -> None
+  + subscribe() -> Any
+  + unsubscribe(queue: Any) -> None
+  }
+  class AgentContext {
+  + to_dict() -> dict[str, Any]
   }
 }
+
 @enduml

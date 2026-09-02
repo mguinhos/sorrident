@@ -1,484 +1,108 @@
 @startuml agent
-skinparam classAttributeIconSize 0
-skinparam packageStyle folder
-skinparam monospace true
-hide empty members
+!include _estilo.puml
+left to right direction
 
-package "core.interfaces" {
-  interface IAgent <<interface>> {
-    + reply(context: 'AgentContext', user_message: str) -> str
+package "agent (núcleo)" {
+  class SorriDenteAgent {
+  + tools() -> ToolRegistry
+  + tracker() -> TaskTracker
+  + model() -> Model
+  + reply(context: AgentContext, user_message: str) -> str
+  - _run(context: AgentContext, user_message: str, task: Task) -> str
+  - _load_history(conversation_id: str) -> list[PromptMessage]
+  - _call_tool(context: AgentContext, task: Task, call: dict[str, Any]) -> Any
+  - _parse_arguments(raw: Any) -> dict[str, Any]
   }
-  interface ILLMProvider <<interface>> {
-    + model() -> str
-    + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
-    + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
-  }
-  interface ITool <<interface>> {
-    + name() -> str
-    + description() -> str
-    + parameters() -> dict[str, Any]
-    + execute(context: 'AgentContext') -> Any
-    + to_schema() -> dict[str, Any]
-  }
-}
-package "domain.services" {
-  interface IConversationService <<interface>> {
-    + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
-    + append(conversation_id: str, author: str, content: str) -> ChatMessage
-    + history(conversation_id: str, limit: int) -> list[ChatMessage]
-    + list_all(limit: int) -> list[Conversation]
-    + mark_read(conversation_id: str) -> Conversation
-    + set_handoff(conversation_id: str, handoff: bool) -> Conversation
-    + get(conversation_id: str) -> Conversation
-    + link_patient(conversation_id: str, patient_id: str) -> Conversation
-    + mark_handoff_notice(conversation_id: str) -> Conversation
-    + close(conversation_id: str, reason: str) -> Conversation
-    + reopen(conversation_id: str) -> Conversation
-    + idle_conversations(minutes: int) -> list[Conversation]
-  }
-  interface ISettingsService <<interface>> {
-    + get() -> ClinicSettings
-    + update() -> ClinicSettings
-  }
-  interface IPatientService <<interface>> {
-    + create() -> Patient
-    + update(patient_id: str) -> Patient
-    + delete(patient_id: str) -> bool
-    + get(patient_id: str) -> Patient
-    + list_all(search: str) -> list[Patient]
-    + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
-  }
-  interface IAppointmentService <<interface>> {
-    + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
-    + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
-    + reschedule(appointment_id: str, start: datetime) -> Appointment
-    + cancel(appointment_id: str, reason: str) -> Appointment
-    + set_status(appointment_id: str, status: str) -> Appointment
-    + get(appointment_id: str) -> Appointment
-    + list_all() -> list[Appointment]
-    + agenda(start: date, end: date) -> list[Appointment]
-    + due_reminders(window_hours: int) -> list[Appointment]
-    + mark_reminder_sent(appointment_id: str) -> Appointment
-  }
-  interface ISchedulingService <<interface>> {
-    + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
-    + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
-    + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
-  }
-  interface IProcedureService <<interface>> {
-    + create() -> Procedure
-    + update(procedure_id: str) -> Procedure
-    + delete(procedure_id: str) -> bool
-    + list_all(only_active: bool) -> list[Procedure]
-  }
-  interface IDentistService <<interface>> {
-    + create() -> Dentist
-    + update(dentist_id: str) -> Dentist
-    + delete(dentist_id: str) -> bool
-    + get(dentist_id: str) -> Dentist
-    + list_all(only_active: bool) -> list[Dentist]
-  }
-  interface INotificationService <<interface>> {
-    + notify(title: str, message: str, level: str) -> Notification
-    + list_all(only_unread: bool, limit: int) -> list[Notification]
-    + mark_read(notification_id: str) -> Notification
-    + mark_all_read() -> int
-  }
-}
-package "rag" {
-  interface IKnowledgeService <<interface>> {
-    + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
-    + update(document_id: str) -> KnowledgeDocument
-    + delete(document_id: str) -> bool
-    + list_all() -> list[KnowledgeDocument]
-    + reindex() -> int
-    + search(question: str, limit: int) -> list[ScoredChunk]
-    + answer_context(question: str, limit: int) -> dict[str, Any]
-  }
-}
-package "export" {
-  interface IExportService <<interface>> {
-    + formats() -> list[str]
-    + export(conversation_id: str, export_format: str) -> ExportedFile
-    + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+  class EchoAgent {
+  + reply(context: AgentContext, user_message: str) -> str
   }
 }
 
-package "agent" {
-  package "agent (núcleo)" {
-    class SorriDenteAgent {
-      - __init__(llm: ILLMProvider, tools: ToolRegistry, prompt_builder: IPromptBuilder, conversations: IConversationService, catalog: Optional[ModelCatalog], policy: Optional[IContextPolicy], tracker: Optional[TaskTracker], max_iterations: int, history_limit: int, temperature: float) -> None
-      + tools() -> ToolRegistry
-      + tracker() -> TaskTracker
-      + model() -> Model
-      + reply(context: AgentContext, user_message: str) -> str
-      - _run(context: AgentContext, user_message: str, task: Task) -> str
-      - _load_history(conversation_id: str) -> list[PromptMessage]
-      - _call_tool(context: AgentContext, task: Task, call: dict[str, Any]) -> Any
-      - _parse_arguments(raw: Any) -> dict[str, Any]
-    }
-    class EchoAgent {
-      - __init__(message: Optional[str]) -> None
-      + reply(context: AgentContext, user_message: str) -> str
-    }
-    IAgent <|.. SorriDenteAgent
-    IAgent <|.. EchoAgent
+package "agent.base" {
+  abstract class BaseTool <<abstract>> {
+  + name() -> str
+  + description() -> str
+  + parameters() -> dict[str, Any]
+  + run(context: AgentContext) -> Any
+  + execute(context: AgentContext) -> Any
+  + parse_datetime(value: str) -> datetime
+  + dump(value: Any) -> str
   }
-  package "agent.base" {
-    abstract class BaseTool <<abstract>> {
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext) -> Any
-      + execute(context: AgentContext) -> Any
-      + parse_datetime(value: str) -> datetime
-      + dump(value: Any) -> str
-    }
-    interface IToolRegistry <<interface>> {
-      + register(tool: ITool) -> 'IToolRegistry'
-      + unregister(name: str) -> None
-      + get(name: str) -> Optional[ITool]
-      + schemas() -> list[dict[str, Any]]
-      + names() -> list[str]
-    }
-    class ToolRegistry {
-      - __init__(tools: Optional[Iterable[ITool]]) -> None
-      + register(tool: ITool) -> 'ToolRegistry'
-      + unregister(name: str) -> None
-      + get(name: str) -> Optional[ITool]
-      + schemas() -> list[dict[str, Any]]
-      + names() -> list[str]
-      - __len__() -> int
-      - __iter__() -> Iterator[ITool]
-      - __contains__(name: object) -> bool
-    }
-    ITool <|-- BaseTool
-    IToolRegistry <|.. ToolRegistry
+  interface IToolRegistry <<interface>> {
+  + register(tool: ITool) -> 'IToolRegistry'
+  + unregister(name: str) -> None
+  + get(name: str) -> Optional[ITool]
+  + schemas() -> list[dict[str, Any]]
+  + names() -> list[str]
   }
-  package "agent.context" {
-    enum MessageRole <<enum>> {
-      SYSTEM
-      USER
-      ASSISTANT
-      TOOL
-    }
-    class PromptMessage {
-    + role: MessageRole
-    + content: str
-    + tool_calls: list[dict[str, Any]]
-    + tool_call_id: str
-    + name: str
-      + to_payload() -> dict[str, Any]
-      + estimated_tokens() -> int
-    }
-    interface IContextPolicy <<interface>> {
-      + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
-    }
-    class SlidingWindowPolicy {
-      - __init__(max_messages: int) -> None
-      + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
-    }
-    class TokenBudgetPolicy {
-      - __init__(usage_ratio: float, min_messages: int) -> None
-      + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
-    }
-    class CompositePolicy {
-      - __init__() -> None
-      + apply(messages: Sequence[PromptMessage], model: Model) -> list[PromptMessage]
-    }
-    class ConversationContext {
-      - __init__(system_prompt: str, policy: Optional[IContextPolicy]) -> None
-      + system(content: str) -> 'ConversationContext'
-      + user(content: str) -> 'ConversationContext'
-      + assistant(content: str, tool_calls: Optional[list[dict[str, Any]]]) -> 'ConversationContext'
-      + tool_result(tool_call_id: str, name: str, content: str) -> 'ConversationContext'
-      + extend(messages: Sequence[PromptMessage]) -> 'ConversationContext'
-      + render(model: Model) -> list[dict[str, Any]]
-      + messages() -> list[PromptMessage]
-      + estimated_tokens() -> int
-      - __len__() -> int
-      - __iter__() -> Iterator[PromptMessage]
-    }
-    IContextPolicy <|-- SlidingWindowPolicy
-    IContextPolicy <|-- TokenBudgetPolicy
-    IContextPolicy <|-- CompositePolicy
-    ConversationContext *-- "0..*" PromptMessage
-    CompositePolicy o-- IContextPolicy
-  }
-  package "agent.task" {
-    enum TaskStatus <<enum>> {
-      PENDING
-      RUNNING
-      DONE
-      FAILED
-      CANCELLED
-    }
-    enum TaskKind <<enum>> {
-      CONVERSATION_TURN
-      TOOL_CALL
-      INFERENCE
-    }
-    class SubTask {
-    + name: str
-    + kind: TaskKind
-    + status: TaskStatus
-    + arguments: dict[str, Any]
-    + result: Any
-    + error: str
-    + id: str
-    + started_at: float
-    + finished_at: Optional[float]
-      + start() -> 'SubTask'
-      + complete(result: Any) -> 'SubTask'
-      + fail(error: str) -> 'SubTask'
-      + duration_ms() -> int
-      + to_dict() -> dict[str, Any]
-    }
-    class Task {
-    + conversation_id: str
-    + prompt: str
-    + kind: TaskKind
-    + status: TaskStatus
-    + subtasks: list[SubTask]
-    + answer: str
-    + error: str
-    + iterations: int
-    + id: str
-    + started_at: float
-    + finished_at: Optional[float]
-      + start() -> 'Task'
-      + add_subtask(name: str, kind: TaskKind) -> SubTask
-      + complete(answer: str) -> 'Task'
-      + fail(error: str) -> 'Task'
-      + pending_subtasks() -> list[SubTask]
-      + failed_subtasks() -> list[SubTask]
-      + duration_ms() -> int
-      + to_dict() -> dict[str, Any]
-    }
-    interface ITaskTracker <<interface>> {
-      + track(task: 'Task') -> 'Task'
-      + recent(limit: int) -> list['Task']
-      + by_conversation(conversation_id: str) -> list['Task']
-    }
-    class TaskTracker {
-      - __init__(max_size: int) -> None
-      + track(task: Task) -> Task
-      + recent(limit: int) -> list[Task]
-      + by_conversation(conversation_id: str) -> list[Task]
-      - __len__() -> int
-      - __iter__() -> Iterator[Task]
-    }
-    Task *-- "0..*" SubTask
-    Task ..> TaskStatus
-    ITaskTracker <|.. TaskTracker
-  }
-  package "agent.models" {
-    enum Supports <<enum>> {
-      NONE
-      TEXT
-      TOOLS
-      STREAMING
-      IMAGE
-      AUDIO
-      JSON_MODE
-      REASONING
-      PARALLEL_TOOLS
-    }
-    class Model {
-    + id: str
-    + provider: str
-    + supports: Supports
-    + context_window: int
-    + max_output_tokens: int
-    + display_name: str
-    + notes: str
-      + capable_of(capability: Supports) -> bool
-      + name() -> str
-      + to_dict() -> dict[str, Any]
-    }
-    interface IModelCatalog <<interface>> {
-      + register(model: Model) -> 'IModelCatalog'
-      + get(model_id: str, provider: str) -> Model
-    }
-    class ModelCatalog {
-      - __init__(models: Optional[list[Model]]) -> None
-      - _defaults() -> list[Model]
-      + register(model: Model) -> 'ModelCatalog'
-      + get(model_id: str, provider: str) -> Model
-      - __iter__() -> Iterator[Model]
-    }
-    IModelCatalog <|.. ModelCatalog
-  }
-  package "agent.prompt" {
-    interface IPromptBuilder <<interface>> {
-      + build(context: AgentContext) -> str
-    }
-    class ClinicPromptBuilder {
-      - __init__(settings: ISettingsService) -> None
-      + build(context: AgentContext) -> str
-    }
-    IPromptBuilder <|.. ClinicPromptBuilder
-    ClinicPromptBuilder ..> ISettingsService
-  }
-  package "agent.tools" {
-    abstract class PatientAwareTool <<abstract>> {
-      - __init__(patients: IPatientService, conversations: IConversationService) -> None
-      + current_patient(context: AgentContext) -> Optional[Patient]
-      + bind(context: AgentContext, patient: Patient) -> Patient
-      + resolve_patient(context: AgentContext, name: str, phone: str) -> Patient
-      + summarize(patient: Patient) -> dict[str, Any]
-    }
-    class KnowledgeBaseTool {
-      - __init__(knowledge: IKnowledgeService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, pergunta: str, limite: int) -> Any
-    }
-    class ClinicInfoTool {
-      - __init__(settings: ISettingsService) -> None
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class CadastrarClienteTool {
-      - __init__(patients: IPatientService, conversations: IConversationService, notifications: INotificationService, repository: PatientRepository) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext) -> Any
-    }
-    class AtualizarInformacoesClienteTool {
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext) -> Any
-    }
-    class ConsultarCadastroTool {
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class ListProceduresTool {
-      - __init__(procedures: IProcedureService) -> None
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class ListDentistsTool {
-      - __init__(dentists: IDentistService) -> None
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class AvailableSlotsTool {
-      - __init__(scheduling: ISchedulingService, procedures: IProcedureService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, data: str, profissional_id: str, procedimento_id: str, periodo: str) -> Any
-    }
-    class MarcarAgendamentoTool {
-      - __init__(appointments: IAppointmentService, patients: IPatientService, procedures: IProcedureService, conversations: IConversationService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      - _resolve_procedure(name: str) -> str
-      + run(context: AgentContext, data_hora: str, procedimento_id: str, procedimento: str, profissional_id: str, nome_paciente: str, telefone: str, observacoes: str) -> Any
-    }
-    class MyAppointmentsTool {
-      - __init__(appointments: IAppointmentService, patients: IPatientService, conversations: IConversationService) -> None
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class CancelAppointmentTool {
-      - __init__(appointments: IAppointmentService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, agendamento_id: str, motivo: str) -> Any
-    }
-    class RescheduleAppointmentTool {
-      - __init__(appointments: IAppointmentService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, agendamento_id: str, nova_data_hora: str) -> Any
-    }
-    class ConsultarEncaixeUrgenciaTool {
-      - __init__(scheduling: ISchedulingService) -> None
-      + name() -> str
-      + description() -> str
-      + run(context: AgentContext) -> Any
-    }
-    class AgendarEncaixeUrgenciaTool {
-      - __init__(appointments: IAppointmentService, patients: IPatientService, conversations: IConversationService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, motivo: str, data_hora: str, nome_paciente: str, telefone: str) -> Any
-    }
-    class HumanHandoffTool {
-      - __init__(notifications: INotificationService, conversations: IConversationService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, motivo: str, urgente: bool, assumir_conversa: bool) -> Any
-    }
-    class EncerrarAtendimentoTool {
-      - __init__(conversations: IConversationService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, resumo: str) -> Any
-    }
-    class ExportarConversaTool {
-      - __init__(exports: IExportService) -> None
-      + name() -> str
-      + description() -> str
-      + parameters() -> dict[str, Any]
-      + run(context: AgentContext, formato: str) -> Any
-    }
-    BaseTool <|-- PatientAwareTool
-    PatientAwareTool <|-- CadastrarClienteTool
-    PatientAwareTool <|-- AtualizarInformacoesClienteTool
-    PatientAwareTool <|-- ConsultarCadastroTool
-    PatientAwareTool <|-- MarcarAgendamentoTool
-    PatientAwareTool <|-- MyAppointmentsTool
-    PatientAwareTool <|-- AgendarEncaixeUrgenciaTool
-    BaseTool <|-- KnowledgeBaseTool
-    BaseTool <|-- ClinicInfoTool
-    BaseTool <|-- ListProceduresTool
-    BaseTool <|-- ListDentistsTool
-    BaseTool <|-- AvailableSlotsTool
-    BaseTool <|-- CancelAppointmentTool
-    BaseTool <|-- RescheduleAppointmentTool
-    BaseTool <|-- ConsultarEncaixeUrgenciaTool
-    BaseTool <|-- HumanHandoffTool
-    BaseTool <|-- EncerrarAtendimentoTool
-    BaseTool <|-- ExportarConversaTool
-    KnowledgeBaseTool ..> IKnowledgeService
-    ClinicInfoTool ..> ISettingsService
-    CadastrarClienteTool ..> IPatientService
-    MarcarAgendamentoTool ..> IAppointmentService
-    AvailableSlotsTool ..> ISchedulingService
-    ExportarConversaTool ..> IExportService
-  }
-  SorriDenteAgent o-- "1" ToolRegistry
-  SorriDenteAgent o-- "1" ILLMProvider
-  SorriDenteAgent o-- "1" IPromptBuilder
-  SorriDenteAgent o-- "1" IConversationService
-  SorriDenteAgent o-- "1" ModelCatalog
-  SorriDenteAgent o-- "1" IContextPolicy
-  SorriDenteAgent o-- "1" TaskTracker
-  ToolRegistry o-- "0..*" ITool
-  ConversationContext ..> AgentContext
-}
-package "core.interfaces" {
-  class AgentContext {
-    - __init__(conversation_id: str, channel: str, external_id: str, patient_id: str, display_name: str, metadata: Optional[dict[str, Any]]) -> None
-    + to_dict() -> dict[str, Any]
+  class ToolRegistry {
+  + register(tool: ITool) -> 'ToolRegistry'
+  + unregister(name: str) -> None
+  + get(name: str) -> Optional[ITool]
+  + schemas() -> list[dict[str, Any]]
+  + names() -> list[str]
+  - __len__() -> int
+  - __iter__() -> Iterator[ITool]
+  - __contains__(name: object) -> bool
   }
 }
+
+package "agent.prompt" {
+  interface IPromptBuilder <<interface>> {
+  + build(context: AgentContext) -> str
+  }
+  class ClinicPromptBuilder {
+  + build(context: AgentContext) -> str
+  }
+}
+
+package "contexto" <<Frame>> {
+  class AvailableSlotsTool
+  class CancelAppointmentTool
+  class ClinicInfoTool
+  class ConsultarEncaixeUrgenciaTool
+  class EncerrarAtendimentoTool
+  class ExportarConversaTool
+  class HumanHandoffTool
+  class IAgent
+  class IContextPolicy
+  class IConversationService
+  class ILLMProvider
+  class ISettingsService
+  class ITool
+  class KnowledgeBaseTool
+  class ListDentistsTool
+  class ListProceduresTool
+  class ModelCatalog
+  class PatientAwareTool
+  class RescheduleAppointmentTool
+  class TaskTracker
+}
+
+BaseTool <|-- AvailableSlotsTool
+BaseTool <|-- CancelAppointmentTool
+BaseTool <|-- ClinicInfoTool
+BaseTool <|-- ConsultarEncaixeUrgenciaTool
+BaseTool <|-- EncerrarAtendimentoTool
+BaseTool <|-- ExportarConversaTool
+BaseTool <|-- HumanHandoffTool
+BaseTool <|-- KnowledgeBaseTool
+BaseTool <|-- ListDentistsTool
+BaseTool <|-- ListProceduresTool
+BaseTool <|-- PatientAwareTool
+BaseTool <|-- RescheduleAppointmentTool
+ClinicPromptBuilder ..> ISettingsService
+IAgent <|.. EchoAgent
+IAgent <|.. SorriDenteAgent
+IPromptBuilder <|.. ClinicPromptBuilder
+ITool <|.. BaseTool
+IToolRegistry <|.. ToolRegistry
+SorriDenteAgent o-- "1" IContextPolicy
+SorriDenteAgent o-- "1" IConversationService
+SorriDenteAgent o-- "1" ILLMProvider
+SorriDenteAgent o-- "1" IPromptBuilder
+SorriDenteAgent o-- "1" ModelCatalog
+SorriDenteAgent o-- "1" TaskTracker
+SorriDenteAgent o-- "1" ToolRegistry
+ToolRegistry o-- "0..*" ITool
 @enduml

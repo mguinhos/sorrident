@@ -1,0 +1,219 @@
+@startuml repositorios
+!include _estilo.puml
+left to right direction
+
+package "core.models" {
+  class Patient
+  class Dentist {
+  + name: str
+  + cro: str
+  + specialty: str
+  + email: str
+  + phone: str
+  + color: str
+  + active: bool
+  + availability: dict[str, list[list[str]]]
+  }
+  class Appointment {
+  + patient_id: str
+  + patient_name: str
+  + dentist_id: str
+  + dentist_name: str
+  + procedure_id: str
+  + procedure_name: str
+  + start: str
+  + end: str
+  + status: str
+  + slot_type: str
+  + priority: str
+  + notes: str
+  + origin: str
+  + reminder_sent: bool
+  + is_encaixe() -> bool
+  + is_urgent() -> bool
+  + duration_minutes() -> int
+  + start_dt() -> datetime
+  + end_dt() -> datetime
+  }
+  class Conversation {
+  + channel: str
+  + external_id: str
+  + patient_id: str
+  + display_name: str
+  + last_message_at: str
+  + unread_for_staff: int
+  + handoff: bool
+  + open: bool
+  + closed_at: str
+  + closed_reason: str
+  + handoff_notice_at: str
+  }
+  class ChatMessage {
+  + conversation_id: str
+  + author: str
+  + content: str
+  + tool_name: str
+  + tool_payload: dict[str, Any]
+  }
+  class Notification {
+  + title: str
+  + message: str
+  + level: str
+  + read: bool
+  + link: str
+  + meta: dict[str, Any]
+  }
+  class FAQ {
+  + question: str
+  + answer: str
+  + tags: list[str]
+  + active: bool
+  }
+  class KnowledgeDocument {
+  + title: str
+  + content: str
+  + source: str
+  + source_id: str
+  + tags: list[str]
+  + active: bool
+  }
+  class ClinicSettings {
+  + clinic_name: str
+  + address: str
+  + phone: str
+  + email: str
+  + opening_hour: str
+  + closing_hour: str
+  + lunch_start: str
+  + lunch_end: str
+  + working_days: list[int]
+  + slot_minutes: int
+  + inactivity_minutes: int
+  + emergency_slot_minutes: int
+  + max_emergency_per_day: int
+  + handoff_notice_cooldown_minutes: int
+  + persona: str
+  }
+  class User {
+  + username: str
+  + password_hash: str
+  + role: str
+  + display_name: str
+  + linked_id: str
+  + active: bool
+  }
+  class Procedure {
+  + name: str
+  + description: str
+  + duration_minutes: int
+  + price: float
+  + active: bool
+  }
+}
+
+package "domain.repositories" {
+  class PatientRepository {
+  + find_by_telegram(telegram_id: str) -> Optional[Patient]
+  + find_by_phone(phone: str) -> Optional[Patient]
+  + find_by_document(document: str) -> Optional[Patient]
+  + search(term: str) -> list[Patient]
+  }
+  class DentistRepository {
+  + active() -> list[Dentist]
+  }
+  class ProcedureRepository {
+  + active() -> list[Procedure]
+  + find_by_name(name: str) -> Optional[Procedure]
+  }
+  class AppointmentRepository {
+  + by_patient(patient_id: str) -> list[Appointment]
+  + by_dentist(dentist_id: str) -> list[Appointment]
+  + in_range(start: datetime, end: datetime) -> list[Appointment]
+  + upcoming(reference: Optional[datetime]) -> list[Appointment]
+  }
+  class ConversationRepository {
+  + find_by_external(channel: str, external_id: str) -> Optional[Conversation]
+  + recent(limit: int) -> list[Conversation]
+  + open_conversations() -> list[Conversation]
+  }
+  class MessageRepository {
+  + by_conversation(conversation_id: str, limit: int) -> list[ChatMessage]
+  }
+  class NotificationRepository {
+  + unread() -> list[Notification]
+  + recent(limit: int) -> list[Notification]
+  }
+  class FAQRepository {
+  + active() -> list[FAQ]
+  + search(term: str, limit: int) -> list[FAQ]
+  }
+  class KnowledgeRepository {
+  + active() -> list[KnowledgeDocument]
+  }
+  class UserRepository {
+  + find_by_username(username: str) -> Optional[User]
+  }
+  class SettingsRepository {
+  + SINGLETON_ID: str
+  + current() -> ClinicSettings
+  }
+}
+
+package "contexto" <<Frame>> {
+  class AnalyticsService
+  class AppointmentService
+  class AuthService
+  class ConversationService
+  class DentistService
+  class FAQService
+  class NotificationService
+  class PatientService
+  class ProcedureService
+  class SchedulingService
+  class SettingsService
+  class TinyDBRepository
+}
+
+AnalyticsService --> AppointmentRepository
+AnalyticsService --> ConversationRepository
+AnalyticsService --> NotificationRepository
+AnalyticsService --> PatientRepository
+AppointmentRepository ..> Appointment
+AppointmentService --> AppointmentRepository
+AppointmentService --> DentistRepository
+AppointmentService --> PatientRepository
+AppointmentService --> ProcedureRepository
+AuthService --> UserRepository
+ConversationRepository ..> Conversation
+ConversationService --> ConversationRepository
+ConversationService --> MessageRepository
+DentistRepository ..> Dentist
+DentistService --> DentistRepository
+FAQRepository ..> FAQ
+FAQService --> FAQRepository
+KnowledgeRepository ..> KnowledgeDocument
+MessageRepository ..> ChatMessage
+NotificationRepository ..> Notification
+NotificationService --> NotificationRepository
+PatientRepository ..> Patient
+PatientService --> PatientRepository
+ProcedureRepository ..> Procedure
+ProcedureService --> ProcedureRepository
+SchedulingService --> AppointmentRepository
+SchedulingService --> DentistRepository
+SchedulingService --> SettingsRepository
+SettingsRepository ..> ClinicSettings
+SettingsService --> SettingsRepository
+TinyDBRepository <|-- AppointmentRepository
+TinyDBRepository <|-- ConversationRepository
+TinyDBRepository <|-- DentistRepository
+TinyDBRepository <|-- FAQRepository
+TinyDBRepository <|-- KnowledgeRepository
+TinyDBRepository <|-- MessageRepository
+TinyDBRepository <|-- NotificationRepository
+TinyDBRepository <|-- PatientRepository
+TinyDBRepository <|-- ProcedureRepository
+TinyDBRepository <|-- SettingsRepository
+TinyDBRepository <|-- UserRepository
+UserRepository ..> User
+@enduml
