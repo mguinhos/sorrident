@@ -163,15 +163,23 @@ O projeto segue a arquitetura limpa. As dependências apontam sempre para
 dentro, e cada parte conhece apenas os contratos do núcleo, nunca as
 versões concretas. Isso deixa o código mais fácil de entender e de testar.
 
-A visão geral dos diagramas está abaixo, e a explicação detalhada de cada
-parte está no arquivo `docs/projeto.md`, junto com os outros diagramas.
+Abaixo vem uma visão geral. A explicação detalhada de cada parte está no
+arquivo `docs/projeto.md`, com todos os diagramas.
+
+### Como as camadas se encaixam
+
+Antes de olhar classe por classe, vale ver o desenho das camadas. As setas
+apontam sempre para dentro: o núcleo não conhece ninguém, e quem está de
+fora é que depende dele.
+
+[![Visão geral](docs/uml/svg/projeto.svg)](docs/uml/svg/projeto.svg)
 
 ### Os modelos de domínio
 
 Aqui estão as entidades do negócio: o paciente, o dentista, os
 procedimentos, as consultas e as conversas. Também ficam aqui as listas de
-valores que dão sentido aos campos, como o status da consulta e o tipo de
-canal.
+valores que dão sentido aos campos, como o status da consulta, o tipo de
+horário (normal ou encaixe) e o tipo de canal.
 
 [![Modelos de domínio](docs/uml/svg/domain_models.svg)](docs/uml/svg/domain_models.svg)
 
@@ -187,17 +195,42 @@ dizer como ela é construída.
 ### O agente de IA
 
 Esta é a parte que conversa com o paciente. O agente usa as ferramentas uma
-a uma, sempre passando pelo provedor de IA. Ele administra a memória da
-conversa para não crescer demais e acompanha cada tarefa que executa.
+a uma, sempre passando pelo provedor de IA. O diagrama mostra o laço do
+agente, o montador do prompt e a base das ferramentas.
 
 [![Agente de IA](docs/uml/svg/agent.svg)](docs/uml/svg/agent.svg)
 
-### Serviços e repositórios
+### A memória da conversa
 
-Esta camada cuida dos casos de uso. Os serviços cumprem o que a interface
-pede e usam os repositórios para guardar e buscar os dados do domínio.
+O agente precisa lembrar do que já foi dito, mas sem deixar a conversa
+crescer sem limite. A janela deslizante corta as mensagens antigas e o
+limite de tokens respeita o tamanho que o modelo aguenta. Cada resposta
+vira uma tarefa, com uma subtarefa por ferramenta chamada.
 
-[![Serviços e repositórios](docs/uml/svg/services_repositories.svg)](docs/uml/svg/services_repositories.svg)
+[![Memória da conversa](docs/uml/svg/agent_contexto.svg)](docs/uml/svg/agent_contexto.svg)
+
+### As ferramentas do agente
+
+É o que o agente sabe fazer, separado por assunto: cadastro do paciente,
+agenda (com o encaixe de urgência), consulta à base de conhecimento e
+suporte, como chamar um atendente ou exportar a conversa.
+
+[![Ferramentas do agente](docs/uml/svg/agent_ferramentas.svg)](docs/uml/svg/agent_ferramentas.svg)
+
+### Os serviços
+
+Esta camada cuida dos casos de uso: marcar consulta, cadastrar paciente,
+avisar a equipe. Cada serviço cumpre o que a interface pede e não sabe como
+os dados são guardados.
+
+[![Serviços](docs/uml/svg/servicos.svg)](docs/uml/svg/servicos.svg)
+
+### Os repositórios
+
+Quem conversa com o banco. Cada repositório estende o repositório genérico
+e soma as consultas próprias, guardando as entidades do domínio.
+
+[![Repositórios](docs/uml/svg/repositorios.svg)](docs/uml/svg/repositorios.svg)
 
 ### Os canais de mensagem
 
@@ -216,14 +249,24 @@ outro encontra o sentido parecido.
 
 [![Base de conhecimento](docs/uml/svg/rag.svg)](docs/uml/svg/rag.svg)
 
-### Infraestrutura, integrações e tarefas
+### A infraestrutura
 
-Aqui estão as versões concretas dos contratos do núcleo: o banco de dados,
-as credenciais, a fila de eventos e o provedor de IA. Também ficam aqui as
-integrações com serviços de fora, os exportadores de conversa e os
-trabalhos que rodam de tempos em tempos, como os lembretes.
+Aqui estão as versões concretas dos contratos do núcleo: o banco de dados
+(o pacote em forma de cilindro), as credenciais, a fila de eventos, o
+provedor de IA da Groq (a nuvem, porque é um serviço de fora), a carga
+inicial de dados e os trabalhos que rodam de tempos em tempos, como os
+lembretes de consulta.
 
-[![Infraestrutura e integrações](docs/uml/svg/infrastructure.svg)](docs/uml/svg/infrastructure.svg)
+[![Infraestrutura](docs/uml/svg/infraestrutura.svg)](docs/uml/svg/infraestrutura.svg)
+
+### As integrações e a exportação
+
+A camada de integrações trata provedores de IA e canais do mesmo jeito:
+cada um declara quais credenciais precisa, e a interface web monta o
+formulário sozinha a partir disso. Trocar de IA não mexe no agente. Aqui
+estão também os exportadores de conversa.
+
+[![Integrações](docs/uml/svg/integracoes.svg)](docs/uml/svg/integracoes.svg)
 
 ### A API REST
 
@@ -232,6 +275,19 @@ as rotas, e um verificador de acesso garante quem pode entrar em cada
 recurso. As rotas dependem apenas das interfaces de serviço.
 
 [![API REST](docs/uml/svg/api.svg)](docs/uml/svg/api.svg)
+
+### Gerando os diagramas
+
+Os fontes ficam em `docs/uml/src/` e viram imagem com o PlantUML rodando em
+Docker:
+
+```bash
+cd docs/uml
+make all
+```
+
+Como editar os desenhos, o que cada script faz e quando usar cada tipo de
+seta está no `docs/uml/README.md`.
 
 ## Licença
 

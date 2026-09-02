@@ -244,4 +244,5 @@ Três scripts em `docs/uml/tools/` cuidam do resto:
 | `checar_relacoes.py` | compara as setas com o código e avisa quando alguma está errada |
 
 O estilo de todos os diagramas está em `docs/uml/src/_estilo.puml`: mudar
-lá muda em todos.
+lá muda em todos. O passo a passo para editar os desenhos está no
+`docs/uml/README.md`.
