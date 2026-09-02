@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+credentials.json
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+.mypy_cache/
+.pytest_cache/
+.openclaude/
+*.log
+.DS_Store

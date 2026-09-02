@@ -1,0 +1,202 @@
+@startuml domain_models
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
+
+package "core" {
+  package "core.models" {
+    enum Role <<enum>> {
+      CLIENTE
+      GESTOR
+      MEDICO
+    }
+    enum SlotType <<enum>> {
+      REGULAR
+      ENCAIXE
+    }
+    enum Priority <<enum>> {
+      NORMAL
+      URGENTE
+    }
+    enum AppointmentStatus <<enum>> {
+      AGENDADO
+      CONFIRMADO
+      CONCLUIDO
+      CANCELADO
+      FALTOU
+    }
+    enum ChannelType <<enum>> {
+      WEB
+      TELEGRAM
+      WHATSAPP
+    }
+    enum MessageAuthor <<enum>> {
+      USER
+      ASSISTANT
+      SYSTEM
+      TOOL
+      HUMAN_AGENT
+    }
+    enum NotificationLevel <<enum>> {
+      INFO
+      SUCESSO
+      ALERTA
+      ERRO
+    }
+
+    class Entity {
+    + id: str
+    + created_at: str
+    + updated_at: str
+      + to_dict() -> dict[str, Any]
+      + from_dict(data: dict[str, Any])
+      + touch() -> None
+    }
+    class Patient {
+    + name: str
+    + phone: str
+    + email: str
+    + birth_date: str
+    + document: str
+    + insurance_provider: str
+    + insurance_card: str
+    + responsible_name: str
+    + notes: str
+    + telegram_id: str
+    + whatsapp_id: str
+    + treatment: str
+    + active: bool
+    }
+    class Dentist {
+    + name: str
+    + cro: str
+    + specialty: str
+    + email: str
+    + phone: str
+    + color: str
+    + active: bool
+    + availability: dict[str, list[list[str]]]
+    }
+    class Procedure {
+    + name: str
+    + description: str
+    + duration_minutes: int
+    + price: float
+    + active: bool
+    }
+    class Appointment {
+    + patient_id: str
+    + patient_name: str
+    + dentist_id: str
+    + dentist_name: str
+    + procedure_id: str
+    + procedure_name: str
+    + start: str
+    + end: str
+    + status: str
+    + slot_type: str
+    + priority: str
+    + notes: str
+    + origin: str
+    + reminder_sent: bool
+      + is_encaixe() -> bool
+      + is_urgent() -> bool
+      + duration_minutes() -> int
+      + start_dt() -> datetime
+      + end_dt() -> datetime
+    }
+    class ChatMessage {
+    + conversation_id: str
+    + author: str
+    + content: str
+    + tool_name: str
+    + tool_payload: dict[str, Any]
+    }
+    class Conversation {
+    + channel: str
+    + external_id: str
+    + patient_id: str
+    + display_name: str
+    + last_message_at: str
+    + unread_for_staff: int
+    + handoff: bool
+    + open: bool
+    + closed_at: str
+    + closed_reason: str
+    + handoff_notice_at: str
+    }
+    class Notification {
+    + title: str
+    + message: str
+    + level: str
+    + read: bool
+    + link: str
+    + meta: dict[str, Any]
+    }
+    class FAQ {
+    + question: str
+    + answer: str
+    + tags: list[str]
+    + active: bool
+    }
+    class KnowledgeDocument {
+    + title: str
+    + content: str
+    + source: str
+    + source_id: str
+    + tags: list[str]
+    + active: bool
+    }
+    class ClinicSettings {
+    + clinic_name: str
+    + address: str
+    + phone: str
+    + email: str
+    + opening_hour: str
+    + closing_hour: str
+    + lunch_start: str
+    + lunch_end: str
+    + working_days: list[int]
+    + slot_minutes: int
+    + inactivity_minutes: int
+    + emergency_slot_minutes: int
+    + max_emergency_per_day: int
+    + handoff_notice_cooldown_minutes: int
+    + persona: str
+    }
+    class User {
+    + username: str
+    + password_hash: str
+    + role: str
+    + display_name: str
+    + linked_id: str
+    + active: bool
+    }
+
+    Entity <|-- Patient
+    Entity <|-- Dentist
+    Entity <|-- Procedure
+    Entity <|-- Appointment
+    Entity <|-- ChatMessage
+    Entity <|-- Conversation
+    Entity <|-- Notification
+    Entity <|-- FAQ
+    Entity <|-- KnowledgeDocument
+    Entity <|-- ClinicSettings
+    Entity <|-- User
+    Conversation "1" *-- "0..*" ChatMessage
+    Patient "1" o-- "0..*" Appointment
+    Dentist "1" o-- "0..*" Appointment
+    Procedure "1" o-- "0..*" Appointment
+    Appointment ..> AppointmentStatus
+    Appointment ..> SlotType
+    Appointment ..> Priority
+    Appointment ..> ChannelType
+    ChatMessage ..> MessageAuthor
+    Conversation ..> ChannelType
+    Notification ..> NotificationLevel
+    User ..> Role
+  }
+}
+@enduml

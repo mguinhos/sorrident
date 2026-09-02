@@ -1,0 +1,19 @@
+"""Stub de tipos: contrato público de sorridente.rag.embedding."""
+from .documents import Chunk as Chunk, Vector as Vector
+from .interfaces import IEmbedder as IEmbedder
+from .text import tokenize as tokenize
+from _typeshed import Incomplete
+from typing import Sequence
+
+class TfIdfEmbedder(IEmbedder):
+    _idf: dict[str, float]
+    _documents: int
+    _use_bigrams: Incomplete
+    def __init__(self, use_bigrams: bool = True) -> None: ...
+    @property
+    def is_fitted(self) -> bool: ...
+    @property
+    def vocabulary_size(self) -> int: ...
+    def _terms(self, text: str) -> list[str]: ...
+    def fit(self, chunks: Sequence[Chunk]) -> None: ...
+    def embed(self, text: str) -> Vector: ...

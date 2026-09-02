@@ -1,0 +1,168 @@
+@startuml rag
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
+
+package "core" {
+  package "domain.repositories" {
+    class KnowledgeRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[KnowledgeDocument]
+    }
+    class FAQRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[FAQ]
+      + search(term: str, limit: int) -> list[FAQ]
+    }
+    class ProcedureRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[Procedure]
+      + find_by_name(name: str) -> Optional[Procedure]
+    }
+    class DentistRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[Dentist]
+    }
+    class SettingsRepository {
+    + SINGLETON_ID: str
+      - __init__(database: IDatabase) -> None
+      + current() -> ClinicSettings
+    }
+  }
+}
+
+package "rag" {
+  package "rag.documents" {
+    class Chunk {
+    + id: str
+    + document_id: str
+    + title: str
+    + content: str
+    + source: str
+    + position: int
+    + metadata: dict[str, Any]
+      + searchable_text() -> str
+      + to_dict() -> dict[str, Any]
+    }
+    class ScoredChunk {
+    + chunk: Chunk
+    + score: float
+      + to_dict() -> dict[str, Any]
+    }
+    class Vector {
+    + values: dict[str, float]
+    + norm: float
+      + from_weights(weights: dict[str, float]) -> 'Vector'
+      + cosine(other: 'Vector') -> float
+    }
+  }
+  package "rag.interfaces" {
+    interface IChunker <<interface>> {
+      + split(document: KnowledgeDocument) -> list[Chunk]
+    }
+    interface IEmbedder <<interface>> {
+      + fit(chunks: Sequence[Chunk]) -> None
+      + embed(text: str) -> Vector
+      + is_fitted() -> bool
+    }
+    interface IVectorStore <<interface>> {
+      + index(entries: Iterable[tuple[Chunk, Vector]]) -> None
+      + clear() -> None
+      + search(query: Vector, limit: int) -> list[ScoredChunk]
+      + chunks() -> list[Chunk]
+      - __len__() -> int
+    }
+    interface IRetriever <<interface>> {
+      + retrieve(query: str, limit: int) -> list[ScoredChunk]
+      + reindex(documents: Sequence[KnowledgeDocument]) -> int
+    }
+    interface IKnowledgeService <<interface>> {
+      + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+      + update(document_id: str) -> KnowledgeDocument
+      + delete(document_id: str) -> bool
+      + list_all() -> list[KnowledgeDocument]
+      + reindex() -> int
+      + search(question: str, limit: int) -> list[ScoredChunk]
+      + answer_context(question: str, limit: int) -> dict[str, Any]
+    }
+  }
+  class ParagraphChunker {
+    - __init__(max_chars: int, min_chars: int) -> None
+    + split(document: KnowledgeDocument) -> list[Chunk]
+    - _explode(paragraph: str) -> list[str]
+  }
+  class WholeDocumentChunker {
+    + split(document: KnowledgeDocument) -> list[Chunk]
+  }
+  class TfIdfEmbedder {
+    - __init__(use_bigrams: bool) -> None
+    + is_fitted() -> bool
+    + vocabulary_size() -> int
+    - _terms(text: str) -> list[str]
+    + fit(chunks: Sequence[Chunk]) -> None
+    + embed(text: str) -> Vector
+  }
+  class InMemoryVectorStore {
+    - __init__() -> None
+    + index(entries: Iterable[tuple[Chunk, Vector]]) -> None
+    + clear() -> None
+    + search(query: Vector, limit: int) -> list[ScoredChunk]
+    + chunks() -> list[Chunk]
+    - __len__() -> int
+  }
+  abstract class BaseRetriever <<abstract>> {
+    - __init__(chunker: IChunker) -> None
+    - _explode(documents: Sequence[KnowledgeDocument]) -> list[Chunk]
+  }
+  class VectorRetriever {
+    - __init__(chunker: IChunker, embedder: IEmbedder, store: IVectorStore) -> None
+    + reindex(documents: Sequence[KnowledgeDocument]) -> int
+    + retrieve(query: str, limit: int) -> list[ScoredChunk]
+  }
+  class BM25Retriever {
+    - __init__(chunker: IChunker, k1: float, b: float) -> None
+    + reindex(documents: Sequence[KnowledgeDocument]) -> int
+    + retrieve(query: str, limit: int) -> list[ScoredChunk]
+  }
+  class HybridRetriever {
+    - __init__(retrievers: Sequence[IRetriever], k: int) -> None
+    + reindex(documents: Sequence[KnowledgeDocument]) -> int
+    + retrieve(query: str, limit: int) -> list[ScoredChunk]
+  }
+  class KnowledgeBaseService {
+    - __init__(documents: KnowledgeRepository, faqs: FAQRepository, procedures: ProcedureRepository, dentists: DentistRepository, settings: SettingsRepository, retriever: IRetriever) -> None
+    + indexed_chunks() -> int
+    + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+    + update(document_id: str) -> KnowledgeDocument
+    + delete(document_id: str) -> bool
+    + list_all() -> list[KnowledgeDocument]
+    + sources() -> list[KnowledgeDocument]
+    + reindex() -> int
+    + search(question: str, limit: int) -> list[ScoredChunk]
+    + answer_context(question: str, limit: int) -> dict[str, Any]
+  }
+
+  IChunker <|.. ParagraphChunker
+  IChunker <|.. WholeDocumentChunker
+  IEmbedder <|.. TfIdfEmbedder
+  IVectorStore <|.. InMemoryVectorStore
+  IRetriever <|.. BaseRetriever
+  BaseRetriever <|-- VectorRetriever
+  BaseRetriever <|-- BM25Retriever
+  IRetriever <|.. HybridRetriever
+  IKnowledgeService <|.. KnowledgeBaseService
+  HybridRetriever o-- "0..*" IRetriever
+  VectorRetriever o-- "1" IChunker
+  VectorRetriever o-- "1" IEmbedder
+  VectorRetriever o-- "1" IVectorStore
+  VectorRetriever ..> Chunk
+  BM25Retriever o-- IChunker
+  KnowledgeBaseService o-- IRetriever
+  KnowledgeBaseService --> KnowledgeRepository
+  KnowledgeBaseService --> FAQRepository
+  KnowledgeBaseService --> ProcedureRepository
+  KnowledgeBaseService --> DentistRepository
+  KnowledgeBaseService --> SettingsRepository
+}
+@enduml

@@ -1,0 +1,477 @@
+@startuml services_repositories
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
+
+package "core" {
+  package "core.models" {
+    class Patient {
+    + name: str
+    + phone: str
+    + email: str
+    + birth_date: str
+    + document: str
+    + insurance_provider: str
+    + insurance_card: str
+    + responsible_name: str
+    + notes: str
+    + telegram_id: str
+    + whatsapp_id: str
+    + treatment: str
+    + active: bool
+    }
+    class Dentist {
+    + name: str
+    + cro: str
+    + specialty: str
+    + email: str
+    + phone: str
+    + color: str
+    + active: bool
+    + availability: dict[str, list[list[str]]]
+    }
+    class Appointment {
+    + patient_id: str
+    + patient_name: str
+    + dentist_id: str
+    + dentist_name: str
+    + procedure_id: str
+    + procedure_name: str
+    + start: str
+    + end: str
+    + status: str
+    + slot_type: str
+    + priority: str
+    + notes: str
+    + origin: str
+    + reminder_sent: bool
+      + is_encaixe() -> bool
+      + is_urgent() -> bool
+      + duration_minutes() -> int
+      + start_dt() -> datetime
+      + end_dt() -> datetime
+    }
+    class Conversation {
+    + channel: str
+    + external_id: str
+    + patient_id: str
+    + display_name: str
+    + last_message_at: str
+    + unread_for_staff: int
+    + handoff: bool
+    + open: bool
+    + closed_at: str
+    + closed_reason: str
+    + handoff_notice_at: str
+    }
+    class ChatMessage {
+    + conversation_id: str
+    + author: str
+    + content: str
+    + tool_name: str
+    + tool_payload: dict[str, Any]
+    }
+    class Notification {
+    + title: str
+    + message: str
+    + level: str
+    + read: bool
+    + link: str
+    + meta: dict[str, Any]
+    }
+    class FAQ {
+    + question: str
+    + answer: str
+    + tags: list[str]
+    + active: bool
+    }
+    class KnowledgeDocument {
+    + title: str
+    + content: str
+    + source: str
+    + source_id: str
+    + tags: list[str]
+    + active: bool
+    }
+    class ClinicSettings {
+    + clinic_name: str
+    + address: str
+    + phone: str
+    + email: str
+    + opening_hour: str
+    + closing_hour: str
+    + lunch_start: str
+    + lunch_end: str
+    + working_days: list[int]
+    + slot_minutes: int
+    + inactivity_minutes: int
+    + emergency_slot_minutes: int
+    + max_emergency_per_day: int
+    + handoff_notice_cooldown_minutes: int
+    + persona: str
+    }
+    class User {
+    + username: str
+    + password_hash: str
+    + role: str
+    + display_name: str
+    + linked_id: str
+    + active: bool
+    }
+    class Procedure {
+    + name: str
+    + description: str
+    + duration_minutes: int
+    + price: float
+    + active: bool
+    }
+  }
+  package "core.interfaces" {
+    interface IDatabase <<interface>> {
+      + connect() -> None
+      + disconnect() -> None
+      + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+      + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+      + delete(table: str, doc_id: str) -> bool
+      + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+      + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+      + all(table: str) -> list[dict[str, Any]]
+      + count(table: str, filters: Optional[dict[str, Any]]) -> int
+    }
+    interface IEventBus <<interface>> {
+      + publish(event: str, payload: dict[str, Any]) -> None
+      + subscribe() -> Any
+      + unsubscribe(queue: Any) -> None
+    }
+  }
+  package "domain.services.interfaces" {
+    interface IService <<interface>> {
+      + name() -> str
+    }
+    interface IPatientService <<interface>> {
+      + create() -> Patient
+      + update(patient_id: str) -> Patient
+      + delete(patient_id: str) -> bool
+      + get(patient_id: str) -> Patient
+      + list_all(search: str) -> list[Patient]
+      + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
+    }
+    interface IDentistService <<interface>> {
+      + create() -> Dentist
+      + update(dentist_id: str) -> Dentist
+      + delete(dentist_id: str) -> bool
+      + get(dentist_id: str) -> Dentist
+      + list_all(only_active: bool) -> list[Dentist]
+    }
+    interface IProcedureService <<interface>> {
+      + create() -> Procedure
+      + update(procedure_id: str) -> Procedure
+      + delete(procedure_id: str) -> bool
+      + list_all(only_active: bool) -> list[Procedure]
+    }
+    interface ISchedulingService <<interface>> {
+      + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
+      + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
+      + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
+    }
+    interface IAppointmentService <<interface>> {
+      + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+      + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+      + reschedule(appointment_id: str, start: datetime) -> Appointment
+      + cancel(appointment_id: str, reason: str) -> Appointment
+      + set_status(appointment_id: str, status: str) -> Appointment
+      + get(appointment_id: str) -> Appointment
+      + list_all() -> list[Appointment]
+      + agenda(start: date, end: date) -> list[Appointment]
+      + due_reminders(window_hours: int) -> list[Appointment]
+      + mark_reminder_sent(appointment_id: str) -> Appointment
+    }
+    interface IConversationService <<interface>> {
+      + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+      + append(conversation_id: str, author: str, content: str) -> ChatMessage
+      + history(conversation_id: str, limit: int) -> list[ChatMessage]
+      + list_all(limit: int) -> list[Conversation]
+      + mark_read(conversation_id: str) -> Conversation
+      + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+      + get(conversation_id: str) -> Conversation
+      + link_patient(conversation_id: str, patient_id: str) -> Conversation
+      + mark_handoff_notice(conversation_id: str) -> Conversation
+      + close(conversation_id: str, reason: str) -> Conversation
+      + reopen(conversation_id: str) -> Conversation
+      + idle_conversations(minutes: int) -> list[Conversation]
+    }
+    interface INotificationService <<interface>> {
+      + notify(title: str, message: str, level: str) -> Notification
+      + list_all(only_unread: bool, limit: int) -> list[Notification]
+      + mark_read(notification_id: str) -> Notification
+      + mark_all_read() -> int
+    }
+    interface IFAQService <<interface>> {
+      + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
+      + update(faq_id: str) -> FAQ
+      + delete(faq_id: str) -> bool
+      + list_all() -> list[FAQ]
+      + search(term: str, limit: int) -> list[FAQ]
+    }
+    interface ISettingsService <<interface>> {
+      + get() -> ClinicSettings
+      + update() -> ClinicSettings
+    }
+    interface IAuthService <<interface>> {
+      + authenticate(username: str, password: str) -> tuple[User, str]
+      + register(username: str, password: str, role: str, display_name: str) -> User
+      + resolve_token(token: str) -> User
+      + list_users() -> list[User]
+    }
+    interface IAnalyticsService <<interface>> {
+      + dashboard() -> dict[str, Any]
+    }
+    IService <|-- IPatientService
+    IService <|-- IDentistService
+    IService <|-- IProcedureService
+    IService <|-- ISchedulingService
+    IService <|-- IAppointmentService
+    IService <|-- IConversationService
+    IService <|-- INotificationService
+    IService <|-- IFAQService
+    IService <|-- ISettingsService
+    IService <|-- IAuthService
+    IService <|-- IAnalyticsService
+  }
+}
+
+package "infrastructure" {
+  abstract class TinyDBRepository <<abstract>> {
+    - __init__(database: IDatabase, entity_type: Type[T], table_name: str) -> None
+    + table_name() -> str
+    + entity_type() -> Type[T]
+    - _to_entity(row: dict[str, Any]) -> T
+    + add(entity: T) -> T
+    + update(entity: T) -> T
+    + remove(entity_id: str) -> bool
+    + get(entity_id: str) -> Optional[T]
+    + list(filters: Optional[dict[str, Any]]) -> list[T]
+    + find_one(filters: dict[str, Any]) -> Optional[T]
+    + count(filters: Optional[dict[str, Any]]) -> int
+  }
+  IDatabase <.. TinyDBRepository : usa
+}
+
+package "domain" {
+  package "domain.repositories" {
+    class PatientRepository {
+      - __init__(database: IDatabase) -> None
+      + find_by_telegram(telegram_id: str) -> Optional[Patient]
+      + find_by_phone(phone: str) -> Optional[Patient]
+      + find_by_document(document: str) -> Optional[Patient]
+      + search(term: str) -> list[Patient]
+    }
+    class DentistRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[Dentist]
+    }
+    class ProcedureRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[Procedure]
+      + find_by_name(name: str) -> Optional[Procedure]
+    }
+    class AppointmentRepository {
+      - __init__(database: IDatabase) -> None
+      + by_patient(patient_id: str) -> list[Appointment]
+      + by_dentist(dentist_id: str) -> list[Appointment]
+      + in_range(start: datetime, end: datetime) -> list[Appointment]
+      + upcoming(reference: Optional[datetime]) -> list[Appointment]
+    }
+    class ConversationRepository {
+      - __init__(database: IDatabase) -> None
+      + find_by_external(channel: str, external_id: str) -> Optional[Conversation]
+      + recent(limit: int) -> list[Conversation]
+      + open_conversations() -> list[Conversation]
+    }
+    class MessageRepository {
+      - __init__(database: IDatabase) -> None
+      + by_conversation(conversation_id: str, limit: int) -> list[ChatMessage]
+    }
+    class NotificationRepository {
+      - __init__(database: IDatabase) -> None
+      + unread() -> list[Notification]
+      + recent(limit: int) -> list[Notification]
+    }
+    class FAQRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[FAQ]
+      + search(term: str, limit: int) -> list[FAQ]
+    }
+    class KnowledgeRepository {
+      - __init__(database: IDatabase) -> None
+      + active() -> list[KnowledgeDocument]
+    }
+    class UserRepository {
+      - __init__(database: IDatabase) -> None
+      + find_by_username(username: str) -> Optional[User]
+    }
+    class SettingsRepository {
+    + SINGLETON_ID: str
+      - __init__(database: IDatabase) -> None
+      + current() -> ClinicSettings
+    }
+    TinyDBRepository <|-- PatientRepository
+    TinyDBRepository <|-- DentistRepository
+    TinyDBRepository <|-- ProcedureRepository
+    TinyDBRepository <|-- AppointmentRepository
+    TinyDBRepository <|-- ConversationRepository
+    TinyDBRepository <|-- MessageRepository
+    TinyDBRepository <|-- NotificationRepository
+    TinyDBRepository <|-- FAQRepository
+    TinyDBRepository <|-- KnowledgeRepository
+    TinyDBRepository <|-- UserRepository
+    TinyDBRepository <|-- SettingsRepository
+    PatientRepository ..> Patient
+    DentistRepository ..> Dentist
+    ProcedureRepository ..> Procedure
+    AppointmentRepository ..> Appointment
+    ConversationRepository ..> Conversation
+    MessageRepository ..> ChatMessage
+    NotificationRepository ..> Notification
+    FAQRepository ..> FAQ
+    KnowledgeRepository ..> KnowledgeDocument
+    UserRepository ..> User
+    SettingsRepository ..> ClinicSettings
+  }
+
+  package "domain.services (implementações)" {
+    class PatientService {
+      - __init__(patients: PatientRepository, notifications: 'NotificationService') -> None
+      + create() -> Patient
+      + update(patient_id: str) -> Patient
+      + delete(patient_id: str) -> bool
+      + get(patient_id: str) -> Patient
+      + list_all(search: str) -> list[Patient]
+      + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
+    }
+    class DentistService {
+      - __init__(dentists: DentistRepository) -> None
+      + create() -> Dentist
+      + update(dentist_id: str) -> Dentist
+      + delete(dentist_id: str) -> bool
+      + get(dentist_id: str) -> Dentist
+      + list_all(only_active: bool) -> list[Dentist]
+    }
+    class ProcedureService {
+      - __init__(procedures: ProcedureRepository) -> None
+      + create() -> Procedure
+      + update(procedure_id: str) -> Procedure
+      + delete(procedure_id: str) -> bool
+      + list_all(only_active: bool) -> list[Procedure]
+    }
+    class SchedulingService {
+      - __init__(appointments: AppointmentRepository, dentists: DentistRepository, settings: SettingsRepository) -> None
+      - _parse_time(value: str, fallback: time) -> time
+      - _windows(dentist: Optional[Dentist], day: date, settings: ClinicSettings) -> list[tuple[time, time]]
+      + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
+      + next_emergency_slot(reference: Optional[datetime]) -> dict[str, Any]
+      + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
+    }
+    class AppointmentService {
+      - __init__(appointments: AppointmentRepository, patients: PatientRepository, dentists: DentistRepository, procedures: ProcedureRepository, scheduling: SchedulingService, notifications: 'NotificationService', settings: SettingsRepository) -> None
+      - _resolve_duration(procedure_id: str) -> tuple[int, str, str]
+      + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+      + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+      + reschedule(appointment_id: str, start: datetime) -> Appointment
+      + cancel(appointment_id: str, reason: str) -> Appointment
+      + set_status(appointment_id: str, status: str) -> Appointment
+      + get(appointment_id: str) -> Appointment
+      + list_all() -> list[Appointment]
+      + agenda(start: date, end: date) -> list[Appointment]
+      + due_reminders(window_hours: int) -> list[Appointment]
+      + mark_reminder_sent(appointment_id: str) -> Appointment
+    }
+    class ConversationService {
+      - __init__(conversations: ConversationRepository, messages: MessageRepository, event_bus: IEventBus) -> None
+      + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+      + get(conversation_id: str) -> Conversation
+      + append(conversation_id: str, author: str, content: str) -> ChatMessage
+      + history(conversation_id: str, limit: int) -> list[ChatMessage]
+      + list_all(limit: int) -> list[Conversation]
+      + mark_read(conversation_id: str) -> Conversation
+      + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+      + link_patient(conversation_id: str, patient_id: str) -> Conversation
+      + mark_handoff_notice(conversation_id: str) -> Conversation
+      + close(conversation_id: str, reason: str) -> Conversation
+      + reopen(conversation_id: str) -> Conversation
+      + idle_conversations(minutes: int) -> list[Conversation]
+    }
+    class NotificationService {
+      - __init__(notifications: NotificationRepository, event_bus: IEventBus) -> None
+      + notify(title: str, message: str, level: str) -> Notification
+      + list_all(only_unread: bool, limit: int) -> list[Notification]
+      + mark_read(notification_id: str) -> Notification
+      + mark_all_read() -> int
+    }
+    class FAQService {
+      - __init__(faqs: FAQRepository) -> None
+      + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
+      + update(faq_id: str) -> FAQ
+      + delete(faq_id: str) -> bool
+      + list_all() -> list[FAQ]
+      + search(term: str, limit: int) -> list[FAQ]
+    }
+    class SettingsService {
+      - __init__(settings: SettingsRepository) -> None
+      + get() -> ClinicSettings
+      + update() -> ClinicSettings
+    }
+    class AuthService {
+      - __init__(users: UserRepository) -> None
+      + hash_password(password: str, salt: str) -> str
+      + register(username: str, password: str, role: str, display_name: str) -> User
+      + authenticate(username: str, password: str) -> tuple[User, str]
+      + resolve_token(token: str) -> User
+      + logout(token: str) -> None
+      + list_users() -> list[User]
+    }
+    class AnalyticsService {
+      - __init__(appointments: AppointmentRepository, patients: PatientRepository, conversations: ConversationRepository, notifications: NotificationRepository) -> None
+      + dashboard() -> dict[str, Any]
+    }
+    IPatientService <|.. PatientService
+    IDentistService <|.. DentistService
+    IProcedureService <|.. ProcedureService
+    ISchedulingService <|.. SchedulingService
+    IAppointmentService <|.. AppointmentService
+    IConversationService <|.. ConversationService
+    INotificationService <|.. NotificationService
+    IFAQService <|.. FAQService
+    ISettingsService <|.. SettingsService
+    IAuthService <|.. AuthService
+    IAnalyticsService <|.. AnalyticsService
+  }
+
+  PatientService --> PatientRepository
+  PatientService --> NotificationService
+  DentistService --> DentistRepository
+  ProcedureService --> ProcedureRepository
+  SettingsService --> SettingsRepository
+  SchedulingService --> AppointmentRepository
+  SchedulingService --> DentistRepository
+  SchedulingService --> SettingsRepository
+  AppointmentService --> AppointmentRepository
+  AppointmentService --> PatientRepository
+  AppointmentService --> DentistRepository
+  AppointmentService --> ProcedureRepository
+  AppointmentService --> SchedulingService
+  AppointmentService --> NotificationService
+  ConversationService --> ConversationRepository
+  ConversationService --> MessageRepository
+  ConversationService --> IEventBus
+  NotificationService --> NotificationRepository
+  NotificationService --> IEventBus
+  FAQService --> FAQRepository
+  AuthService --> UserRepository
+  AnalyticsService --> AppointmentRepository
+  AnalyticsService --> PatientRepository
+  AnalyticsService --> ConversationRepository
+  AnalyticsService --> NotificationRepository
+}
+@enduml

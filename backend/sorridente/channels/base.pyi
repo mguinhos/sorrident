@@ -1,0 +1,59 @@
+"""Stub de tipos: contrato público de sorridente.channels.base."""
+import abc
+from ..core.interfaces import AgentContext as AgentContext, IAgent as IAgent, IMessagingChannel as IMessagingChannel
+from ..core.models import ChannelType as ChannelType, MessageAuthor as MessageAuthor
+from ..domain.services.interfaces import IConversationService as IConversationService, IPatientService as IPatientService, ISettingsService as ISettingsService
+from _typeshed import Incomplete
+from abc import ABC, abstractmethod
+from typing import Any
+
+logger: Incomplete
+
+class InboundMessage:
+    channel: str
+    external_id: str
+    text: str
+    display_name: str
+    metadata: dict[str, Any]
+    def __init__(self, channel: str, external_id: str, text: str, display_name: str = '', metadata: dict[str, Any] | None = None) -> None: ...
+
+class IMessageDispatcher(ABC, metaclass=abc.ABCMeta):
+    @abstractmethod
+    async def handle(self, inbound: InboundMessage) -> str | None: ...
+
+class MessageDispatcher(IMessageDispatcher):
+    ESPERA: str
+    _agent: Incomplete
+    _conversations: Incomplete
+    _patients: Incomplete
+    _settings: Incomplete
+    def __init__(self, agent: IAgent, conversations: IConversationService, patients: IPatientService, settings: ISettingsService) -> None: ...
+    async def _should_send_waiting_notice(self, conversation: Any) -> bool: ...
+    async def _registration_summary(self, patient_id: str) -> str: ...
+    async def handle(self, inbound: InboundMessage) -> str | None: ...
+
+class BaseChannel(IMessagingChannel, ABC, metaclass=abc.ABCMeta):
+    _dispatcher: Incomplete
+    _running: bool
+    def __init__(self, dispatcher: MessageDispatcher) -> None: ...
+    @property
+    def is_running(self) -> bool: ...
+    @property
+    @abstractmethod
+    def channel_type(self) -> str: ...
+    async def process(self, inbound: InboundMessage) -> str | None: ...
+    @abstractmethod
+    async def start(self) -> None: ...
+    @abstractmethod
+    async def stop(self) -> None: ...
+    @abstractmethod
+    async def send(self, external_id: str, text: str) -> bool: ...
+    async def send_document(self, external_id: str, filename: str, data: bytes, content_type: str = 'text/plain', caption: str = '') -> bool: ...
+
+class WebChannel(BaseChannel):
+    @property
+    def channel_type(self) -> str: ...
+    _running: bool
+    async def start(self) -> None: ...
+    async def stop(self) -> None: ...
+    async def send(self, external_id: str, text: str) -> bool: ...

@@ -1,0 +1,57 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: #f5f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.sd-chat-scroll {
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sd-bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.sd-bubble-user {
+  align-self: flex-end;
+  background: #1677ff;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.sd-bubble-bot {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #e6e9f0;
+  border-bottom-left-radius: 4px;
+}
+
+.sd-bubble-staff {
+  align-self: flex-start;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.sd-login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1677ff 0%, #36cfc9 100%);
+  padding: 24px;
+}

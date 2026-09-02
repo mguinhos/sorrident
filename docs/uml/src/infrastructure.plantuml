@@ -1,0 +1,480 @@
+@startuml infrastructure
+skinparam classAttributeIconSize 0
+skinparam packageStyle folder
+skinparam monospace true
+hide empty members
+
+package "core" {
+  package "core.interfaces" {
+    interface IDatabase <<interface>> {
+      + connect() -> None
+      + disconnect() -> None
+      + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+      + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+      + delete(table: str, doc_id: str) -> bool
+      + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+      + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+      + all(table: str) -> list[dict[str, Any]]
+      + count(table: str, filters: Optional[dict[str, Any]]) -> int
+    }
+    interface IRepository <<interface>> {
+      + table_name() -> str
+      + add(entity: T) -> T
+      + update(entity: T) -> T
+      + remove(entity_id: str) -> bool
+      + get(entity_id: str) -> Optional[T]
+      + list(filters: Optional[dict[str, Any]]) -> list[T]
+    }
+    interface ICredentialStore <<interface>> {
+      + get(key: str, default: Any) -> Any
+      + set(key: str, value: Any) -> None
+      + all() -> dict[str, Any]
+      + delete(key: str) -> None
+    }
+    interface IEventBus <<interface>> {
+      + publish(event: str, payload: dict[str, Any]) -> None
+      + subscribe() -> Any
+      + unsubscribe(queue: Any) -> None
+    }
+    interface ILLMProvider <<interface>> {
+      + model() -> str
+      + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+      + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+    }
+  }
+}
+
+package "infrastructure" {
+  package "db" <<Database>> {
+    class TinyDBDatabase {
+      - __init__(path: str | Path) -> None
+      + connect() -> None
+      + disconnect() -> None
+      - _table(table: str)
+      - _matches(document: dict[str, Any], filters: dict[str, Any]) -> bool
+      + insert(table: str, document: dict[str, Any]) -> dict[str, Any]
+      + update(table: str, doc_id: str, document: dict[str, Any]) -> dict[str, Any]
+      + delete(table: str, doc_id: str) -> bool
+      + get(table: str, doc_id: str) -> Optional[dict[str, Any]]
+      + find(table: str, filters: Optional[dict[str, Any]]) -> list[dict[str, Any]]
+      + all(table: str) -> list[dict[str, Any]]
+      + count(table: str, filters: Optional[dict[str, Any]]) -> int
+    }
+    abstract class TinyDBRepository <<abstract>> {
+      - __init__(database: IDatabase, entity_type: Type[T], table_name: str) -> None
+      + table_name() -> str
+      + entity_type() -> Type[T]
+      - _to_entity(row: dict[str, Any]) -> T
+      + add(entity: T) -> T
+      + update(entity: T) -> T
+      + remove(entity_id: str) -> bool
+      + get(entity_id: str) -> Optional[T]
+      + list(filters: Optional[dict[str, Any]]) -> list[T]
+      + find_one(filters: dict[str, Any]) -> Optional[T]
+      + count(filters: Optional[dict[str, Any]]) -> int
+    }
+  }
+  class JsonCredentialStore {
+    - __init__(path: str | Path) -> None
+    - _read_sync() -> dict[str, Any]
+    - _write_sync(data: dict[str, Any]) -> None
+    - _load() -> dict[str, Any]
+    + all() -> dict[str, Any]
+    + get(key: str, default: Any) -> Any
+    + set(key: str, value: Any) -> None
+    + update(values: dict[str, Any]) -> dict[str, Any]
+    + delete(key: str) -> None
+  }
+  class InMemoryEventBus {
+    - __init__(max_queue: int) -> None
+    + publish(event: str, payload: dict[str, Any]) -> None
+    + subscribe() -> asyncio.Queue
+    + unsubscribe(queue: asyncio.Queue) -> None
+    + subscriber_count() -> int
+  }
+  class GroqLLMProvider {
+    - __init__(api_key: Optional[str], model: str, timeout: float) -> None
+    + model() -> str
+    + configured() -> bool
+    + configure(api_key: str, model: Optional[str]) -> None
+    + client() -> AsyncGroq
+    + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+    + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+    - _clean(text: str) -> str
+  }
+
+  IDatabase <|.. TinyDBDatabase
+  IRepository <|.. TinyDBRepository
+  ICredentialStore <|.. JsonCredentialStore
+  IEventBus <|.. InMemoryEventBus
+  ILLMProvider <|.. GroqLLMProvider
+  TinyDBRepository o-- "1" IDatabase
+  GroqLLMProvider ..> ILLMError : levanta
+}
+
+package "core.exceptions" {
+  class LLMError {
+  + status_code: int
+  }
+  class CredentialsNotConfiguredError {
+  + status_code: int
+  }
+}
+
+package "integrations" {
+  enum IntegrationKind <<enum>> {
+    INFERENCE_PROVIDER
+    MESSAGING_CHANNEL
+    CALENDAR
+    PAYMENT
+  }
+  class CredentialField {
+  + key: str
+  + label: str
+  + secret: bool
+  + required: bool
+  + placeholder: str
+  + help_text: str
+  + default: Any
+    + to_dict() -> dict[str, Any]
+  }
+  class IntegrationStatus {
+  + key: str
+  + kind: str
+  + name: str
+  + description: str
+  + configured: bool
+  + enabled: bool
+  + running: bool
+  + detail: str
+  + last_error: str
+  + extra: dict[str, Any]
+    + to_dict() -> dict[str, Any]
+  }
+  interface IIntegration <<interface>> {
+    + key() -> str
+    + kind() -> IntegrationKind
+    + name() -> str
+    + description() -> str
+    + credential_fields() -> tuple[CredentialField, ...]
+    + configure(credentials: dict[str, Any]) -> None
+    + enable() -> None
+    + disable() -> None
+    + test() -> dict[str, Any]
+    + status() -> IntegrationStatus
+    + describe() -> dict[str, Any]
+  }
+  abstract class BaseIntegration <<abstract>> {
+    - __init__() -> None
+    + credentials() -> dict[str, Any]
+    + last_error() -> str
+    - _remember(credentials: dict[str, Any]) -> None
+    + masked_credentials() -> dict[str, Any]
+    + is_configured() -> bool
+  }
+  abstract class BaseInferenceIntegration <<abstract>> {
+    + kind() -> IntegrationKind
+    + provider() -> ILLMProvider
+    + default_model() -> str
+    + test() -> dict[str, Any]
+  }
+  class GroqInferenceIntegration {
+  + KEY: str
+    - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
+    + key() -> str
+    + name() -> str
+    + description() -> str
+    + default_model() -> str
+    + provider() -> ILLMProvider
+    + credential_fields() -> tuple[CredentialField, ...]
+    + configure(credentials: dict[str, Any]) -> None
+    + enable() -> None
+    + disable() -> None
+    + is_configured() -> bool
+    + status() -> IntegrationStatus
+  }
+  abstract class InferenceResolver <<abstract>> {
+    + active_integration() -> Optional[BaseInferenceIntegration]
+    + active_provider() -> Optional[ILLMProvider]
+  }
+  class InferenceRegistry {
+  + kind
+    - __init__() -> None
+    + register(integration: BaseInferenceIntegration) -> 'InferenceRegistry'
+    + active_key() -> str
+    + active_integration() -> Optional[BaseInferenceIntegration]
+    + activate(key: str) -> BaseInferenceIntegration
+  }
+  abstract class BaseChannelIntegration <<abstract>> {
+    + kind() -> IntegrationKind
+  }
+  class TelegramIntegration {
+  + KEY: str
+    - __init__(channel: TelegramChannel) -> None
+    + key() -> str
+    + name() -> str
+    + description() -> str
+    + credential_fields() -> tuple[CredentialField, ...]
+    + configure(credentials: dict[str, Any]) -> None
+    + enable() -> None
+    + disable() -> None
+    + test() -> dict[str, Any]
+    + is_configured() -> bool
+    + status() -> IntegrationStatus
+  }
+  class WhatsAppIntegration {
+  + KEY: str
+    - __init__(channel: WhatsAppChannel) -> None
+    + key() -> str
+    + name() -> str
+    + description() -> str
+    + credential_fields() -> tuple[CredentialField, ...]
+    + configure(credentials: dict[str, Any]) -> None
+    + enable() -> None
+    + disable() -> None
+    + test() -> dict[str, Any]
+    + is_configured() -> bool
+    + status() -> IntegrationStatus
+  }
+  class RoutingLLMProvider {
+    - __init__(resolver: 'InferenceResolver') -> None
+    + model() -> str
+    + configured() -> bool
+    - _provider() -> ILLMProvider
+    + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+    + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+  }
+  abstract class BaseIntegrationRegistry <<abstract>> {
+  + kind: IntegrationKind
+    - __init__() -> None
+    + register(integration: T) -> 'BaseIntegrationRegistry[T]'
+    + get(key: str) -> T
+    + find(key: str) -> Optional[T]
+    + keys() -> list[str]
+    - __iter__() -> Iterator[T]
+    - __len__() -> int
+    - __contains__(key: object) -> bool
+  }
+  class MessagingRegistry {
+  + kind
+    + start_enabled() -> None
+    + stop_all() -> None
+    + running() -> list[BaseChannelIntegration]
+  }
+  class IntegrationRegistry {
+    - __init__(credentials: ICredentialStore) -> None
+    + registries() -> tuple[BaseIntegrationRegistry[Any], ...]
+    + register(integration: IIntegration) -> 'IntegrationRegistry'
+    + get(key: str) -> IIntegration
+    + all() -> list[IIntegration]
+    + load_all() -> None
+    + save(key: str, values: dict[str, Any]) -> IIntegration
+    + enable(key: str) -> IIntegration
+    + disable(key: str) -> IIntegration
+    + set_active_inference(key: str) -> BaseInferenceIntegration
+    + autostart() -> None
+    + shutdown() -> None
+    + describe_all() -> list[dict[str, Any]]
+    - __iter__() -> Iterator[IIntegration]
+    - __len__() -> int
+  }
+
+  IIntegration <|.. BaseIntegration
+  BaseIntegration <|-- BaseInferenceIntegration
+  BaseInferenceIntegration <|-- GroqInferenceIntegration
+  BaseIntegration <|-- BaseChannelIntegration
+  BaseChannelIntegration <|-- TelegramIntegration
+  BaseChannelIntegration <|-- WhatsAppIntegration
+  InferenceResolver <|-- InferenceRegistry
+  BaseIntegrationRegistry <|-- MessagingRegistry
+  BaseIntegrationRegistry <|-- IntegrationRegistry
+  ILLMProvider <|.. RoutingLLMProvider
+  RoutingLLMProvider ..> InferenceResolver
+  IntegrationRegistry *-- InferenceRegistry
+  IntegrationRegistry *-- MessagingRegistry
+  IntegrationRegistry o-- ICredentialStore
+  GroqInferenceIntegration o-- GroqLLMProvider
+  BaseIntegration ..> IntegrationKind
+  BaseIntegration ..> IntegrationStatus
+  BaseIntegration ..> CredentialField
+  GroqInferenceIntegration ..> CredentialsNotConfiguredError
+}
+
+package "export" {
+  class ExportedFile {
+  + filename: str
+  + content_type: str
+  + data: bytes
+    + size_kb() -> int
+  }
+  interface IConversationExporter <<interface>> {
+    + format() -> str
+    + content_type() -> str
+    + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  interface IExportService <<interface>> {
+    + formats() -> list[str]
+    + export(conversation_id: str, export_format: str) -> ExportedFile
+    + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+  }
+  abstract class BaseExporter <<abstract>> {
+  + VISIBLE_AUTHORS: tuple
+    - _visible(messages: Sequence[ChatMessage]) -> list[ChatMessage]
+    - _stamp(value: str) -> str
+    - _author(message: ChatMessage) -> str
+    - _basename(conversation: Conversation) -> str
+  }
+  class TextExporter {
+    + format() -> str
+    + content_type() -> str
+    + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class MarkdownExporter {
+    + format() -> str
+    + content_type() -> str
+    + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class HtmlExporter {
+    + format() -> str
+    + content_type() -> str
+    + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
+  }
+  class ConversationExportService {
+    - __init__(conversations: IConversationService, settings: ISettingsService, channels: IChannelManager, exporters: Iterable[IConversationExporter]) -> None
+    + formats() -> list[str]
+    - _exporter(export_format: str) -> IConversationExporter
+    + export(conversation_id: str, export_format: str) -> ExportedFile
+    + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
+  }
+  IConversationExporter <|.. BaseExporter
+  BaseExporter <|-- TextExporter
+  BaseExporter <|-- MarkdownExporter
+  BaseExporter <|-- HtmlExporter
+  IExportService <|.. ConversationExportService
+  ConversationExportService o-- IConversationExporter
+}
+
+package "scheduler" {
+  interface IBackgroundJob <<interface>> {
+    + interval_seconds() -> int
+    + job_name() -> str
+    + run_once() -> None
+  }
+  interface IScheduler <<interface>> {
+    + register(job: IBackgroundJob) -> 'IScheduler'
+    + start() -> None
+    + stop() -> None
+    + jobs() -> Sequence[IBackgroundJob]
+  }
+  class AppointmentReminderJob {
+    - __init__(appointments: IAppointmentService, patients: PatientRepository, channels: IChannelManager, notifications: INotificationService, interval_seconds: int, window_hours: int) -> None
+    + interval_seconds() -> int
+    + run_once() -> None
+  }
+  class ConversationTimeoutJob {
+  + DESPEDIDA: str
+    - __init__(conversations: IConversationService, channels: IChannelManager, settings: ISettingsService, interval_seconds: int) -> None
+    + interval_seconds() -> int
+    + run_once() -> None
+  }
+  class KnowledgeReindexJob {
+    - __init__(knowledge: IKnowledgeService, interval_seconds: int) -> None
+    + interval_seconds() -> int
+    + run_once() -> None
+  }
+  class BackgroundScheduler {
+    - __init__() -> None
+    + jobs() -> Sequence[IBackgroundJob]
+    + register(job: IBackgroundJob) -> 'BackgroundScheduler'
+    + start() -> None
+    + stop() -> None
+    - _loop(job: IBackgroundJob) -> None
+  }
+  interface IAppointmentService <<interface>> {
+    + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
+    + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
+    + reschedule(appointment_id: str, start: datetime) -> Appointment
+    + cancel(appointment_id: str, reason: str) -> Appointment
+    + set_status(appointment_id: str, status: str) -> Appointment
+    + get(appointment_id: str) -> Appointment
+    + list_all() -> list[Appointment]
+    + agenda(start: date, end: date) -> list[Appointment]
+    + due_reminders(window_hours: int) -> list[Appointment]
+    + mark_reminder_sent(appointment_id: str) -> Appointment
+  }
+  interface IConversationService <<interface>> {
+    + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
+    + append(conversation_id: str, author: str, content: str) -> ChatMessage
+    + history(conversation_id: str, limit: int) -> list[ChatMessage]
+    + list_all(limit: int) -> list[Conversation]
+    + mark_read(conversation_id: str) -> Conversation
+    + set_handoff(conversation_id: str, handoff: bool) -> Conversation
+    + get(conversation_id: str) -> Conversation
+    + link_patient(conversation_id: str, patient_id: str) -> Conversation
+    + mark_handoff_notice(conversation_id: str) -> Conversation
+    + close(conversation_id: str, reason: str) -> Conversation
+    + reopen(conversation_id: str) -> Conversation
+    + idle_conversations(minutes: int) -> list[Conversation]
+  }
+  interface IKnowledgeService <<interface>> {
+    + create(title: str, content: str, tags: Optional[list[str]]) -> KnowledgeDocument
+    + update(document_id: str) -> KnowledgeDocument
+    + delete(document_id: str) -> bool
+    + list_all() -> list[KnowledgeDocument]
+    + reindex() -> int
+    + search(question: str, limit: int) -> list[ScoredChunk]
+    + answer_context(question: str, limit: int) -> dict[str, Any]
+  }
+  IBackgroundJob <|.. AppointmentReminderJob
+  IBackgroundJob <|.. ConversationTimeoutJob
+  IBackgroundJob <|.. KnowledgeReindexJob
+  IScheduler <|.. BackgroundScheduler
+  BackgroundScheduler o-- IBackgroundJob
+  AppointmentReminderJob ..> IAppointmentService : due_reminders()
+  ConversationTimeoutJob ..> IConversationService : idle_conversations()
+  KnowledgeReindexJob ..> IKnowledgeService : reindex()
+}
+
+package "seed" {
+  interface ISeeder <<interface>> {
+    + run() -> None
+  }
+  class DataSeeder {
+    - __init__(settings: SettingsRepository, users: UserRepository, dentists: DentistRepository, procedures: ProcedureRepository, faqs: FAQRepository, knowledge: KnowledgeRepository, auth: AuthService) -> None
+    + run() -> None
+  }
+  class UserRepository {
+    - __init__(database: IDatabase) -> None
+    + find_by_username(username: str) -> Optional[User]
+  }
+  class FAQRepository {
+    - __init__(database: IDatabase) -> None
+    + active() -> list[FAQ]
+    + search(term: str, limit: int) -> list[FAQ]
+  }
+  class KnowledgeRepository {
+    - __init__(database: IDatabase) -> None
+    + active() -> list[KnowledgeDocument]
+  }
+  class SettingsRepository {
+  + SINGLETON_ID: str
+    - __init__(database: IDatabase) -> None
+    + current() -> ClinicSettings
+  }
+  class AuthService {
+    - __init__(users: UserRepository) -> None
+    + hash_password(password: str, salt: str) -> str
+    + register(username: str, password: str, role: str, display_name: str) -> User
+    + authenticate(username: str, password: str) -> tuple[User, str]
+    + resolve_token(token: str) -> User
+    + logout(token: str) -> None
+    + list_users() -> list[User]
+  }
+  ISeeder <|.. DataSeeder
+  DataSeeder --> UserRepository
+  DataSeeder --> FAQRepository
+  DataSeeder --> KnowledgeRepository
+  DataSeeder --> SettingsRepository
+  DataSeeder ..> AuthService
+}
+@enduml
