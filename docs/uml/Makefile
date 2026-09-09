@@ -1,61 +1,52 @@
-# Makefile — renderização dos diagramas UML do SorriDente
+# Renderização dos diagramas UML do SorriDent.
 #
-# Requisitos:
-#   - Docker (imagem oficial plantuml/plantuml)  -> gera os .svg
-#   - Python venv com Pillow + cairosvg           -> rasteriza .png
-#     (instalar com: ../../.venv/bin/pip install pillow cairosvg)
+# Só precisa de Docker: o PlantUML gera SVG e PNG por conta própria.
 #
-# Alvos:
-#   make svg     -> gera docs/uml/svg/*.svg a partir de src/*.plantuml + projeto.plantuml
-#   make png     -> rasteriza docs/uml/svg/*.svg -> docs/uml/png/*.png
-#   make all     -> svg + png
-#   make clean   -> remove svg/ e png/ gerados
-#   make render  -> alias de all
+#   make        gera os SVG e os PNG
+#   make svg    só os SVG
+#   make png    só os PNG
+#   make clean  apaga o que foi gerado
 
-UML_DIR   := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-SRC_DIR   := $(UML_DIR)src
-SVG_DIR   := $(UML_DIR)svg
-PNG_DIR   := $(UML_DIR)png
-PROJ_ROOT := $(abspath $(UML_DIR)/../..)
-PLANTUML  := plantuml/plantuml:latest
-PYTHON    := $(PROJ_ROOT)/.venv/bin/python
-SCRIPT    := $(UML_DIR)tools/render_svg_to_png.py
+UML_DIR  := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+SRC_DIR  := $(UML_DIR)src
+SVG_DIR  := $(UML_DIR)svg
+PNG_DIR  := $(UML_DIR)png
+PLANTUML := docker run --rm -v "$(UML_DIR)":/uml plantuml/plantuml:latest
 
-# fontes: os fragmentos de src/ + o master projeto.plantuml
-SRCS      := $(wildcard $(SRC_DIR)/*.plantuml) $(UML_DIR)projeto.plantuml
-SVGS      := $(patsubst $(SRC_DIR)/%.plantuml,$(SVG_DIR)/%.svg,$(wildcard $(SRC_DIR)/*.plantuml)) \
-             $(SVG_DIR)/projeto.svg
-PNGS      := $(patsubst $(SVG_DIR)/%.svg,$(PNG_DIR)/%.png,$(SVGS))
+FONTES := $(wildcard $(SRC_DIR)/*.plantuml)
+SVGS   := $(patsubst $(SRC_DIR)/%.plantuml,$(SVG_DIR)/%.svg,$(FONTES)) $(SVG_DIR)/projeto.svg
+PNGS   := $(patsubst $(SVG_DIR)/%.svg,$(PNG_DIR)/%.png,$(SVGS))
 
-.PHONY: svg png all render clean
+.PHONY: all svg png clean render FORCE
 
-# Os diagramas renderizam em poucos segundos; forçar a re-renderização torna
-# `make svg`/`make png` previsíveis (sem "Nada a ser feito" silencioso quando
-# os artefatos já estão atualizados).
-FORCE:
-.PHONY: FORCE
-
-all: render
-render: svg png
+all: svg png
+render: all
 
 svg: $(SVGS)
-
 png: $(PNGS)
 
-# Gera cada SVG a partir do fonte correspondente (master vira projeto.svg)
+# Os diagramas levam poucos segundos; forçar a regeração evita o
+# "nada a ser feito" quando só o estilo mudou.
+FORCE:
+
 $(SVG_DIR)/%.svg: $(SRC_DIR)/%.plantuml FORCE
 	@mkdir -p $(SVG_DIR)
-	docker run --rm -v "$(UML_DIR)":/uml $(PLANTUML) -tsvg -o /uml/svg /uml/src/$*.plantuml
+	$(PLANTUML) -tsvg -o /uml/svg /uml/src/$*.plantuml
 
+$(PNG_DIR)/%.png: $(SRC_DIR)/%.plantuml FORCE
+	@mkdir -p $(PNG_DIR)
+	$(PLANTUML) -tpng -o /uml/png /uml/src/$*.plantuml
+
+# O master fica fora de src/ e o nome do arquivo vem do @startuml
 $(SVG_DIR)/projeto.svg: $(UML_DIR)projeto.plantuml FORCE
 	@mkdir -p $(SVG_DIR)
-	docker run --rm -v "$(UML_DIR)":/uml $(PLANTUML) -tsvg -o /uml/svg /uml/projeto.plantuml
-	mv -f $(SVG_DIR)/SorriDente-Projeto.svg $(SVG_DIR)/projeto.svg
+	$(PLANTUML) -tsvg -o /uml/svg /uml/projeto.plantuml
+	mv -f $(SVG_DIR)/SorriDente-Projeto.svg $@
 
-# Rasteriza cada SVG -> PNG com o script Pillow/cairosvg
-$(PNG_DIR)/%.png: $(SVG_DIR)/%.svg FORCE
+$(PNG_DIR)/projeto.png: $(UML_DIR)projeto.plantuml FORCE
 	@mkdir -p $(PNG_DIR)
-	$(PYTHON) $(SCRIPT) $(SVG_DIR)/$*.svg --out $(PNG_DIR)
+	$(PLANTUML) -tpng -o /uml/png /uml/projeto.plantuml
+	mv -f $(PNG_DIR)/SorriDente-Projeto.png $@
 
 clean:
 	rm -rf $(SVG_DIR) $(PNG_DIR)

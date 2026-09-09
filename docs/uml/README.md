@@ -5,7 +5,7 @@ a partir dos arquivos desta pasta.
 
 ## Como gerar
 
-Precisa de Docker (para o PlantUML) e do `.venv` do projeto (para virar PNG):
+Só precisa de Docker: o PlantUML gera SVG e PNG por conta própria.
 
 ```bash
 cd docs/uml
@@ -33,7 +33,6 @@ make clean    # apaga o que foi gerado
 | `tools/dividir.py` | recorta os diagramas grandes em menores, por pacote |
 | `tools/ajustar_layout.py` | aplica o estilo e escolhe a orientação que deixa o desenho mais quadrado |
 | `tools/checar_relacoes.py` | lê o código e avisa quando uma seta está errada |
-| `tools/render_svg_to_png.py` | transforma os SVG em PNG |
 
 O checador aceita `--corrigir` para arrumar sozinho as setas trocadas:
 
