@@ -178,9 +178,11 @@ arquivo `docs/projeto.md`, com todos os diagramas.
 
 ### Como as camadas se encaixam
 
-Antes de olhar classe por classe, vale ver o desenho das camadas. As setas
-apontam sempre para dentro: o núcleo não conhece ninguém, e quem está de
-fora é que depende dele.
+Antes de olhar classe por classe, vale entender o desenho geral. O
+núcleo fica no meio, com as regras do negócio, e não depende de nada: nem
+de banco, nem de internet, nem de framework. Quem está em volta é que
+depende dele. Por isso dá para trocar o Telegram, o banco ou o modelo de
+IA sem mexer nas regras.
 
 [![Visão geral](docs/uml/svg/projeto.svg)](docs/uml/svg/projeto.svg)
 

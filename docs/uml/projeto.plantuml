@@ -86,8 +86,9 @@ CORE <.. SVC
 CORE <.. REPO
 
 note bottom of CORE
-  Só o core não depende de ninguém.
-  As setas apontam sempre para dentro.
+  O core guarda as regras e os contratos.
+  Ele funciona sozinho, sem banco,
+  sem internet e sem framework.
 end note
 
 @enduml
