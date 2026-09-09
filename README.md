@@ -62,27 +62,29 @@ atendimentos pendentes e a base de conhecimento.
 ### Linux (ou Windows com WSL2)
 
 ```bash
-# 1. dependências do sistema
 sudo apt update && sudo apt install -y python3 python3-venv python3-pip git
 
-# 2. ambiente do Python e bibliotecas
 cd sorrident
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-# 3. a chave da IA, sem ela o agente não responde
+O agente precisa de uma chave do Groq Cloud para responder:
+
+```bash
 export GROQ_CLOUD_API_KEY="sua-chave"
 ```
 
-Agora é só subir, cada um em um terminal:
+Suba o backend e, em outro terminal, a interface:
 
 ```bash
-./run_backend.sh    # API e bot   -> http://localhost:8000
-./run_frontend.sh   # interface   -> http://localhost:3000
+./run_backend.sh
+./run_frontend.sh
 ```
 
-A documentação da API fica em `http://localhost:8000/docs`.
+A interface abre em `http://localhost:3000` e a API em
+`http://localhost:8000`, com a documentação em `/docs`.
 
 <details>
 <summary><b>Não tem o Node.js?</b></summary>
