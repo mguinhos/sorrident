@@ -53,119 +53,68 @@ atendimentos pendentes e a base de conhecimento.
 
 ## Passos de instalação
 
-### Requisitos
+| Você precisa de | Para quê |
+|---|---|
+| Python 3.12+ | o backend |
+| Node.js 20 | a interface web |
+| Git e make | baixar e montar o projeto |
 
-Para rodar o projeto você precisa de:
-- Git
-- Python 3.12 ou mais novo
-- Node.js 18.17 ou mais novo (recomendado o 20, via nvm)
-- npm (vem junto com o Node.js)
-- make
-
-O Node.js é usado só na interface web. O backend é todo em Python.
-
-### Instalando o Node.js com o nvm
-
-O nvm (Node Version Manager) deixa você ter várias versões do Node.js ao
-mesmo tempo. Para instalar, abra um terminal e rode:
+### Linux (ou Windows com WSL2)
 
 ```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-```
+# 1. dependências do sistema
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip git
 
-Depois recarregue o terminal e instale a versão estável:
-
-```bash
-nvm install 20
-nvm use 20
-npm install -g npm@latest
-```
-
-Confirme que o Node está instalado e qual é a versão:
-
-```bash
-node --version
-npm --version
-```
-
-### Linux (Ubuntu ou Debian)
-
-Primeiro instale o Python e o git, caso ainda não tenha:
-
-```bash
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip git
-```
-
-Entre na pasta do projeto e crie o ambiente virtual do Python:
-
-```bash
+# 2. ambiente do Python e bibliotecas
 cd sorrident
 python3 -m venv .venv
-```
-
-Ative o ambiente e instale as dependências do backend:
-
-```bash
 source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-Configure a chave do provedor de IA. Sem ela o agente não responde. Você
-pode usar a chave do Groq Cloud:
-
-```bash
+# 3. a chave da IA, sem ela o agente não responde
 export GROQ_CLOUD_API_KEY="sua-chave"
 ```
 
-Subindo o backend (API e bot), com o script da raiz:
+Agora é só subir, cada um em um terminal:
 
 ```bash
-./run_backend.sh
+./run_backend.sh    # API e bot   -> http://localhost:8000
+./run_frontend.sh   # interface   -> http://localhost:3000
 ```
 
-Em outro terminal, suba a interface web. O script já instala as
-dependências do frontend na primeira vez:
+A documentação da API fica em `http://localhost:8000/docs`.
+
+<details>
+<summary><b>Não tem o Node.js?</b></summary>
+
+O nvm deixa você ter várias versões do Node ao mesmo tempo:
 
 ```bash
-./run_frontend.sh
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+# feche e abra o terminal
+nvm install 20 && nvm use 20
+node --version
 ```
 
-A API fica em `http://localhost:8000` e a interface em
-`http://localhost:3000`. A documentação interativa da API fica em
-`http://localhost:8000/docs`.
+</details>
 
-### Windows (com WSL2)
+<details>
+<summary><b>Está no Windows?</b></summary>
 
-O WSL2 é um ambiente Linux que roda dentro do Windows. Ele é a forma mais
-simples de rodar este projeto no Windows, porque os scripts e as
-dependências foram feitos para Linux.
+O WSL2 é um Linux que roda dentro do Windows, e é o jeito mais simples de
+usar o projeto, porque os scripts foram feitos para Linux.
 
-Para instalar, abra o PowerShell como administrador e rode:
+No PowerShell como administrador:
 
 ```powershell
 wsl --install -d Ubuntu
 ```
 
-Reinicie o computador quando o Windows pedir. Ao abrir o Ubuntu, ele pede
-para criar um usuário e uma senha. Depois, dentro do Ubuntu:
+Reinicie o computador, abra o Ubuntu, crie seu usuário e siga os passos do
+Linux normalmente. O site abre no navegador do Windows pelo mesmo endereço,
+`http://localhost:3000`.
 
-```bash
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip git curl
-```
-
-Instale o nvm e o Node.js como na seção anterior. Continue com a
-instalação do Python, a criação do ambiente virtual e a chave do provedor.
-Por fim suba o backend e o frontend:
-
-```bash
-./run_backend.sh
-./run_frontend.sh
-```
-
-O site que está rodando dentro do WSL2 pode ser aberto no navegador do
-Windows pelo mesmo endereço `http://localhost:3000`.
+</details>
 
 ## Detalhes da Arquitetura de Software
 
