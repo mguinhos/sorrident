@@ -1,7 +1,9 @@
 ' Estilo comum dos diagramas do SorriDente.
 ' Incluído por todos os fontes: mudar aqui muda em todos.
 
-skinparam classAttributeIconSize 0
+' Com 0 aqui, o PlantUML desliga os ícones e escreve "+" e "-" no lugar.
+' Deixando o padrão, a visibilidade aparece com os símbolos coloridos:
+' bolinha verde = público, quadrado vermelho = privado, losango = protegido.
 skinparam packageStyle folder
 skinparam monospace true
 

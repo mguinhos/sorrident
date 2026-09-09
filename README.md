@@ -8,6 +8,10 @@ Um assistente autonômo e plataforma web de teleatendimento para clinicas ortod�
 
 <h2 align="center">SorriDent</h2>
 
+<p align="center">
+  <em>Marca consulta, tira dúvida e chama a equipe quando precisa.</em>
+</p>
+
 Projeto Integrador da UNICAP, Recife, Pernambuco.
 
 | Disciplina | Professor | Turno | Turma | Período |

@@ -19,7 +19,7 @@ PNG_DIR   := $(UML_DIR)png
 PROJ_ROOT := $(abspath $(UML_DIR)/../..)
 PLANTUML  := plantuml/plantuml:latest
 PYTHON    := $(PROJ_ROOT)/.venv/bin/python
-SCRIPT    := $(PROJ_ROOT)/render_svg_to_png.py
+SCRIPT    := $(UML_DIR)tools/render_svg_to_png.py
 
 # fontes: os fragmentos de src/ + o master projeto.plantuml
 SRCS      := $(wildcard $(SRC_DIR)/*.plantuml) $(UML_DIR)projeto.plantuml
