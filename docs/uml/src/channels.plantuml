@@ -8,34 +8,12 @@ package "core" {
   }
   package "core.models" {
     enum ChannelType <<enum>>
-    class Conversation {
-    + channel: str
-    + external_id: str
-    + patient_id: str
-    + display_name: str
-    + last_message_at: str
-    + unread_for_staff: int
-    + handoff: bool
-    + open: bool
-    + closed_at: str
-    + closed_reason: str
-    + handoff_notice_at: str
-    }
+    class Conversation
   }
   package "domain.services.interfaces" {
     interface IConversationService <<interface>>
-    interface IPatientService <<interface>> {
-      + create() -> Patient
-      + update(patient_id: str) -> Patient
-      + delete(patient_id: str) -> bool
-      + get(patient_id: str) -> Patient
-      + list_all(search: str) -> list[Patient]
-      + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
-    }
-    interface ISettingsService <<interface>> {
-      + get() -> ClinicSettings
-      + update() -> ClinicSettings
-    }
+    interface IPatientService <<interface>>
+    interface ISettingsService <<interface>>
   }
 }
 

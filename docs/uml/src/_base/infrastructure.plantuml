@@ -287,7 +287,6 @@ package "integrations" {
   BaseChannelIntegration <|-- WhatsAppIntegration
   InferenceResolver <|-- InferenceRegistry
   BaseIntegrationRegistry <|-- MessagingRegistry
-  BaseIntegrationRegistry <|-- IntegrationRegistry
   ILLMProvider <|.. RoutingLLMProvider
   RoutingLLMProvider ..> InferenceResolver
   IntegrationRegistry *-- InferenceRegistry

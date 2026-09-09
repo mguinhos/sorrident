@@ -1,9 +1,22 @@
 @startuml repositorios
 !include _estilo.puml
-left to right direction
 
 package "core.models" {
-  class Patient
+  class Patient {
+  + name: str
+  + phone: str
+  + email: str
+  + birth_date: str
+  + document: str
+  + insurance_provider: str
+  + insurance_card: str
+  + responsible_name: str
+  + notes: str
+  + telegram_id: str
+  + whatsapp_id: str
+  + treatment: str
+  + active: bool
+  }
   class Dentist {
   + name: str
   + cro: str
@@ -113,48 +126,59 @@ package "core.models" {
 
 package "domain.repositories" {
   class PatientRepository {
+  - __init__(database: IDatabase) -> None
   + find_by_telegram(telegram_id: str) -> Optional[Patient]
   + find_by_phone(phone: str) -> Optional[Patient]
   + find_by_document(document: str) -> Optional[Patient]
   + search(term: str) -> list[Patient]
   }
   class DentistRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[Dentist]
   }
   class ProcedureRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[Procedure]
   + find_by_name(name: str) -> Optional[Procedure]
   }
   class AppointmentRepository {
+  - __init__(database: IDatabase) -> None
   + by_patient(patient_id: str) -> list[Appointment]
   + by_dentist(dentist_id: str) -> list[Appointment]
   + in_range(start: datetime, end: datetime) -> list[Appointment]
   + upcoming(reference: Optional[datetime]) -> list[Appointment]
   }
   class ConversationRepository {
+  - __init__(database: IDatabase) -> None
   + find_by_external(channel: str, external_id: str) -> Optional[Conversation]
   + recent(limit: int) -> list[Conversation]
   + open_conversations() -> list[Conversation]
   }
   class MessageRepository {
+  - __init__(database: IDatabase) -> None
   + by_conversation(conversation_id: str, limit: int) -> list[ChatMessage]
   }
   class NotificationRepository {
+  - __init__(database: IDatabase) -> None
   + unread() -> list[Notification]
   + recent(limit: int) -> list[Notification]
   }
   class FAQRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[FAQ]
   + search(term: str, limit: int) -> list[FAQ]
   }
   class KnowledgeRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[KnowledgeDocument]
   }
   class UserRepository {
+  - __init__(database: IDatabase) -> None
   + find_by_username(username: str) -> Optional[User]
   }
   class SettingsRepository {
   + SINGLETON_ID: str
+  - __init__(database: IDatabase) -> None
   + current() -> ClinicSettings
   }
 }

@@ -45,6 +45,7 @@ package "integrations" {
   + describe() -> dict[str, Any]
   }
   abstract class BaseIntegration <<abstract>> {
+  - __init__() -> None
   + credentials() -> dict[str, Any]
   + last_error() -> str
   - _remember(credentials: dict[str, Any]) -> None
@@ -57,21 +58,20 @@ package "integrations" {
   + default_model() -> str
   + test() -> dict[str, Any]
   }
-  package "Groq Cloud" <<Cloud>> {
-    class GroqInferenceIntegration {
-    + KEY: str
-    + key() -> str
-    + name() -> str
-    + description() -> str
-    + default_model() -> str
-    + provider() -> ILLMProvider
-    + credential_fields() -> tuple[CredentialField, ...]
-    + configure(credentials: dict[str, Any]) -> None
-    + enable() -> None
-    + disable() -> None
-    + is_configured() -> bool
-    + status() -> IntegrationStatus
-    }
+  class GroqInferenceIntegration {
+  + KEY: str
+  - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
+  + key() -> str
+  + name() -> str
+  + description() -> str
+  + default_model() -> str
+  + provider() -> ILLMProvider
+  + credential_fields() -> tuple[CredentialField, ...]
+  + configure(credentials: dict[str, Any]) -> None
+  + enable() -> None
+  + disable() -> None
+  + is_configured() -> bool
+  + status() -> IntegrationStatus
   }
   abstract class InferenceResolver <<abstract>> {
   + active_integration() -> Optional[BaseInferenceIntegration]
@@ -79,6 +79,7 @@ package "integrations" {
   }
   class InferenceRegistry {
   + kind
+  - __init__() -> None
   + register(integration: BaseInferenceIntegration) -> 'InferenceRegistry'
   + active_key() -> str
   + active_integration() -> Optional[BaseInferenceIntegration]
@@ -89,6 +90,7 @@ package "integrations" {
   }
   class TelegramIntegration {
   + KEY: str
+  - __init__(channel: TelegramChannel) -> None
   + key() -> str
   + name() -> str
   + description() -> str
@@ -102,6 +104,7 @@ package "integrations" {
   }
   class WhatsAppIntegration {
   + KEY: str
+  - __init__(channel: WhatsAppChannel) -> None
   + key() -> str
   + name() -> str
   + description() -> str
@@ -114,6 +117,7 @@ package "integrations" {
   + status() -> IntegrationStatus
   }
   class RoutingLLMProvider {
+  - __init__(resolver: 'InferenceResolver') -> None
   + model() -> str
   + configured() -> bool
   - _provider() -> ILLMProvider
@@ -122,6 +126,7 @@ package "integrations" {
   }
   abstract class BaseIntegrationRegistry <<abstract>> {
   + kind: IntegrationKind
+  - __init__() -> None
   + register(integration: T) -> 'BaseIntegrationRegistry[T]'
   + get(key: str) -> T
   + find(key: str) -> Optional[T]
@@ -137,6 +142,7 @@ package "integrations" {
   + running() -> list[BaseChannelIntegration]
   }
   class IntegrationRegistry {
+  - __init__(credentials: ICredentialStore) -> None
   + registries() -> tuple[BaseIntegrationRegistry[Any], ...]
   + register(integration: IIntegration) -> 'IntegrationRegistry'
   + get(key: str) -> IIntegration
@@ -195,6 +201,7 @@ package "export" {
   + export(conversation: Conversation, messages: Sequence[ChatMessage], clinic_name: str) -> ExportedFile
   }
   class ConversationExportService {
+  - __init__(conversations: IConversationService, settings: ISettingsService, channels: IChannelManager, exporters: Iterable[IConversationExporter]) -> None
   + formats() -> list[str]
   - _exporter(export_format: str) -> IConversationExporter
   + export(conversation_id: str, export_format: str) -> ExportedFile

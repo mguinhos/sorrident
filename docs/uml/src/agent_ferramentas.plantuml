@@ -2,6 +2,35 @@
 !include _estilo.puml
 left to right direction
 
+package "agent.base" {
+  abstract class BaseTool <<abstract>> {
+  + name() -> str
+  + description() -> str
+  + parameters() -> dict[str, Any]
+  + run(context: AgentContext) -> Any
+  + execute(context: AgentContext) -> Any
+  + parse_datetime(value: str) -> datetime
+  + dump(value: Any) -> str
+  }
+  interface IToolRegistry <<interface>> {
+  + register(tool: ITool) -> 'IToolRegistry'
+  + unregister(name: str) -> None
+  + get(name: str) -> Optional[ITool]
+  + schemas() -> list[dict[str, Any]]
+  + names() -> list[str]
+  }
+  class ToolRegistry {
+  + register(tool: ITool) -> 'ToolRegistry'
+  + unregister(name: str) -> None
+  + get(name: str) -> Optional[ITool]
+  + schemas() -> list[dict[str, Any]]
+  + names() -> list[str]
+  - __len__() -> int
+  - __iter__() -> Iterator[ITool]
+  - __contains__(name: object) -> bool
+  }
+}
+
 package "agent.tools" {
   abstract class PatientAwareTool <<abstract>> {
   + current_patient(context: AgentContext) -> Optional[Patient]
@@ -10,112 +39,68 @@ package "agent.tools" {
   + summarize(patient: Patient) -> dict[str, Any]
   }
   class KnowledgeBaseTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, pergunta: str, limite: int) -> Any
   }
   class ClinicInfoTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class CadastrarClienteTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext) -> Any
   }
   class AtualizarInformacoesClienteTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext) -> Any
   }
   class ConsultarCadastroTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class ListProceduresTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class ListDentistsTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class AvailableSlotsTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, data: str, profissional_id: str, procedimento_id: str, periodo: str) -> Any
   }
   class MarcarAgendamentoTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   - _resolve_procedure(name: str) -> str
   + run(context: AgentContext, data_hora: str, procedimento_id: str, procedimento: str, profissional_id: str, nome_paciente: str, telefone: str, observacoes: str) -> Any
   }
   class MyAppointmentsTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class CancelAppointmentTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, agendamento_id: str, motivo: str) -> Any
   }
   class RescheduleAppointmentTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, agendamento_id: str, nova_data_hora: str) -> Any
   }
   class ConsultarEncaixeUrgenciaTool {
-  + name() -> str
-  + description() -> str
   + run(context: AgentContext) -> Any
   }
   class AgendarEncaixeUrgenciaTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, motivo: str, data_hora: str, nome_paciente: str, telefone: str) -> Any
   }
   class HumanHandoffTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, motivo: str, urgente: bool, assumir_conversa: bool) -> Any
   }
   class EncerrarAtendimentoTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, resumo: str) -> Any
   }
   class ExportarConversaTool {
-  + name() -> str
-  + description() -> str
-  + parameters() -> dict[str, Any]
   + run(context: AgentContext, formato: str) -> Any
   }
 }
 
 package "contexto" <<Frame>> {
-  class BaseTool
   class IAppointmentService
   class IExportService
   class IKnowledgeService
   class IPatientService
   class ISchedulingService
   class ISettingsService
+  class ITool
+  class SorriDenteAgent
 }
 
 AvailableSlotsTool ..> ISchedulingService
@@ -134,6 +119,8 @@ BaseTool <|-- RescheduleAppointmentTool
 CadastrarClienteTool ..> IPatientService
 ClinicInfoTool ..> ISettingsService
 ExportarConversaTool ..> IExportService
+ITool <|.. BaseTool
+IToolRegistry <|.. ToolRegistry
 KnowledgeBaseTool ..> IKnowledgeService
 MarcarAgendamentoTool ..> IAppointmentService
 PatientAwareTool <|-- AgendarEncaixeUrgenciaTool
@@ -142,4 +129,6 @@ PatientAwareTool <|-- CadastrarClienteTool
 PatientAwareTool <|-- ConsultarCadastroTool
 PatientAwareTool <|-- MarcarAgendamentoTool
 PatientAwareTool <|-- MyAppointmentsTool
+SorriDenteAgent o-- "1" ToolRegistry
+ToolRegistry o-- "0..*" ITool
 @enduml

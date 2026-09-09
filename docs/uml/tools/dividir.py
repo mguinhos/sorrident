@@ -130,7 +130,7 @@ DIVISOES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     # o agente tem 56 classes: núcleo de um lado, ferramentas do outro
     ("agent", "agent", ("agent (núcleo)", "agent.base", "agent.prompt")),
     ("agent", "agent_contexto", ("agent.context", "agent.task", "agent.models")),
-    ("agent", "agent_ferramentas", ("agent.tools",)),
+    ("agent", "agent_ferramentas", ("agent.tools", "agent.base")),
     # infraestrutura: persistência de um lado, integrações externas do outro
     ("infrastructure", "infraestrutura", ("infrastructure", "db", "scheduler", "seed")),
     ("infrastructure", "integracoes", ("integrations", "export")),

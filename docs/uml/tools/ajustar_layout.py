@@ -34,11 +34,18 @@ IMAGEM_DOCKER = "plantuml/plantuml:latest"
 #: proporção largura/altura desejada
 ALVO = 1.4
 
+#: nesses diagramas, as classes que casam com o padrão mostram só o que é
+#: próprio delas; os métodos que toda irmã repete (o contrato herdado) saem,
+#: senão a mesma lista aparece dezenas de vezes e o desenho estica à toa
+REPETIDOS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "agent_ferramentas": (r"\w+Tool$", ("name()", "description()", "parameters()")),
+}
+
 #: pacote que cada diagrama documenta em detalhe; o resto vira contexto
 FOCO: dict[str, tuple[str, ...]] = {
     "agent": ("agent",),
     "agent_contexto": ("agent.context", "agent.task", "agent.models"),
-    "agent_ferramentas": ("agent.tools",),
+    "agent_ferramentas": ("agent.tools", "agent.base"),
     "api": ("api", "composition root"),
     "channels": ("channels",),
     "core_interfaces": ("core.interfaces",),
@@ -103,11 +110,18 @@ def aplicar_estereotipos(linha: str) -> str:
     return linha
 
 
-def reescrever(texto: str, orientacao: str, focos: tuple[str, ...]) -> str:
+def reescrever(
+    texto: str,
+    orientacao: str,
+    focos: tuple[str, ...],
+    repetidos: tuple[str, tuple[str, ...]] | None = None,
+) -> str:
     """Aplica o estilo, tira os construtores e colapsa as classes de contexto."""
     contexto = set(classes_de_contexto(texto, focos))
     saida: list[str] = []
     pulando_corpo = False
+    dentro_de_repetida = False
+    padrao = re.compile(repetidos[0]) if repetidos else None
 
     for linha in texto.splitlines():
         # dentro do corpo de uma classe de contexto: descarta até o fecha-chaves
@@ -131,6 +145,18 @@ def reescrever(texto: str, orientacao: str, focos: tuple[str, ...]) -> str:
             saida.append(linha.rstrip()[:-1].rstrip())
             pulando_corpo = True
             continue
+
+        if declaracao and padrao is not None:
+            # BaseTool e PatientAwareTool definem o contrato: nelas os métodos ficam
+            dentro_de_repetida = bool(
+                padrao.search(declaracao.group(1))
+                and not declaracao.group(1).startswith(("Base", "PatientAware"))
+            )
+        elif dentro_de_repetida and linha.strip() == "}":
+            dentro_de_repetida = False
+        elif dentro_de_repetida and repetidos:
+            if any(metodo in linha for metodo in repetidos[1]):
+                continue
 
         saida.append(aplicar_estereotipos(linha))
         if linha.startswith("@startuml"):
@@ -177,8 +203,9 @@ def main() -> int:
         antes = medir(fonte)
 
         melhor: tuple[float, str, tuple[int, int]] | None = None
+        repetidos = REPETIDOS.get(fonte.stem)
         for orientacao in ("", "left to right direction"):
-            fonte.write_text(reescrever(original, orientacao, focos))
+            fonte.write_text(reescrever(original, orientacao, focos, repetidos))
             try:
                 dimensao = medir(fonte)
             except RuntimeError as erro:
@@ -192,7 +219,7 @@ def main() -> int:
             fonte.write_text(original)
             continue
         _, orientacao, dimensao = melhor
-        fonte.write_text(reescrever(original, orientacao, focos))
+        fonte.write_text(reescrever(original, orientacao, focos, repetidos))
         rotulo = "left→right" if orientacao else "padrão"
         print(f"{fonte.stem:<24} {antes[0]:>5}x{antes[1]:<7} {dimensao[0]:>5}x{dimensao[1]:<7}  {rotulo}")
 

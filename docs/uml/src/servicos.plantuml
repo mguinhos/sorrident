@@ -87,6 +87,7 @@ package "domain.services.interfaces" {
 
 package "domain.services (implementações)" {
   class PatientService {
+  - __init__(patients: PatientRepository, notifications: 'NotificationService') -> None
   + create() -> Patient
   + update(patient_id: str) -> Patient
   + delete(patient_id: str) -> bool
@@ -95,6 +96,7 @@ package "domain.services (implementações)" {
   + get_or_create_by_channel(channel: str, external_id: str, name: str) -> Patient
   }
   class DentistService {
+  - __init__(dentists: DentistRepository) -> None
   + create() -> Dentist
   + update(dentist_id: str) -> Dentist
   + delete(dentist_id: str) -> bool
@@ -102,12 +104,14 @@ package "domain.services (implementações)" {
   + list_all(only_active: bool) -> list[Dentist]
   }
   class ProcedureService {
+  - __init__(procedures: ProcedureRepository) -> None
   + create() -> Procedure
   + update(procedure_id: str) -> Procedure
   + delete(procedure_id: str) -> bool
   + list_all(only_active: bool) -> list[Procedure]
   }
   class SchedulingService {
+  - __init__(appointments: AppointmentRepository, dentists: DentistRepository, settings: SettingsRepository) -> None
   - _parse_time(value: str, fallback: time) -> time
   - _windows(dentist: Optional[Dentist], day: date, settings: ClinicSettings) -> list[tuple[time, time]]
   + is_free(dentist_id: str, start: datetime, end: datetime, ignore_id: str) -> bool
@@ -115,6 +119,7 @@ package "domain.services (implementações)" {
   + available_slots(day: date, dentist_id: str, duration_minutes: int) -> list[dict[str, Any]]
   }
   class AppointmentService {
+  - __init__(appointments: AppointmentRepository, patients: PatientRepository, dentists: DentistRepository, procedures: ProcedureRepository, scheduling: SchedulingService, notifications: 'NotificationService', settings: SettingsRepository) -> None
   - _resolve_duration(procedure_id: str) -> tuple[int, str, str]
   + schedule(patient_id: str, start: datetime, dentist_id: str, procedure_id: str, notes: str, origin: str, allow_overbook: bool, priority: str) -> Appointment
   + schedule_emergency(patient_id: str, reason: str, origin: str, start: Optional[datetime]) -> Appointment
@@ -128,6 +133,7 @@ package "domain.services (implementações)" {
   + mark_reminder_sent(appointment_id: str) -> Appointment
   }
   class ConversationService {
+  - __init__(conversations: ConversationRepository, messages: MessageRepository, event_bus: IEventBus) -> None
   + get_or_create(channel: str, external_id: str, display_name: str) -> Conversation
   + get(conversation_id: str) -> Conversation
   + append(conversation_id: str, author: str, content: str) -> ChatMessage
@@ -142,12 +148,14 @@ package "domain.services (implementações)" {
   + idle_conversations(minutes: int) -> list[Conversation]
   }
   class NotificationService {
+  - __init__(notifications: NotificationRepository, event_bus: IEventBus) -> None
   + notify(title: str, message: str, level: str) -> Notification
   + list_all(only_unread: bool, limit: int) -> list[Notification]
   + mark_read(notification_id: str) -> Notification
   + mark_all_read() -> int
   }
   class FAQService {
+  - __init__(faqs: FAQRepository) -> None
   + create(question: str, answer: str, tags: Optional[list[str]]) -> FAQ
   + update(faq_id: str) -> FAQ
   + delete(faq_id: str) -> bool
@@ -155,10 +163,12 @@ package "domain.services (implementações)" {
   + search(term: str, limit: int) -> list[FAQ]
   }
   class SettingsService {
+  - __init__(settings: SettingsRepository) -> None
   + get() -> ClinicSettings
   + update() -> ClinicSettings
   }
   class AuthService {
+  - __init__(users: UserRepository) -> None
   + hash_password(password: str, salt: str) -> str
   + register(username: str, password: str, role: str, display_name: str) -> User
   + authenticate(username: str, password: str) -> tuple[User, str]
@@ -167,6 +177,7 @@ package "domain.services (implementações)" {
   + list_users() -> list[User]
   }
   class AnalyticsService {
+  - __init__(appointments: AppointmentRepository, patients: PatientRepository, conversations: ConversationRepository, notifications: NotificationRepository) -> None
   + dashboard() -> dict[str, Any]
   }
 }

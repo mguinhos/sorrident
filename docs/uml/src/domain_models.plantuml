@@ -9,29 +9,10 @@ package "core" {
       MEDICO
     }
     enum SlotType <<enum>>
-    enum Priority <<enum>> {
-      NORMAL
-      URGENTE
-    }
-    enum AppointmentStatus <<enum>> {
-      AGENDADO
-      CONFIRMADO
-      CONCLUIDO
-      CANCELADO
-      FALTOU
-    }
-    enum ChannelType <<enum>> {
-      WEB
-      TELEGRAM
-      WHATSAPP
-    }
-    enum MessageAuthor <<enum>> {
-      USER
-      ASSISTANT
-      SYSTEM
-      TOOL
-      HUMAN_AGENT
-    }
+    enum Priority <<enum>>
+    enum AppointmentStatus <<enum>>
+    enum ChannelType <<enum>>
+    enum MessageAuthor <<enum>>
     enum NotificationLevel <<enum>> {
       INFO
       SUCESSO

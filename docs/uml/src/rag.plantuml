@@ -6,17 +6,9 @@ package "core" {
   package "domain.repositories" {
     class KnowledgeRepository
     class FAQRepository
-    class ProcedureRepository {
-      + active() -> list[Procedure]
-      + find_by_name(name: str) -> Optional[Procedure]
-    }
-    class DentistRepository {
-      + active() -> list[Dentist]
-    }
-    class SettingsRepository {
-    + SINGLETON_ID: str
-      + current() -> ClinicSettings
-    }
+    class ProcedureRepository
+    class DentistRepository
+    class SettingsRepository
   }
 }
 

@@ -3,6 +3,7 @@
 
 package "infrastructure" {
   class JsonCredentialStore {
+  - __init__(path: str | Path) -> None
   - _read_sync() -> dict[str, Any]
   - _write_sync(data: dict[str, Any]) -> None
   - _load() -> dict[str, Any]
@@ -13,27 +14,28 @@ package "infrastructure" {
   + delete(key: str) -> None
   }
   class InMemoryEventBus {
+  - __init__(max_queue: int) -> None
   + publish(event: str, payload: dict[str, Any]) -> None
   + subscribe() -> asyncio.Queue
   + unsubscribe(queue: asyncio.Queue) -> None
   + subscriber_count() -> int
   }
-  package "Groq Cloud" <<Cloud>> {
-    class GroqLLMProvider {
-    + model() -> str
-    + configured() -> bool
-    + configure(api_key: str, model: Optional[str]) -> None
-    + client() -> AsyncGroq
-    + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
-    + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
-    - _clean(text: str) -> str
-    }
+  class GroqLLMProvider {
+  - __init__(api_key: Optional[str], model: str, timeout: float) -> None
+  + model() -> str
+  + configured() -> bool
+  + configure(api_key: str, model: Optional[str]) -> None
+  + client() -> AsyncGroq
+  + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
+  + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
+  - _clean(text: str) -> str
   }
 
 }
 
 package "db" <<Database>> {
   class TinyDBDatabase {
+  - __init__(path: str | Path) -> None
   + connect() -> None
   + disconnect() -> None
   - _table(table: str)
@@ -47,6 +49,7 @@ package "db" <<Database>> {
   + count(table: str, filters: Optional[dict[str, Any]]) -> int
   }
   abstract class TinyDBRepository <<abstract>> {
+  - __init__(database: IDatabase, entity_type: Type[T], table_name: str) -> None
   + table_name() -> str
   + entity_type() -> Type[T]
   - _to_entity(row: dict[str, Any]) -> T
@@ -73,19 +76,23 @@ package "scheduler" {
   + jobs() -> Sequence[IBackgroundJob]
   }
   class AppointmentReminderJob {
+  - __init__(appointments: IAppointmentService, patients: PatientRepository, channels: IChannelManager, notifications: INotificationService, interval_seconds: int, window_hours: int) -> None
   + interval_seconds() -> int
   + run_once() -> None
   }
   class ConversationTimeoutJob {
   + DESPEDIDA: str
+  - __init__(conversations: IConversationService, channels: IChannelManager, settings: ISettingsService, interval_seconds: int) -> None
   + interval_seconds() -> int
   + run_once() -> None
   }
   class KnowledgeReindexJob {
+  - __init__(knowledge: IKnowledgeService, interval_seconds: int) -> None
   + interval_seconds() -> int
   + run_once() -> None
   }
   class BackgroundScheduler {
+  - __init__() -> None
   + jobs() -> Sequence[IBackgroundJob]
   + register(job: IBackgroundJob) -> 'BackgroundScheduler'
   + start() -> None
@@ -134,23 +141,29 @@ package "seed" {
   + run() -> None
   }
   class DataSeeder {
+  - __init__(settings: SettingsRepository, users: UserRepository, dentists: DentistRepository, procedures: ProcedureRepository, faqs: FAQRepository, knowledge: KnowledgeRepository, auth: AuthService) -> None
   + run() -> None
   }
   class UserRepository {
+  - __init__(database: IDatabase) -> None
   + find_by_username(username: str) -> Optional[User]
   }
   class FAQRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[FAQ]
   + search(term: str, limit: int) -> list[FAQ]
   }
   class KnowledgeRepository {
+  - __init__(database: IDatabase) -> None
   + active() -> list[KnowledgeDocument]
   }
   class SettingsRepository {
   + SINGLETON_ID: str
+  - __init__(database: IDatabase) -> None
   + current() -> ClinicSettings
   }
   class AuthService {
+  - __init__(users: UserRepository) -> None
   + hash_password(password: str, salt: str) -> str
   + register(username: str, password: str, role: str, display_name: str) -> User
   + authenticate(username: str, password: str) -> tuple[User, str]

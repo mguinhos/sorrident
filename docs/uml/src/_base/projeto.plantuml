@@ -610,7 +610,7 @@ package "agent" {
           - __iter__() -> Iterator[ITool]
           - __contains__(name: object) -> bool
         }
-        ITool <|-- BaseTool
+        ITool <|.. BaseTool
         IToolRegistry <|.. ToolRegistry
     }
     package "agent.context" {
@@ -657,9 +657,9 @@ package "agent" {
           - __len__() -> int
           - __iter__() -> Iterator[PromptMessage]
         }
-        IContextPolicy <|-- SlidingWindowPolicy
-        IContextPolicy <|-- TokenBudgetPolicy
-        IContextPolicy <|-- CompositePolicy
+        IContextPolicy <|.. SlidingWindowPolicy
+        IContextPolicy <|.. TokenBudgetPolicy
+        IContextPolicy <|.. CompositePolicy
         ConversationContext *-- "0..*" PromptMessage
         ConversationContext o-- "1" IContextPolicy
     }
@@ -1016,7 +1016,7 @@ package "channels" {
       - __iter__() -> Iterator[IMessagingChannel]
     }
     IMessageDispatcher <|.. MessageDispatcher
-    IMessagingChannel <|-- BaseChannel
+    IMessagingChannel <|.. BaseChannel
     BaseChannel <|-- WebChannel
     BaseChannel <|-- TelegramChannel
     BaseChannel <|-- WhatsAppChannel
@@ -1140,7 +1140,7 @@ package "rag" {
     IChunker <|.. WholeDocumentChunker
     IEmbedder <|.. TfIdfEmbedder
     IVectorStore <|.. InMemoryVectorStore
-    IRetriever <|-- BaseRetriever
+    IRetriever <|.. BaseRetriever
     BaseRetriever <|-- VectorRetriever
     BaseRetriever <|-- BM25Retriever
     IRetriever <|.. HybridRetriever
@@ -1375,7 +1375,7 @@ package "integrations" {
       - __iter__() -> Iterator[IIntegration]
       - __len__() -> int
     }
-    IIntegration <|-- BaseIntegration
+    IIntegration <|.. BaseIntegration
     BaseIntegration <|-- BaseInferenceIntegration
     BaseInferenceIntegration <|-- GroqInferenceIntegration
     BaseIntegration <|-- BaseChannelIntegration
@@ -1383,7 +1383,7 @@ package "integrations" {
     BaseChannelIntegration <|-- WhatsAppIntegration
     ILLMProvider <|.. RoutingLLMProvider
     RoutingLLMProvider ..> InferenceResolver
-    InferenceResolver <|.. InferenceRegistry
+    InferenceResolver <|-- InferenceRegistry
     IntegrationRegistry *-- "0..*" InferenceRegistry
     IntegrationRegistry *-- "0..*" MessagingRegistry
     IntegrationRegistry o-- "1" ICredentialStore
@@ -1438,7 +1438,7 @@ package "export" {
       + export(conversation_id: str, export_format: str) -> ExportedFile
       + export_and_send(conversation_id: str, export_format: str) -> dict[str, object]
     }
-    IConversationExporter <|-- BaseExporter
+    IConversationExporter <|.. BaseExporter
     BaseExporter <|-- TextExporter
     BaseExporter <|-- MarkdownExporter
     BaseExporter <|-- HtmlExporter

@@ -160,7 +160,7 @@ package "channels" {
   }
 
   IMessageDispatcher <|.. MessageDispatcher
-  IMessagingChannel <|-- BaseChannel
+  IMessagingChannel <|.. BaseChannel
   BaseChannel <|-- WebChannel
   BaseChannel <|-- TelegramChannel
   BaseChannel <|-- WhatsAppChannel

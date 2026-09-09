@@ -111,8 +111,6 @@ package "api (FastAPI)" {
     - __init__() -> None
     - __call__(user: User) -> User
   }
-  interface IDependencyProvider <<interface>>
-  IDependencyProvider <|.. RoleChecker
 
   package "api.schemas.dto (Pydantic)" {
     class LoginRequest {

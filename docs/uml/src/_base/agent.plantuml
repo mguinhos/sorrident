@@ -152,7 +152,7 @@ package "agent" {
       - __iter__() -> Iterator[ITool]
       - __contains__(name: object) -> bool
     }
-    ITool <|-- BaseTool
+    ITool <|.. BaseTool
     IToolRegistry <|.. ToolRegistry
   }
   package "agent.context" {
@@ -199,9 +199,9 @@ package "agent" {
       - __len__() -> int
       - __iter__() -> Iterator[PromptMessage]
     }
-    IContextPolicy <|-- SlidingWindowPolicy
-    IContextPolicy <|-- TokenBudgetPolicy
-    IContextPolicy <|-- CompositePolicy
+    IContextPolicy <|.. SlidingWindowPolicy
+    IContextPolicy <|.. TokenBudgetPolicy
+    IContextPolicy <|.. CompositePolicy
     ConversationContext *-- "0..*" PromptMessage
     CompositePolicy o-- IContextPolicy
   }

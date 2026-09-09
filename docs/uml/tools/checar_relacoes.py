@@ -107,7 +107,9 @@ def main(corrigir: bool = False) -> int:
     tipos = tipos_globais()
     problemas = 0
 
-    for fonte in sorted(SRC.glob("*.plantuml")):
+    # os fontes-base entram na conferência: é de lá que os diagramas são
+    # recortados, então uma seta errada ali volta a cada regeração
+    for fonte in sorted(SRC.glob("*.plantuml")) + sorted((SRC / "_base").glob("*.plantuml")):
         achados: list[str] = []
         texto = fonte.read_text()
         for numero, linha in enumerate(texto.splitlines(), 1):
