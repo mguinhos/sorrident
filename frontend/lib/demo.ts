@@ -109,3 +109,51 @@ export const CONVENIOS: Convenio[] = [
     coberturas: [["Avaliação ortodôntica", "coberto"], ["Manutenção", "coberto"], ["Instalação de aparelho", "parcial"], ["Alinhadores invisíveis", "não coberto"]],
     resumo: { atendimentos: 0, aReceber: 0, glosas: 0 } },
 ];
+
+/* ---------------------------------------------------------------- financeiro */
+export type Periodo = "Mês" | "Trimestre" | "Ano";
+
+export const FINANCEIRO: Record<Periodo, { kpis: { rotulo: string; valor: string; delta: string; tom: "ok" | "info" | "alerta"; icone: string }[] }> = {
+  "Mês": { kpis: [
+    { rotulo: "Faturamento (mês)", valor: "R$ 48.320", delta: "+12,4%", tom: "ok", icone: "grafico" },
+    { rotulo: "A receber", valor: "R$ 12.450", delta: "+3,1%", tom: "info", icone: "baixar" },
+    { rotulo: "Ticket médio", valor: "R$ 386", delta: "+5,8%", tom: "ok", icone: "cartao" },
+    { rotulo: "Inadimplência", valor: "3,2%", delta: "-0,7%", tom: "alerta", icone: "alerta" },
+  ] },
+  "Trimestre": { kpis: [
+    { rotulo: "Faturamento (trimestre)", valor: "R$ 135.320", delta: "+9,1%", tom: "ok", icone: "grafico" },
+    { rotulo: "A receber", valor: "R$ 28.900", delta: "+2,4%", tom: "info", icone: "baixar" },
+    { rotulo: "Ticket médio", valor: "R$ 379", delta: "+3,2%", tom: "ok", icone: "cartao" },
+    { rotulo: "Inadimplência", valor: "3,6%", delta: "-0,3%", tom: "alerta", icone: "alerta" },
+  ] },
+  "Ano": { kpis: [
+    { rotulo: "Faturamento (ano)", valor: "R$ 402.880", delta: "+18,0%", tom: "ok", icone: "grafico" },
+    { rotulo: "A receber", valor: "R$ 41.200", delta: "+6,5%", tom: "info", icone: "baixar" },
+    { rotulo: "Ticket médio", valor: "R$ 371", delta: "+4,1%", tom: "ok", icone: "cartao" },
+    { rotulo: "Inadimplência", valor: "4,0%", delta: "-1,2%", tom: "alerta", icone: "alerta" },
+  ] },
+};
+
+export const RECEITA_MENSAL = [
+  { mes: "Mai", valor: 31000, cor: "#bbd3ea" },
+  { mes: "Jun", valor: 38000, cor: "#9fc1e4" },
+  { mes: "Jul", valor: 35000, cor: "#7faedd" },
+  { mes: "Ago", valor: 44000, cor: "#4c8fd0" },
+  { mes: "Set", valor: 43000, cor: "#1e77c7" },
+  { mes: "Out", valor: 48000, cor: "var(--gradiente)" },
+];
+
+export const RECEITA_SERVICO = [
+  { servico: "Ortodontia", valor: 18400, pct: 88, cor: "var(--gradiente)" },
+  { servico: "Implante", valor: 11900, pct: 62, cor: "#10bbfa" },
+  { servico: "Restauração", valor: 7150, pct: 46, cor: "#4c8fd0" },
+  { servico: "Limpeza", valor: 5320, pct: 34, cor: "#9fc1e4" },
+  { servico: "Clareamento", valor: 3100, pct: 21, cor: "#bbd3ea" },
+];
+
+export const LANCAMENTOS = [
+  { paciente: "Mariana Costa", servico: "Manutenção", data: "07/10", valor: 420, status: "pago" },
+  { paciente: "Pedro Lima", servico: "Avaliação", data: "07/10", valor: 150, status: "pendente" },
+  { paciente: "Beatriz Souza", servico: "Instalação", data: "06/10", valor: 1280, status: "pago" },
+  { paciente: "Lucas Ferreira", servico: "Urgência", data: "06/10", valor: 260, status: "atrasado" },
+];
