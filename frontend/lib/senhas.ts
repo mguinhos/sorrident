@@ -30,6 +30,7 @@ export interface Senha {
   emitida: string;
   chamada?: string;
   destino?: string;
+  depois?: string;
   paciente?: string;
 }
 
@@ -49,7 +50,7 @@ const INICIAL: Estado = {
     { codigo: "AV03", sigla: "AV", tipo: "Avaliação", emitida: "" },
   ],
   chamadas: [
-    { codigo: "A12", sigla: "MA", tipo: "Manutenção de aparelho fixo", emitida: "", chamada: "14:32", destino: "Guichê 1", paciente: "Mariana C." },
+    { codigo: "A12", sigla: "MA", tipo: "Manutenção de aparelho fixo", emitida: "", chamada: "14:32", destino: "Guichê 1", depois: "Consultório 2", paciente: "Mariana C." },
     { codigo: "MA07", sigla: "MA", tipo: "Manutenção", emitida: "", chamada: "14:28", destino: "Consultório 1" },
     { codigo: "AV02", sigla: "AV", tipo: "Avaliação", emitida: "", chamada: "14:21", destino: "Guichê 2" },
     { codigo: "UR00", sigla: "UR", tipo: "Urgência", emitida: "", chamada: "14:12", destino: "Consultório 3" },

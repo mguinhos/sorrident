@@ -35,7 +35,6 @@ export default function PainelChamada() {
   const dataHora = relogio
     ? `${relogio.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" }).replace("-feira", "").replace(/^./, (c) => c.toUpperCase())} · ${relogio.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
     : "";
-  const destinoGuiche = atual?.destino?.startsWith("Guichê");
 
   return (
     <main className="sd-painel">
@@ -77,10 +76,10 @@ export default function PainelChamada() {
                       <div style={{ fontSize: u(64), fontWeight: 800, color: "#fff", lineHeight: 1 }}>{atual.destino}</div>
                     </div>
                   </div>
-                  {destinoGuiche && (
+                  {atual.depois && (
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: u(4), padding: `${u(28)} ${u(36)}`, borderRadius: u(24), background: "var(--cor-primaria-suave)" }}>
                       <div style={{ fontSize: u(24), color: "var(--cor-suave)" }}>Depois, atendimento no</div>
-                      <div style={{ fontSize: u(48), fontWeight: 700, color: "var(--cor-primaria)", lineHeight: 1.1 }}>Consultório 2</div>
+                      <div style={{ fontSize: u(48), fontWeight: 700, color: "var(--cor-primaria)", lineHeight: 1.1 }}>{atual.depois}</div>
                     </div>
                   )}
                 </div>
