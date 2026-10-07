@@ -818,3 +818,51 @@
     border: 0;
   }
 }
+
+/* ---------- quiosque (retrato 1080×1920) ---------- */
+.sd-quiosque {
+  --u: min(calc(100vw / 1080), calc(100vh / 1920));
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cor-fundo);
+  overflow: hidden;
+  user-select: none;
+}
+.sd-quiosque-cartao {
+  font: inherit;
+  color: var(--cor-tinta);
+  background: #fff;
+  border: 2px solid var(--cor-borda);
+  border-radius: calc(28 * var(--u));
+  box-shadow: var(--sombra);
+  padding: calc(40 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  min-height: 0;
+  transition: transform 0.1s ease;
+}
+.sd-quiosque-cartao:active {
+  transform: scale(0.98);
+}
+.sd-quiosque-senha {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* ---------- painel de chamada (TV 1920×1080) ---------- */
+.sd-painel {
+  --u: min(calc(100vw / 1920), calc(100vh / 1080));
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cor-fundo);
+  overflow: hidden;
+}
