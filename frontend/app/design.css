@@ -740,3 +740,14 @@
 .sd-tabela td.sd-num + td.sd-num {
   padding-left: 16px;
 }
+
+/* formulários compactos (cadastros) */
+.sd-form .ant-form-item {
+  margin-bottom: 14px;
+}
+.sd-form .ant-form-item-label {
+  padding-bottom: 6px;
+}
+.sd-form .ant-form-item-label > label {
+  font-size: 13px;
+}
