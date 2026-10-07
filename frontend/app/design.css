@@ -688,3 +688,48 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* ---------- login ---------- */
+.sd-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradiente);
+  position: relative;
+  overflow: hidden;
+  padding: 24px 16px;
+}
+.sd-login-padrao {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27150%27%20height%3D%27150%27%20viewBox%3D%270%200%20150%20150%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%23ffffff%27%20stroke-width%3D%272.2%27%20opacity%3D%270.85%27%3E%3Cpath%20d%3D%27M45%2030c-9%200-15%205.5-15%2013%200%205%201.1%207.6%202.7%2011.6%201.5%204.2%202.4%208%202.4%2013.4%200%206.4%201.7%2011.6%204.9%2011.6%203%200%203.7-4.2%204.5-9.2.5-3.9%201.3-6.6%203.1-6.6s2.6%202.7%203.1%206.6c.8%205%201.5%209.2%204.5%209.2%203.2%200%204.9-5.2%204.9-11.6%200-5.4.9-9.2%202.4-13.4C64.9%2050.6%2066%2048%2066%2043c0-7.5-6-13-15-13-3.7%200-6.2%202.1-9.5%202.1S48.7%2030%2045%2030z%27/%3E%3C/g%3E%3Cg%20fill%3D%27%23ffffff%27%20opacity%3D%270.5%27%3E%3Ccircle%20cx%3D%27112%27%20cy%3D%27112%27%20r%3D%272.6%27/%3E%3Ccircle%20cx%3D%27126%27%20cy%3D%2740%27%20r%3D%272.2%27/%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%27118%27%20r%3D%272.2%27/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 150px 150px;
+  opacity: 0.13;
+}
+.sd-login-brilho {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.sd-login-cartao {
+  width: 432px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 22px;
+  padding: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 30px 80px rgba(4, 22, 64, 0.34);
+  position: relative;
+}
+.sd-login-cartao .ant-segmented {
+  background: #f1f4fa;
+  padding: 4px;
+}
+.sd-login-cartao .ant-segmented-item-selected {
+  color: var(--cor-primaria-escura);
+  font-weight: 700;
+}
