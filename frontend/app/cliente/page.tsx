@@ -18,7 +18,8 @@ export default function ClientePage() {
 
   const carregar = useCallback(async () => {
     try {
-      setConsultas(await api.myAppointments());
+      const lista = await api.myAppointments();
+      setConsultas(Array.isArray(lista) ? lista : []);
     } catch {
       /* o paciente pode ainda não ter cadastro vinculado */
     }
