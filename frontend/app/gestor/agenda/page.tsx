@@ -8,13 +8,14 @@ import Topo, { Conteudo } from "@/components/layout/Topo";
 import GradeHorarios, { type Coluna } from "@/components/agenda/GradeHorarios";
 import NovoAgendamento from "@/components/agenda/NovoAgendamento";
 import AgendaTab from "@/components/tabs/AgendaTab";
+import AppointmentsTab from "@/components/tabs/AppointmentsTab";
 import { Botao, Icone } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { Appointment, Dentist } from "@/lib/types";
 
 dayjs.locale("pt-br");
 
-type Visao = "Dia" | "Semana" | "Mês";
+type Visao = "Dia" | "Semana" | "Mês" | "Lista";
 
 function Legenda({ cor, texto }: { cor: string; texto: string }) {
   return (
@@ -46,7 +47,7 @@ export default function AgendaPage() {
   }, [inicio.format("YYYY-MM-DD"), visao]);
 
   useEffect(() => {
-    if (visao !== "Mês") void carregar();
+    if (visao === "Dia" || visao === "Semana") void carregar();
   }, [carregar, visao]);
 
   const colunas: Coluna[] = useMemo(() => {
@@ -81,7 +82,7 @@ export default function AgendaPage() {
     <>
       <Topo
         titulo="Agenda"
-        sub={visao === "Mês" ? "Visão do mês" : `${total} ${total === 1 ? "consulta" : "consultas"} · ${dentistas.length} profissionais`}
+        sub={visao === "Mês" ? "Visão do mês" : visao === "Lista" ? "Confirme, registre faltas ou cancele consultas" : `${total} ${total === 1 ? "consulta" : "consultas"} · ${dentistas.length} profissionais`}
         acoes={
           <>
             <Botao tipo="secundario" icone="busca" onClick={() => setNovo(true)}>Buscar horário livre</Botao>
@@ -92,7 +93,7 @@ export default function AgendaPage() {
       <Conteudo gap={16}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {visao !== "Mês" && (
+            {(visao === "Dia" || visao === "Semana") && (
               <>
                 <button type="button" className="sd-sino" style={{ width: 36, height: 36 }} aria-label="Anterior" onClick={() => setDia(dia.subtract(1, passo))}>
                   <Icone nome="esq" tam={16} />
@@ -111,10 +112,10 @@ export default function AgendaPage() {
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--cor-suave)" }}>
               <Icone nome="check" tam={13} cor="var(--cor-sucesso)" esp={2.4} />Confirmado
             </span>
-            <Segmented<Visao> value={visao} onChange={setVisao} options={["Dia", "Semana", "Mês"]} aria-label="Visão da agenda" />
+            <Segmented<Visao> value={visao} onChange={setVisao} options={["Dia", "Semana", "Mês", "Lista"]} aria-label="Visão da agenda" />
           </div>
         </div>
-        {visao === "Mês" ? <AgendaTab /> : <GradeHorarios colunas={colunas} />}
+        {visao === "Mês" ? <AgendaTab /> : visao === "Lista" ? <AppointmentsTab /> : <GradeHorarios colunas={colunas} />}
       </Conteudo>
       <NovoAgendamento aberto={novo} aoFechar={() => setNovo(false)} aoCriar={() => void carregar()} diaInicial={dia} />
     </>
