@@ -266,7 +266,7 @@ export default function ConfigCanais() {
     </MiniChat>
   );
   return (
-    <Casca {...comum} titulo="Canais conectados!" descricao="A partir de agora o assistente responde os pacientes nesses canais, com as mesmas regras." previa={<Celular3D tela={tela} selo={<SeloFlutuante texto={`${nAtivos} ${nAtivos === 1 ? "canal ativo" : "canais ativos"}`} />} />} previaRotulo="Tudo no ar">
+    <Casca {...comum} titulo={nAtivos > 1 ? "Canais conectados!" : "Confira os canais"} descricao={nAtivos > 1 ? "A partir de agora o assistente responde os pacientes nesses canais, com as mesmas regras." : "Nenhum canal de mensagem ficou ativo ainda. Volte ao passo 2 para conectar o WhatsApp ou o Telegram."} previa={<Celular3D tela={tela} selo={<SeloFlutuante texto={`${nAtivos} ${nAtivos === 1 ? "canal ativo" : "canais ativos"}`} />} />} previaRotulo="Tudo no ar">
       {linhaCanal(<MarcaCanal canal="whatsapp" />, "WhatsApp", st("whatsapp")?.detail || "Meta Cloud API", !!st("whatsapp")?.enabled)}
       {linhaCanal(<MarcaCanal canal="telegram" />, "Telegram", st("telegram")?.detail || "Bot do Telegram", !!st("telegram")?.enabled)}
       {linhaCanal(<span className="sd-escolha-icone" style={{ width: 48, height: 48 }}><Icone nome="chat" tam={24} /></span>, "Chat do site", "Área do paciente", true)}
