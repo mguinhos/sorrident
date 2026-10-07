@@ -34,3 +34,23 @@ export const ALERTAS_CLINICOS = {
   alergias: "Nega alergias medicamentosas",
   observacoes: "Reabsorção radicular leve no 26 — acompanhar por radiografia",
 };
+
+/* ---------------------------------------------------------------- exames */
+export interface Exame {
+  id: string;
+  paciente: string;
+  exame: string;
+  data: string;
+  status: "pronto" | "em análise" | "solicitado";
+  profissional: string;
+  laudo: string;
+}
+
+export const EXAMES: Exame[] = [
+  { id: "e1", paciente: "Mariana Costa", exame: "Radiografia panorâmica", data: "22/09/2026", status: "pronto", profissional: "Dr. Rafael Nogueira", laudo: "Dentição permanente completa. Sem lesões periapicais visíveis. Terceiros molares em formação." },
+  { id: "e2", paciente: "João Pedro Almeida", exame: "Documentação ortodôntica", data: "22/09/2026", status: "em análise", profissional: "Dra. Helena Martins", laudo: "" },
+  { id: "e3", paciente: "Beatriz Souza", exame: "Tomografia (CBCT)", data: "21/09/2026", status: "pronto", profissional: "Dra. Helena Martins", laudo: "Sem alterações ósseas relevantes. Canal mandibular preservado." },
+  { id: "e4", paciente: "Lucas Ferreira", exame: "Modelo 3D intraoral", data: "20/09/2026", status: "solicitado", profissional: "Dr. Rafael Nogueira", laudo: "" },
+  { id: "e5", paciente: "Ana Clara Ribeiro", exame: "Radiografia periapical", data: "19/09/2026", status: "pronto", profissional: "Dra. Carla Lima", laudo: "Lesão cariosa incipiente na face distal do 36." },
+  { id: "e6", paciente: "Pedro Henrique Santos", exame: "Telerradiografia", data: "18/09/2026", status: "pronto", profissional: "Dra. Helena Martins", laudo: "Padrão esquelético classe II leve." },
+];
