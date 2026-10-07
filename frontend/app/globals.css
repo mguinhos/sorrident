@@ -2,8 +2,15 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  background: #f5f7fb;
+  font-family: var(--fonte);
+  color: var(--cor-tinta);
+  background: var(--cor-fundo);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(0, 101, 196, 0.45);
+  outline-offset: 2px;
 }
 
 * {
