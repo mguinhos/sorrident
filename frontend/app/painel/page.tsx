@@ -3,28 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Icone } from "@/components/ui";
-import { useSenhas } from "@/lib/senhas";
+import { PAINEL_PADRAO, lerConfigPainel, useSenhas, type ConfigPainel } from "@/lib/senhas";
+import { falarSenha, tocarAviso } from "@/lib/som";
 
 const u = (n: number) => `calc(${n} * var(--u))`;
-
-function campainha() {
-  try {
-    const ctx = new AudioContext();
-    [0, 0.28].forEach((t, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = i ? 660 : 880;
-      g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.5);
-      o.connect(g).connect(ctx.destination);
-      o.start(ctx.currentTime + t);
-      o.stop(ctx.currentTime + t + 0.55);
-    });
-  } catch {
-    /* navegador sem áudio liberado */
-  }
-}
 
 /** Painel de chamada da sala de espera: senha e destino em destaque, últimas e próximas senhas. */
 export default function PainelChamada() {
@@ -32,6 +14,9 @@ export default function PainelChamada() {
   const [relogio, setRelogio] = useState<Date | null>(null);
   const anterior = useRef<string | undefined>(undefined);
   const atual = chamadas[0];
+  const [cfg, setCfg] = useState<ConfigPainel>(PAINEL_PADRAO);
+
+  useEffect(() => setCfg(lerConfigPainel()), []);
 
   useEffect(() => {
     setRelogio(new Date());
@@ -40,9 +25,12 @@ export default function PainelChamada() {
   }, []);
 
   useEffect(() => {
-    if (anterior.current && atual && anterior.current !== atual.codigo + atual.chamada) campainha();
+    if (anterior.current && atual && anterior.current !== atual.codigo + atual.chamada) {
+      tocarAviso(cfg.aviso, cfg.volume / 100);
+      if (cfg.voz && atual.destino) setTimeout(() => falarSenha(atual.codigo, atual.destino ?? "", cfg.volume / 100), 900);
+    }
     anterior.current = atual ? atual.codigo + atual.chamada : undefined;
-  }, [atual]);
+  }, [atual, cfg]);
 
   const dataHora = relogio
     ? `${relogio.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" }).replace("-feira", "").replace(/^./, (c) => c.toUpperCase())} · ${relogio.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
@@ -56,13 +44,13 @@ export default function PainelChamada() {
           <Image src="/logo.svg" alt="" width={56} height={56} style={{ width: u(56), height: u(56) }} priority />
           <div style={{ display: "flex", flexDirection: "column", gap: u(2) }}>
             <div style={{ fontSize: u(28), fontWeight: 700 }}>SorriDente</div>
-            <div style={{ fontSize: u(18), color: "var(--cor-suave)" }}>Painel de chamadas · sala de espera</div>
+            <div style={{ fontSize: u(18), color: "var(--cor-suave)" }}>Painel de chamadas · {cfg.nomeLocal.toLowerCase()}</div>
           </div>
         </div>
-        <div className="sd-num" style={{ display: "flex", alignItems: "center", gap: u(12), fontSize: u(30), fontWeight: 700 }}>
+        {cfg.mostrarRelogio && <div className="sd-num" style={{ display: "flex", alignItems: "center", gap: u(12), fontSize: u(30), fontWeight: 700 }}>
           <Icone nome="relogio" tam={30} cor="var(--cor-suave)" style={{ width: u(30), height: u(30) }} />
           {dataHora}
-        </div>
+        </div>}
       </header>
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", gap: u(32), padding: `${u(40)} ${u(48)}` }}>
@@ -77,7 +65,7 @@ export default function PainelChamada() {
                 <div style={{ display: "flex", alignItems: "center", gap: u(64) }}>
                   <div style={{ fontSize: u(260), fontWeight: 800, color: "var(--cor-primaria)", letterSpacing: "-0.04em", lineHeight: 0.9 }}>{atual.codigo}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: u(12) }}>
-                    {atual.paciente && <div style={{ fontSize: u(72), fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1 }}>{atual.paciente}</div>}
+                    {cfg.mostrarNome && atual.paciente && <div style={{ fontSize: u(72), fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1 }}>{atual.paciente}</div>}
                     <div style={{ fontSize: u(34), color: "var(--cor-suave)" }}>{atual.tipo}</div>
                   </div>
                 </div>
@@ -103,7 +91,7 @@ export default function PainelChamada() {
             )}
           </section>
 
-          <div style={{ display: "flex", alignItems: "center", gap: u(24) }}>
+          {cfg.mostrarProximas && <div style={{ display: "flex", alignItems: "center", gap: u(24) }}>
             <div style={{ width: u(180), fontSize: u(20), fontWeight: 700, color: "var(--cor-suave)", letterSpacing: ".08em", textTransform: "uppercase", lineHeight: 1.3 }}>Próximas senhas</div>
             {fila.slice(0, 3).map((s) => {
               const urg = s.sigla === "UR";
@@ -115,10 +103,10 @@ export default function PainelChamada() {
               );
             })}
             {fila.length === 0 && <div style={{ fontSize: u(24), color: "var(--cor-suave)" }}>Nenhuma senha na fila.</div>}
-          </div>
+          </div>}
         </div>
 
-        <aside style={{ width: u(560), flexShrink: 0, background: "#fff", border: "1px solid var(--cor-borda)", borderRadius: u(32), boxShadow: "var(--sombra)", padding: u(40), display: "flex", flexDirection: "column", gap: u(12) }}>
+        {cfg.mostrarUltimas && <aside style={{ width: u(560), flexShrink: 0, background: "#fff", border: "1px solid var(--cor-borda)", borderRadius: u(32), boxShadow: "var(--sombra)", padding: u(40), display: "flex", flexDirection: "column", gap: u(12) }}>
           <div style={{ fontSize: u(20), fontWeight: 700, color: "var(--cor-suave)", letterSpacing: ".08em", textTransform: "uppercase", paddingBottom: u(8) }}>Últimas chamadas</div>
           {chamadas.slice(1, 6).map((s) => (
             <div key={s.codigo + s.chamada} style={{ display: "flex", alignItems: "center", gap: u(24), padding: `${u(22)} 0`, borderTop: "1px solid var(--cor-divisoria)" }}>
@@ -127,7 +115,7 @@ export default function PainelChamada() {
               <div className="sd-num" style={{ fontSize: u(22), color: "var(--cor-sutil)" }}>{s.chamada}</div>
             </div>
           ))}
-        </aside>
+        </aside>}
       </div>
     </main>
   );
