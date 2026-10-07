@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button, Switch } from "antd";
 import type { ButtonProps } from "antd";
 import type { CSSProperties, ReactNode } from "react";
@@ -47,14 +48,16 @@ interface BotaoProps extends Omit<ButtonProps, "type" | "size" | "icon"> {
 }
 
 /** Botão sólido do design: primário #0065C4 sem gradiente; P 32, M 40, G 48 px. */
-export function Botao({ tipo = "primario", tam = "M", icone, iconeFim, children, className, href, ...resto }: BotaoProps) {
+export function Botao({ tipo = "primario", tam = "M", icone, iconeFim, children, className, href, onClick, ...resto }: BotaoProps) {
+  const router = useRouter();
   const tipoAntd = tipo === "primario" ? "primary" : tipo === "fantasma" ? "text" : "default";
   const tamIc = tam === "G" ? 18 : 16;
-  const btn = (
+  return (
     <Button
       type={tipoAntd}
       size={tam === "P" ? "small" : tam === "G" ? "large" : "middle"}
       className={`sd-botao sd-botao-${tipo} ${className ?? ""}`}
+      onClick={href ? () => router.push(href) : onClick}
       {...resto}
     >
       {icone && <Icone nome={icone} tam={tamIc} />}
@@ -62,7 +65,6 @@ export function Botao({ tipo = "primario", tam = "M", icone, iconeFim, children,
       {iconeFim && <Icone nome={iconeFim} tam={tamIc} esp={2.2} />}
     </Button>
   );
-  return href ? <Link href={href} style={{ display: "inline-flex" }}>{btn}</Link> : btn;
 }
 
 export function LinkSeta({ children, href, onClick }: { children: ReactNode; href?: string; onClick?: () => void }) {
