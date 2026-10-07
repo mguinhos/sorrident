@@ -11,6 +11,7 @@ import { Avatar, Botao, Cartao, Etiqueta, Icone, LinkSeta } from "@/components/u
 import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import { hora } from "@/lib/formato";
+import { chamarProxima } from "@/lib/senhas";
 import type { Appointment, Conversation, Dentist } from "@/lib/types";
 
 dayjs.locale("pt-br");
@@ -73,7 +74,13 @@ export default function PainelMedico() {
             <Botao
               icone="megafone"
               disabled={!proximo}
-              onClick={() => proximo && message.success(`${proximo.patient_name} foi chamado(a) no painel da sala de espera.`)}
+              onClick={() => {
+                if (!proximo) return;
+                const partes = proximo.patient_name.split(" ");
+                const curto = partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1][0]}.` : partes[0];
+                const s = chamarProxima("Consultório 1", curto);
+                message.success(s ? `${curto} chamado(a) no painel com a senha ${s.codigo}.` : `${curto} foi chamado(a). Não há senhas na fila do quiosque.`);
+              }}
             >
               Chamar próximo paciente
             </Botao>
