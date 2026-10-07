@@ -40,6 +40,7 @@ export const tema: ThemeConfig = {
       dangerShadow: "none",
       paddingInline: 16,
       paddingInlineLG: 18,
+      paddingInlineSM: 12,
       contentFontSizeLG: 15,
     },
     Input: { paddingInline: 14, activeShadow: "0 0 0 4px rgba(0, 101, 196, 0.18)" },
