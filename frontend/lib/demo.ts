@@ -157,3 +157,39 @@ export const LANCAMENTOS = [
   { paciente: "Beatriz Souza", servico: "Instalação", data: "06/10", valor: 1280, status: "pago" },
   { paciente: "Lucas Ferreira", servico: "Urgência", data: "06/10", valor: 260, status: "atrasado" },
 ];
+
+/* ---------------------------------------------------------------- orçamentos */
+export interface ItemOrcamento {
+  id: string;
+  procedimento: string;
+  dente: string;
+  qtd: number;
+  unitario: number;
+}
+
+export const ORCAMENTO = {
+  numero: "2026-0147",
+  paciente: { nome: "Diego Martins", detalhe: "34 anos · CPF 123.456.789-00 · (82) 98811-2233" },
+  responsavel: "Dra. Helena Martins",
+  convenio: "Particular",
+  itens: [
+    { id: "i1", procedimento: "Instalação de aparelho fixo (superior e inferior)", dente: "-", qtd: 1, unitario: 1800 },
+    { id: "i2", procedimento: "Manutenções mensais (12 meses)", dente: "-", qtd: 12, unitario: 150 },
+    { id: "i3", procedimento: "Documentação ortodôntica", dente: "-", qtd: 1, unitario: 260 },
+    { id: "i4", procedimento: "Radiografia panorâmica", dente: "-", qtd: 1, unitario: 90 },
+    { id: "i5", procedimento: "Restauração em resina", dente: "26", qtd: 1, unitario: 280 },
+    { id: "i6", procedimento: "Profilaxia e orientação de higiene", dente: "-", qtd: 2, unitario: 120 },
+  ] as ItemOrcamento[],
+  desconto: 0.1,
+  entrada: 800,
+  parcelas: 12,
+  pagamento: "Cartão recorrente · boleto mensal",
+  validade: "30 dias · até 07/11/2026",
+  observacoes: "Valor inclui documentação, contenção e 2 retornos de urgência. Manutenções podem ser remarcadas uma vez por mês sem custo.",
+  historico: [
+    { titulo: "Enviado ao paciente", detalhe: "07/10/2026 · 08:12 · WhatsApp", cor: "var(--cor-primaria)" },
+    { titulo: "Orçamento criado", detalhe: "06/10/2026 · 17:40 · Dra. Helena Martins", cor: "var(--cor-acento)" },
+    { titulo: "Avaliação inicial", detalhe: "06/10/2026 · 16:30 · Consulta de avaliação", cor: "var(--cor-cinza-300)" },
+  ],
+  aberturas: { vezes: 2, ultima: "07/10 às 09:31" },
+};

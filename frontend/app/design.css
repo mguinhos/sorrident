@@ -733,3 +733,10 @@
   color: var(--cor-primaria-escura);
   font-weight: 700;
 }
+.sd-tabela td.sd-num,
+.sd-tabela th {
+  white-space: nowrap;
+}
+.sd-tabela td.sd-num + td.sd-num {
+  padding-left: 16px;
+}
