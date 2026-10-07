@@ -150,3 +150,46 @@ export function lerConfigQuiosque(): ConfigQuiosque {
 export function gravarConfigQuiosque(c: ConfigQuiosque) {
   window.localStorage.setItem(CHAVE_CONFIG, JSON.stringify(c));
 }
+
+/* ---------------------------------------------------------------- configuração do painel de chamada */
+const CHAVE_PAINEL = "sorridente.painel";
+
+export interface ConfigPainel {
+  nomeLocal: string;
+  formato: "tv" | "retrato";
+  escopo: "clinica" | "locais";
+  mostrarNome: boolean;
+  mostrarUltimas: boolean;
+  mostrarProximas: boolean;
+  mostrarRelogio: boolean;
+  aviso: "campainha" | "gongo" | "nenhum";
+  volume: number;
+  voz: boolean;
+}
+
+export const PAINEL_PADRAO: ConfigPainel = {
+  nomeLocal: "Sala de espera · térreo",
+  formato: "tv",
+  escopo: "clinica",
+  mostrarNome: true,
+  mostrarUltimas: true,
+  mostrarProximas: true,
+  mostrarRelogio: true,
+  aviso: "campainha",
+  volume: 70,
+  voz: true,
+};
+
+export function lerConfigPainel(): ConfigPainel {
+  if (typeof window === "undefined") return PAINEL_PADRAO;
+  try {
+    const bruto = window.localStorage.getItem(CHAVE_PAINEL);
+    return bruto ? { ...PAINEL_PADRAO, ...(JSON.parse(bruto) as Partial<ConfigPainel>) } : PAINEL_PADRAO;
+  } catch {
+    return PAINEL_PADRAO;
+  }
+}
+
+export function gravarConfigPainel(c: ConfigPainel) {
+  window.localStorage.setItem(CHAVE_PAINEL, JSON.stringify(c));
+}
