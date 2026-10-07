@@ -54,3 +54,58 @@ export const EXAMES: Exame[] = [
   { id: "e5", paciente: "Ana Clara Ribeiro", exame: "Radiografia periapical", data: "19/09/2026", status: "pronto", profissional: "Dra. Carla Lima", laudo: "Lesão cariosa incipiente na face distal do 36." },
   { id: "e6", paciente: "Pedro Henrique Santos", exame: "Telerradiografia", data: "18/09/2026", status: "pronto", profissional: "Dra. Helena Martins", laudo: "Padrão esquelético classe II leve." },
 ];
+
+/* ---------------------------------------------------------------- pagamentos */
+export interface Parcela {
+  n: string;
+  vencimento: string;
+  valor: number;
+  status: "pago" | "pendente" | "atrasado";
+}
+
+export const PLANO_PAGAMENTO = {
+  paciente: "Mariana Costa",
+  total: 4023,
+  parcelas: [
+    { n: "1/6", vencimento: "22/09/2026", valor: 800, status: "pago" },
+    { n: "2/6", vencimento: "22/10/2026", valor: 268.58, status: "pago" },
+    { n: "3/6", vencimento: "22/11/2026", valor: 268.58, status: "pendente" },
+    { n: "4/6", vencimento: "22/12/2026", valor: 268.58, status: "pendente" },
+    { n: "5/6", vencimento: "22/01/2027", valor: 268.58, status: "pendente" },
+    { n: "6/6", vencimento: "22/02/2027", valor: 268.58, status: "pendente" },
+  ] as Parcela[],
+  pago: 1800,
+  recebimentos: [
+    { desc: "22/10 · Pix", valor: 268.58 },
+    { desc: "22/09 · Cartão", valor: 800 },
+    { desc: "22/09 · Entrada", valor: 731.42 },
+  ],
+};
+
+export const FORMAS_PAGAMENTO = ["Pix", "Cartão (3x)", "Boleto", "Dinheiro", "Convênio"];
+
+/* ---------------------------------------------------------------- convênios */
+export interface Convenio {
+  nome: string;
+  cobertura: number;
+  procedimentos: string;
+  repasse: string;
+  status: "ativo" | "em análise";
+  coberturas: [string, "coberto" | "parcial" | "não coberto"][];
+  resumo: { atendimentos: number; aReceber: number; glosas: number };
+}
+
+export const CONVENIOS: Convenio[] = [
+  { nome: "Amil Dental", cobertura: 80, procedimentos: "12 de 18", repasse: "30 dias", status: "ativo",
+    coberturas: [["Avaliação ortodôntica", "coberto"], ["Manutenção", "coberto"], ["Instalação de aparelho", "parcial"], ["Alinhadores invisíveis", "não coberto"]],
+    resumo: { atendimentos: 37, aReceber: 9740, glosas: 320 } },
+  { nome: "Bradesco Dental", cobertura: 70, procedimentos: "10 de 18", repasse: "45 dias", status: "ativo",
+    coberturas: [["Avaliação ortodôntica", "coberto"], ["Manutenção", "coberto"], ["Instalação de aparelho", "não coberto"], ["Alinhadores invisíveis", "não coberto"]],
+    resumo: { atendimentos: 21, aReceber: 5120, glosas: 0 } },
+  { nome: "Odontoprev", cobertura: 60, procedimentos: "8 de 18", repasse: "30 dias", status: "ativo",
+    coberturas: [["Avaliação ortodôntica", "coberto"], ["Manutenção", "parcial"], ["Instalação de aparelho", "não coberto"], ["Alinhadores invisíveis", "não coberto"]],
+    resumo: { atendimentos: 14, aReceber: 2980, glosas: 150 } },
+  { nome: "SulAmérica Odonto", cobertura: 75, procedimentos: "11 de 18", repasse: "30 dias", status: "em análise",
+    coberturas: [["Avaliação ortodôntica", "coberto"], ["Manutenção", "coberto"], ["Instalação de aparelho", "parcial"], ["Alinhadores invisíveis", "não coberto"]],
+    resumo: { atendimentos: 0, aReceber: 0, glosas: 0 } },
+];
