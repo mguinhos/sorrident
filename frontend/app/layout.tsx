@@ -7,6 +7,7 @@ import { AuthProvider } from "./providers";
 import { tema } from "@/lib/tema";
 import "./tokens.css";
 import "./globals.css";
+import "./design.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--fonte-inter", display: "swap" });
 
