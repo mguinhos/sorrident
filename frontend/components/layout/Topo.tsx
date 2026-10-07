@@ -6,10 +6,11 @@ interface Props {
   sub?: ReactNode;
   migalha?: string[];
   acoes?: ReactNode;
+  aoLado?: ReactNode;
 }
 
 /** Topo padronizado das páginas internas: migalha, título, subtítulo e ações à direita. */
-export default function Topo({ titulo, sub, migalha, acoes }: Props) {
+export default function Topo({ titulo, sub, migalha, acoes, aoLado }: Props) {
   return (
     <header className="sd-topo">
       <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "12px 0" }}>
@@ -23,7 +24,10 @@ export default function Topo({ titulo, sub, migalha, acoes }: Props) {
             ))}
           </div>
         )}
-        <h1 className="sd-topo-titulo">{titulo}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <h1 className="sd-topo-titulo">{titulo}</h1>
+          {aoLado}
+        </div>
         {sub && <div className="sd-topo-sub">{sub}</div>}
       </div>
       {acoes && <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{acoes}</div>}
