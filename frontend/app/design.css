@@ -751,3 +751,70 @@
 .sd-form .ant-form-item-label > label {
   font-size: 13px;
 }
+
+/* ---------- chat do paciente ---------- */
+.sd-chat {
+  display: flex;
+  flex-direction: column;
+  background: var(--cor-fundo);
+  min-height: 0;
+  overflow: hidden;
+}
+.sd-chat-rolagem {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.sd-bolha {
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sd-bolha-bot {
+  background: #fff;
+  border: 1px solid var(--cor-borda);
+  border-radius: 16px 16px 16px 4px;
+  color: var(--cor-tinta);
+}
+.sd-bolha-eu {
+  max-width: 280px;
+  background: var(--cor-primaria);
+  color: #fff;
+  border-radius: 16px 16px 4px 16px;
+}
+.sd-cliente {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  background: var(--cor-fundo);
+}
+.sd-cliente-chat {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--cor-borda);
+  border-right: 1px solid var(--cor-borda);
+}
+.sd-cliente-chat > .sd-chat {
+  flex: 1;
+}
+.sd-cliente-lado {
+  width: 360px;
+  padding: 24px 0;
+}
+@media (max-width: 1000px) {
+  .sd-cliente-lado {
+    display: none;
+  }
+  .sd-cliente-chat {
+    border: 0;
+  }
+}
