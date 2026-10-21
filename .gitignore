@@ -11,3 +11,4 @@ frontend/.env.local
 .openclaude/
 *.log
 .DS_Store
+frontend/tsconfig.tsbuildinfo
