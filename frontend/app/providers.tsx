@@ -63,7 +63,7 @@ export function useRequireRole(...roles: Role[]): User | null {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace("/");
+      router.replace("/login");
       return;
     }
     if (roles.length && !roles.includes(user.role)) {

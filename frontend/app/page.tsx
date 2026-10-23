@@ -2,87 +2,154 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Alert, Button, Form, Input, Segmented } from "antd";
-import { HOME_BY_ROLE, useAuth } from "./providers";
-import type { Role } from "@/lib/types";
+import { BellOutlined, CalendarOutlined, ScheduleOutlined } from "@ant-design/icons";
+import { Button } from "antd";
+import { HOME_BY_ROLE, useAuth } from "@/app/providers";
+import Transicao from "@/components/layout/Transicao";
 
-const PERFIS: { label: string; value: Role; hint: string; demo: [string, string] }[] = [
-  { label: "Cliente", value: "cliente", hint: "Converse com o SorriDente e agende sua consulta.", demo: ["cliente", "cliente123"] },
-  { label: "Gestor", value: "gestor", hint: "Painel da clínica: agenda, conversas, financeiro e configurações.", demo: ["gestor", "gestor123"] },
-  { label: "Médico", value: "medico", hint: "Sua agenda do dia e o prontuário dos pacientes.", demo: ["medico", "medico123"] },
+const PILARES = [
+  {
+    titulo: "Agendamento a qualquer hora",
+    texto: "Marque, remarque ou cancele pelo WhatsApp e pelo portal — inclusive fora do horário comercial.",
+    icone: ScheduleOutlined,
+  },
+  {
+    titulo: "Horários compatíveis com os dentistas",
+    texto: "O assistente consulta a agenda real dos dentistas e só oferece horários livres.",
+    icone: CalendarOutlined,
+  },
+  {
+    titulo: "Lembrete antes da consulta",
+    texto: "Um aviso 24 horas antes, com confirmação em um toque, para reduzir faltas e espera na recepção.",
+    icone: BellOutlined,
+  },
 ];
 
-export default function LoginPage() {
-  const [perfil, setPerfil] = useState<Role>("cliente");
-  const [erro, setErro] = useState("");
-  const [carregando, setCarregando] = useState(false);
-  const [form] = Form.useForm();
-  const { user, login } = useAuth();
+export default function ApresentacaoPage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
+  const [abrindo, setAbrindo] = useState(false);
 
+  const destino = user ? HOME_BY_ROLE[user.role] : "/login";
+
+  // quem já tem sessão aberta vai direto para o seu painel
   useEffect(() => {
-    if (user) router.replace(HOME_BY_ROLE[user.role]);
-  }, [user, router]);
+    if (!loading && user) router.replace(HOME_BY_ROLE[user.role]);
+  }, [loading, user, router]);
 
-  const perfilAtual = PERFIS.find((p) => p.value === perfil)!;
-
+  // deixa o login pronto antes do clique
   useEffect(() => {
-    form.setFieldsValue({ username: perfilAtual.demo[0], password: perfilAtual.demo[1] });
-  }, [perfil, form, perfilAtual]);
+    router.prefetch("/login");
+  }, [router]);
 
-  async function onFinish(values: { username: string; password: string }) {
-    setCarregando(true);
-    setErro("");
-    try {
-      const logged = await login(values.username, values.password);
-      router.replace(HOME_BY_ROLE[logged.role]);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Falha ao entrar.");
-    } finally {
-      setCarregando(false);
+  // segura a tela de transição por um instante antes de trocar de rota
+  useEffect(() => {
+    if (!abrindo) return;
+    const id = window.setTimeout(() => router.push(destino), 750);
+    return () => window.clearTimeout(id);
+  }, [abrindo, destino, router]);
+
+  function abrirAcesso() {
+    if (abrindo) return;
+    const semAnimacao =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (user || semAnimacao) {
+      router.push(destino);
+      return;
     }
+    setAbrindo(true);
   }
 
-  return (
-    <main className="sd-login">
-      <div className="sd-login-padrao" aria-hidden />
-      <div className="sd-login-brilho" aria-hidden style={{ left: -140, top: -120, width: 520, height: 520, background: "radial-gradient(circle,rgba(255,255,255,.30),transparent 62%)" }} />
-      <div className="sd-login-brilho" aria-hidden style={{ right: -160, bottom: -180, width: 620, height: 620, background: "radial-gradient(circle,rgba(255,255,255,.20),transparent 62%)" }} />
-      <div className="sd-login-brilho" aria-hidden style={{ inset: 0, borderRadius: 0, background: "radial-gradient(760px 400px at 50% 50%,rgba(255,255,255,.10),transparent 70%)" }} />
+  if (abrindo) return <Transicao mensagem="Abrindo o acesso…" />;
 
-      <section className="sd-login-cartao" aria-labelledby="titulo-login">
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Image src="/logo.svg" alt="" width={54} height={54} priority />
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <h1 id="titulo-login" style={{ margin: 0, fontSize: 23, fontWeight: 800, letterSpacing: "-0.3px" }}>SorriDente</h1>
-            <span style={{ fontSize: 12.5, color: "var(--cor-suave)" }}>Clínica ortodôntica · acesso ao sistema</span>
+  return (
+    <main className="sd-apresentacao">
+      <header className="sd-apresentacao-topo">
+        <div className="sd-apresentacao-marca">
+          <Image src="/logo.svg" alt="" width={40} height={40} priority />
+          <strong>SorriDente</strong>
+        </div>
+      </header>
+
+      <section className="sd-apresentacao-hero">
+        <div className="sd-apresentacao-texto">
+          <h1>
+            Seu sorriso cuidado <em>sem espera</em> na recepção
+          </h1>
+          <p>
+            A SorriDente une ortodontia e atendimento inteligente: um assistente virtual
+            conversa com você pelo WhatsApp e pelo portal, encontra o melhor horário na
+            agenda dos dentistas e cuida dos lembretes da sua consulta.
+          </p>
+
+          <div className="sd-apresentacao-acoes">
+            <Button
+              type="primary"
+              size="large"
+              className="sd-apresentacao-cta"
+              onClick={abrirAcesso}
+              loading={abrindo}
+            >
+              {user ? "Ir para o painel" : "Experimente o App"}
+            </Button>
+            <Link href="/como-funciona" className="sd-apresentacao-secundario">
+              Como funciona
+            </Link>
           </div>
         </div>
 
-        <Segmented
-          block
-          value={perfil}
-          onChange={(v) => setPerfil(v as Role)}
-          options={PERFIS.map((p) => ({ label: p.label, value: p.value }))}
-          aria-label="Perfil de acesso"
-        />
-        <p style={{ margin: 0, fontSize: 13, color: "var(--cor-suave)", lineHeight: 1.5 }}>{perfilAtual.hint}</p>
-
-        {erro && <Alert type="error" message={erro} showIcon />}
-
-        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Form.Item name="username" label={<b>Usuário</b>} style={{ margin: 0 }} rules={[{ required: true, message: "Informe o usuário" }]}>
-            <Input placeholder="usuário" style={{ height: 46 }} autoComplete="username" />
-          </Form.Item>
-          <Form.Item name="password" label={<b>Senha</b>} style={{ margin: 0 }} rules={[{ required: true, message: "Informe a senha" }]}>
-            <Input.Password placeholder="senha" style={{ height: 46 }} autoComplete="current-password" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={carregando} style={{ fontWeight: 700 }}>
-            Entrar como {perfilAtual.label.toLowerCase()}
-          </Button>
-        </Form>
+        <div className="sd-apresentacao-cartao" aria-hidden>
+          <div className="sd-apresentacao-cartao-topo">
+            <Image src="/logo.svg" alt="" width={56} height={56} priority />
+            <div>
+              <strong>SorriDente</strong>
+              <span>Atendimento e gestão da clínica</span>
+            </div>
+          </div>
+          <ul>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Agende sua avaliação em minutos
+            </li>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Confirme a consulta por mensagem
+            </li>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Tire as suas dúvidas antes de vir
+            </li>
+          </ul>
+          <div className="sd-apresentacao-cartao-rodape">
+            <span>Seg a sex · 8h às 18h</span>
+            <span>Sábado · 8h às 12h</span>
+          </div>
+        </div>
       </section>
+
+      <section className="sd-apresentacao-pilares">
+        {PILARES.map(({ titulo, texto, icone: Icone }) => (
+          <article key={titulo} className="sd-apresentacao-pilar">
+            <span className="sd-apresentacao-pilar-icone" aria-hidden>
+              <Icone />
+            </span>
+            <h2>{titulo}</h2>
+            <p>{texto}</p>
+          </article>
+        ))}
+      </section>
+
+      <footer className="sd-apresentacao-rodape">
+        <div>
+          <strong>SorriDente</strong> · para sua clínica ortodôntica
+        </div>
+        <div className="sd-apresentacao-lgpd">
+          Seus dados são tratados conforme a LGPD.
+        </div>
+      </footer>
     </main>
   );
 }

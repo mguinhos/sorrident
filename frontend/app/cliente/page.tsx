@@ -39,7 +39,7 @@ export default function ClientePage() {
       title="Sair"
       onClick={() => {
         logout();
-        router.replace("/");
+        router.replace("/login");
       }}
     >
       <Icone nome="esq" tam={16} />

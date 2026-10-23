@@ -4,6 +4,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider } from "antd";
 import ptBR from "antd/locale/pt_BR";
 import { AuthProvider } from "./providers";
+import ProgressoRota from "@/components/layout/ProgressoRota";
 import { tema } from "@/lib/tema";
 import "./tokens.css";
 import "./globals.css";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body>
+        <ProgressoRota />
         <AntdRegistry>
           <ConfigProvider locale={ptBR} theme={tema}>
             <AuthProvider>{children}</AuthProvider>

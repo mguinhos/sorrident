@@ -98,7 +98,7 @@ export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gest
           title="Sair"
           onClick={() => {
             logout();
-            router.replace("/");
+            router.replace("/login");
           }}
         >
           <Icone nome="esq" tam={16} />
