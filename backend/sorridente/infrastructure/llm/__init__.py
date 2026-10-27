@@ -1,3 +1,3 @@
-from .openai_provider import OpenAILLMProvider, DEFAULT_MODEL
+from .groq_provider import GroqLLMProvider, DEFAULT_MODEL
 
-__all__ = ["OpenAILLMProvider", "DEFAULT_MODEL"]
+__all__ = ["GroqLLMProvider", "DEFAULT_MODEL"]

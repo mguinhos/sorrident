@@ -100,7 +100,7 @@ class ILLMProvider(ABC):
         temperature: float = 0.3,
         max_tokens: int = 1024,
     ) -> dict[str, Any]:
-        """Retorna a mensagem do assistente no formato OpenAI."""
+        """Retorna a mensagem do assistente no formato OpenAI/Groq."""
 
     @abstractmethod
     def stream(

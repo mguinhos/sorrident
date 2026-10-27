@@ -16,10 +16,9 @@ from sorridente.agent.task import SubTask, Task, TaskKind, TaskStatus, TaskTrack
 
 
 def test_capacidades_do_modelo() -> None:
-    model = ModelCatalog().get("gpt-4o-mini")
+    model = ModelCatalog().get("qwen/qwen3.8-27b")
     assert model.capable_of(Supports.TOOLS)
-    assert model.capable_of(Supports.STREAMING)
-    assert model.capable_of(Supports.JSON_MODE)
+    assert model.capable_of(Supports.REASONING)
     assert not model.capable_of(Supports.IMAGE)
     assert "tools" in model.supports.describe()
 

@@ -16,7 +16,7 @@ O que este script faz em cada fonte:
   diagrama e não dizem nada numa visão de arquitetura;
 - colapsa as classes que só aparecem como contexto (ficam só com o nome),
   mantendo os detalhes apenas no pacote que o diagrama documenta;
-- marca o pacote da OpenAI como `<<Cloud>>` e o do TinyDB como `<<Database>>`;
+- marca o pacote do Groq como `<<Cloud>>` e o do TinyDB como `<<Database>>`;
 - testa as duas orientações e fica com a de melhor proporção.
 """
 from __future__ import annotations
@@ -59,8 +59,8 @@ FOCO: dict[str, tuple[str, ...]] = {
 
 #: pacotes que ganham forma própria no desenho
 ESTEREOTIPOS: tuple[tuple[str, str], ...] = (
-    ("OpenAI", "Cloud"),
-    ("openai", "Cloud"),
+    ("Groq", "Cloud"),
+    ("groq", "Cloud"),
     ("TinyDB", "Database"),
     ("tinydb", "Database"),
 )
@@ -99,7 +99,7 @@ def classes_de_contexto(texto: str, focos: tuple[str, ...]) -> list[str]:
 
 
 def aplicar_estereotipos(linha: str) -> str:
-    """Dá forma de nuvem à OpenAI e de cilindro ao TinyDB."""
+    """Dá forma de nuvem ao Groq e de cilindro ao TinyDB."""
     pacote = PACOTE.match(linha)
     if not pacote or pacote.group(3):
         return linha

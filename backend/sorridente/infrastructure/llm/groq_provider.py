@@ -1,19 +1,19 @@
-"""Provedor de LLM baseado na OpenAI (AsyncOpenAI)."""
+"""Provedor de LLM baseado no Groq Cloud (AsyncGroq)."""
 from __future__ import annotations
 
 import os
 from typing import Any, AsyncIterator, Optional, Sequence, cast
 
-from openai import AsyncOpenAI
+from groq import AsyncGroq
 
 from ...core.exceptions import LLMError
 from ...core.interfaces import ILLMProvider
 
-DEFAULT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+DEFAULT_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
 
 
-class OpenAILLMProvider(ILLMProvider):
-    """Implementação de ILLMProvider usando `openai.AsyncOpenAI`."""
+class GroqLLMProvider(ILLMProvider):
+    """Implementação de ILLMProvider usando `groq.AsyncGroq`."""
 
     def __init__(
         self,
@@ -21,10 +21,10 @@ class OpenAILLMProvider(ILLMProvider):
         model: str = DEFAULT_MODEL,
         timeout: float = 60.0,
     ) -> None:
-        self._api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        self._api_key = api_key or os.environ.get("GROQ_CLOUD_API_KEY", "")
         self._model = model
         self._timeout = timeout
-        self._client: Optional[AsyncOpenAI] = None
+        self._client: Optional[AsyncGroq] = None
 
     @property
     def model(self) -> str:
@@ -43,14 +43,14 @@ class OpenAILLMProvider(ILLMProvider):
             self._model = model
 
     @property
-    def client(self) -> AsyncOpenAI:
+    def client(self) -> AsyncGroq:
         if not self._api_key:
             raise LLMError(
-                "OPENAI_API_KEY não configurada. Defina a variável de ambiente "
+                "GROQ_CLOUD_API_KEY não configurada. Defina a variável de ambiente "
                 "ou salve a credencial pela interface web."
             )
         if self._client is None:
-            self._client = AsyncOpenAI(api_key=self._api_key, timeout=self._timeout)
+            self._client = AsyncGroq(api_key=self._api_key, timeout=self._timeout)
         return self._client
 
     async def complete(
@@ -72,7 +72,7 @@ class OpenAILLMProvider(ILLMProvider):
         try:
             response = await self.client.chat.completions.create(**kwargs)
         except Exception as exc:  # noqa: BLE001 - erro do SDK vira erro de domínio
-            raise LLMError(f"Falha ao consultar a OpenAI: {exc}") from exc
+            raise LLMError(f"Falha ao consultar o Groq Cloud: {exc}") from exc
 
         message = response.choices[0].message
         return {
@@ -112,7 +112,7 @@ class OpenAILLMProvider(ILLMProvider):
         except LLMError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise LLMError(f"Falha no streaming da OpenAI: {exc}") from exc
+            raise LLMError(f"Falha no streaming do Groq Cloud: {exc}") from exc
 
     @staticmethod
     def _clean(text: str) -> str:

@@ -70,19 +70,19 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-O agente precisa de uma chave da OpenAI para responder. Copie o
+O agente precisa de uma chave do Groq Cloud para responder. Copie o
 `.env.example` para `.env` e preencha a chave (o arquivo já está no
 `.gitignore`):
 
 ```bash
 cp .env.example .env
-# edite o .env e preencha OPENAI_API_KEY
+# edite o .env e preencha GROQ_CLOUD_API_KEY
 ```
 
 Ou, se preferir variável de ambiente:
 
 ```bash
-export OPENAI_API_KEY="sua-chave"
+export GROQ_CLOUD_API_KEY="sua-chave"
 ```
 
 Suba o backend e, em outro terminal, a interface:
@@ -225,7 +225,7 @@ outro encontra o sentido parecido.
 
 Aqui estão as versões concretas dos contratos do núcleo: o banco de dados
 (o pacote em forma de cilindro), as credenciais, a fila de eventos, o
-provedor de IA da OpenAI (a nuvem, porque é um serviço de fora), a carga
+provedor de IA da Groq (a nuvem, porque é um serviço de fora), a carga
 inicial de dados e os trabalhos que rodam de tempos em tempos, como os
 lembretes de consulta.
 

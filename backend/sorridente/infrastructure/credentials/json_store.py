@@ -10,7 +10,7 @@ from ...core.interfaces import ICredentialStore
 
 
 class JsonCredentialStore(ICredentialStore):
-    """Persiste credenciais (token do bot Telegram, chave OpenAI, etc.) em JSON."""
+    """Persiste credenciais (token do bot Telegram, chave Groq, etc.) em JSON."""
 
     def __init__(self, path: str | Path = "credentials.json") -> None:
         self._path = Path(path)

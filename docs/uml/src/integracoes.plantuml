@@ -58,9 +58,9 @@ package "integrations" {
   + default_model() -> str
   + test() -> dict[str, Any]
   }
-  class OpenAIInferenceIntegration {
+  class GroqInferenceIntegration {
   + KEY: str
-  - __init__(provider: Optional[OpenAILLMProvider], default_model: str) -> None
+  - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
   + key() -> str
   + name() -> str
   + description() -> str
@@ -211,7 +211,7 @@ package "export" {
 
 package "contexto" <<Frame>> {
   class CredentialsNotConfiguredError
-  class OpenAILLMProvider
+  class GroqLLMProvider
   class ICredentialStore
   class ILLMProvider
 }
@@ -221,7 +221,7 @@ BaseChannelIntegration <|-- WhatsAppIntegration
 BaseExporter <|-- HtmlExporter
 BaseExporter <|-- MarkdownExporter
 BaseExporter <|-- TextExporter
-BaseInferenceIntegration <|-- OpenAIInferenceIntegration
+BaseInferenceIntegration <|-- GroqInferenceIntegration
 BaseIntegration ..> CredentialField
 BaseIntegration ..> IntegrationKind
 BaseIntegration ..> IntegrationStatus
@@ -229,8 +229,8 @@ BaseIntegration <|-- BaseChannelIntegration
 BaseIntegration <|-- BaseInferenceIntegration
 BaseIntegrationRegistry <|-- MessagingRegistry
 ConversationExportService o-- IConversationExporter
-OpenAIInferenceIntegration ..> CredentialsNotConfiguredError
-OpenAIInferenceIntegration o-- OpenAILLMProvider
+GroqInferenceIntegration ..> CredentialsNotConfiguredError
+GroqInferenceIntegration o-- GroqLLMProvider
 IConversationExporter <|.. BaseExporter
 IExportService <|.. ConversationExportService
 IIntegration <|.. BaseIntegration

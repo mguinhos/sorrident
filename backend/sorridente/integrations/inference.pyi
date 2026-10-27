@@ -2,7 +2,7 @@
 import abc
 from ..core.exceptions import LLMError as LLMError
 from ..core.interfaces import ILLMProvider as ILLMProvider
-from ..infrastructure.llm import OpenAILLMProvider as OpenAILLMProvider
+from ..infrastructure.llm import GroqLLMProvider as GroqLLMProvider
 from .base import BaseIntegration as BaseIntegration, CredentialField as CredentialField, IntegrationKind as IntegrationKind, IntegrationStatus as IntegrationStatus
 from _typeshed import Incomplete
 from abc import ABC, abstractmethod
@@ -20,12 +20,12 @@ class BaseInferenceIntegration(BaseIntegration, ABC, metaclass=abc.ABCMeta):
     _last_error: Incomplete
     async def test(self) -> dict[str, Any]: ...
 
-class OpenAIInferenceIntegration(BaseInferenceIntegration):
+class GroqInferenceIntegration(BaseInferenceIntegration):
     KEY: str
     _provider: Incomplete
     _default_model: Incomplete
     _enabled: bool
-    def __init__(self, provider: OpenAILLMProvider | None = None, default_model: str = 'gpt-4o-mini') -> None: ...
+    def __init__(self, provider: GroqLLMProvider | None = None, default_model: str = 'qwen/qwen3.8-27b') -> None: ...
     @property
     def key(self) -> str: ...
     @property

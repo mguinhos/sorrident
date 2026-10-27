@@ -17,7 +17,7 @@ package "canais" {
   [Web] as CW
 }
 
-package "OpenAI" <<Cloud>> {
+package "Groq Cloud" <<Cloud>> {
   [Modelo de linguagem] as LLM
 }
 

@@ -186,8 +186,8 @@ package "composition root" {
   class AppConfig {
   + database_path: Path
   + credentials_path: Path
-  + openai_api_key: str
-  + openai_model: str
+  + groq_api_key: str
+  + groq_model: str
   + host: str
   + port: int
   + cors_origins: tuple[str, ...]

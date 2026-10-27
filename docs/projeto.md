@@ -188,7 +188,7 @@ Referência: `rag/`.
 As versões concretas dos contratos do núcleo. O pacote do banco aparece
 como um cilindro e junta a base de dados com o repositório genérico.
 Também estão aqui o guardador de credenciais, a fila de eventos em
-memória, o provedor de IA da OpenAI (desenhado como uma nuvem, porque é um
+memória, o provedor de IA da Groq (desenhado como uma nuvem, porque é um
 serviço de fora), a carga inicial de dados e os trabalhos que rodam de
 tempos em tempos: os lembretes, o controle de inatividade e a atualização
 do índice.
