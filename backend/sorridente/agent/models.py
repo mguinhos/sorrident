@@ -32,7 +32,7 @@ class Model:
     """Descrição de um modelo servido por um provedor de inferência."""
 
     id: str
-    provider: str = "groq"
+    provider: str = "opencode_go"
     supports: Supports = Supports.TEXT | Supports.TOOLS | Supports.STREAMING
     context_window: int = 32_768
     max_output_tokens: int = 4_096
@@ -74,7 +74,7 @@ class IModelCatalog(ABC):
     def register(self, model: Model) -> "IModelCatalog": ...
 
     @abstractmethod
-    def get(self, model_id: str, provider: str = "groq") -> Model: ...
+    def get(self, model_id: str, provider: str = "opencode_go") -> Model: ...
 
 
 class ModelCatalog(IModelCatalog):
@@ -88,21 +88,21 @@ class ModelCatalog(IModelCatalog):
     def _defaults() -> list[Model]:
         return [
             Model(
-                id="qwen/qwen3.8-27b",
-                provider="groq",
+                id="kimi-k2.5",
+                provider="opencode_go",
                 supports=DEFAULT_SUPPORTS | Supports.REASONING,
-                context_window=131_072,
+                context_window=262_144,
                 max_output_tokens=8_192,
-                display_name="Qwen3.8 27B",
+                display_name="Kimi K2.5",
                 notes="Modelo padrão do agente SorriDente.",
             ),
             Model(
-                id="qwen/qwen3.6-27b",
-                provider="groq",
+                id="glm-5",
+                provider="opencode_go",
                 supports=DEFAULT_SUPPORTS | Supports.REASONING,
                 context_window=131_072,
                 max_output_tokens=8_192,
-                display_name="Qwen3.6 27B",
+                display_name="GLM-5",
             ),
         ]
 
@@ -110,7 +110,7 @@ class ModelCatalog(IModelCatalog):
         self._models[model.id] = model
         return self
 
-    def get(self, model_id: str, provider: str = "groq") -> Model:
+    def get(self, model_id: str, provider: str = "opencode_go") -> Model:
         """Devolve o modelo conhecido ou um perfil conservador para modelos novos."""
         known = self._models.get(model_id)
         if known is not None:

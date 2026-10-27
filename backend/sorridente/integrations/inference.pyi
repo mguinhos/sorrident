@@ -2,7 +2,7 @@
 import abc
 from ..core.exceptions import LLMError as LLMError
 from ..core.interfaces import ILLMProvider as ILLMProvider
-from ..infrastructure.llm import GroqLLMProvider as GroqLLMProvider
+from ..infrastructure.llm import OpenCodeGoLLMProvider as OpenCodeGoLLMProvider
 from .base import BaseIntegration as BaseIntegration, CredentialField as CredentialField, IntegrationKind as IntegrationKind, IntegrationStatus as IntegrationStatus
 from _typeshed import Incomplete
 from abc import ABC, abstractmethod
@@ -20,12 +20,12 @@ class BaseInferenceIntegration(BaseIntegration, ABC, metaclass=abc.ABCMeta):
     _last_error: Incomplete
     async def test(self) -> dict[str, Any]: ...
 
-class GroqInferenceIntegration(BaseInferenceIntegration):
+class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
     KEY: str
     _provider: Incomplete
     _default_model: Incomplete
     _enabled: bool
-    def __init__(self, provider: GroqLLMProvider | None = None, default_model: str = 'qwen/qwen3.8-27b') -> None: ...
+    def __init__(self, provider: OpenCodeGoLLMProvider | None = None, default_model: str = 'kimi-k2.5') -> None: ...
     @property
     def key(self) -> str: ...
     @property
