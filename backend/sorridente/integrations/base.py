@@ -1,6 +1,6 @@
 """Camada de integrações: contrato único para tudo que é externo ao sistema.
 
-Um provedor de inferência (Groq), um canal de mensageria (Telegram, WhatsApp)
+Um provedor de inferência (OpenAI), um canal de mensageria (Telegram, WhatsApp)
 ou qualquer serviço futuro (pagamentos, e-mail) são a mesma coisa aos olhos do
 sistema: uma `IIntegration` com credenciais declaradas, ciclo de vida e status.
 """

@@ -55,8 +55,8 @@ class AppConfig:
 
     database_path: Path = field(default_factory=lambda: Path(_env("SORRIDENTE_DB", str(BASE_DIR / "data" / "sorridente.json"))))
     credentials_path: Path = field(default_factory=lambda: Path(_env("SORRIDENTE_CREDENTIALS", str(BASE_DIR / "credentials.json"))))
-    groq_api_key: str = field(default_factory=lambda: _env("GROQ_CLOUD_API_KEY", ""))
-    groq_model: str = field(default_factory=lambda: _env("GROQ_MODEL", "qwen/qwen3.8-27b"))
+    openai_api_key: str = field(default_factory=lambda: _env("OPENAI_API_KEY", ""))
+    openai_model: str = field(default_factory=lambda: _env("OPENAI_MODEL", "gpt-4o-mini"))
     host: str = field(default_factory=lambda: _env("SORRIDENTE_HOST", "0.0.0.0"))
     port: int = field(default_factory=lambda: _env_int("SORRIDENTE_PORT", 8000))
     cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")

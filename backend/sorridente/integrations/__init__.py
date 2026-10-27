@@ -8,7 +8,7 @@ from .base import (
 )
 from .inference import (
     BaseInferenceIntegration,
-    GroqInferenceIntegration,
+    OpenAIInferenceIntegration,
     InferenceResolver,
     RoutingLLMProvider,
 )
@@ -27,7 +27,7 @@ __all__ = [
     "IntegrationKind",
     "IntegrationStatus",
     "BaseInferenceIntegration",
-    "GroqInferenceIntegration",
+    "OpenAIInferenceIntegration",
     "InferenceResolver",
     "RoutingLLMProvider",
     "BaseChannelIntegration",

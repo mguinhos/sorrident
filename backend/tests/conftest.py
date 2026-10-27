@@ -19,7 +19,7 @@ async def container(tmp_path: Path) -> AsyncIterator[ApplicationContainer]:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        groq_api_key="",
+        openai_api_key="",
         autostart_telegram=False,
     )
     app_container = ApplicationContainer(config)

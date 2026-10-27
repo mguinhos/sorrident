@@ -92,12 +92,12 @@ package "infrastructure" {
     + unsubscribe(queue: asyncio.Queue) -> None
     + subscriber_count() -> int
   }
-  class GroqLLMProvider {
+  class OpenAILLMProvider {
     - __init__(api_key: Optional[str], model: str, timeout: float) -> None
     + model() -> str
     + configured() -> bool
     + configure(api_key: str, model: Optional[str]) -> None
-    + client() -> AsyncGroq
+    + client() -> AsyncOpenAI
     + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
     + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
     - _clean(text: str) -> str
@@ -107,9 +107,9 @@ package "infrastructure" {
   IRepository <|.. TinyDBRepository
   ICredentialStore <|.. JsonCredentialStore
   IEventBus <|.. InMemoryEventBus
-  ILLMProvider <|.. GroqLLMProvider
+  ILLMProvider <|.. OpenAILLMProvider
   TinyDBRepository o-- "1" IDatabase
-  GroqLLMProvider ..> ILLMError : levanta
+  OpenAILLMProvider ..> ILLMError : levanta
 }
 
 package "core.exceptions" {
@@ -178,9 +178,9 @@ package "integrations" {
     + default_model() -> str
     + test() -> dict[str, Any]
   }
-  class GroqInferenceIntegration {
+  class OpenAIInferenceIntegration {
   + KEY: str
-    - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
+    - __init__(provider: Optional[OpenAILLMProvider], default_model: str) -> None
     + key() -> str
     + name() -> str
     + description() -> str
@@ -281,7 +281,7 @@ package "integrations" {
 
   IIntegration <|.. BaseIntegration
   BaseIntegration <|-- BaseInferenceIntegration
-  BaseInferenceIntegration <|-- GroqInferenceIntegration
+  BaseInferenceIntegration <|-- OpenAIInferenceIntegration
   BaseIntegration <|-- BaseChannelIntegration
   BaseChannelIntegration <|-- TelegramIntegration
   BaseChannelIntegration <|-- WhatsAppIntegration
@@ -292,11 +292,11 @@ package "integrations" {
   IntegrationRegistry *-- InferenceRegistry
   IntegrationRegistry *-- MessagingRegistry
   IntegrationRegistry o-- ICredentialStore
-  GroqInferenceIntegration o-- GroqLLMProvider
+  OpenAIInferenceIntegration o-- OpenAILLMProvider
   BaseIntegration ..> IntegrationKind
   BaseIntegration ..> IntegrationStatus
   BaseIntegration ..> CredentialField
-  GroqInferenceIntegration ..> CredentialsNotConfiguredError
+  OpenAIInferenceIntegration ..> CredentialsNotConfiguredError
 }
 
 package "export" {

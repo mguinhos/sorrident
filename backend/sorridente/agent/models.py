@@ -32,7 +32,7 @@ class Model:
     """Descrição de um modelo servido por um provedor de inferência."""
 
     id: str
-    provider: str = "groq"
+    provider: str = "openai"
     supports: Supports = Supports.TEXT | Supports.TOOLS | Supports.STREAMING
     context_window: int = 32_768
     max_output_tokens: int = 4_096
@@ -74,7 +74,7 @@ class IModelCatalog(ABC):
     def register(self, model: Model) -> "IModelCatalog": ...
 
     @abstractmethod
-    def get(self, model_id: str, provider: str = "groq") -> Model: ...
+    def get(self, model_id: str, provider: str = "openai") -> Model: ...
 
 
 class ModelCatalog(IModelCatalog):
@@ -88,21 +88,21 @@ class ModelCatalog(IModelCatalog):
     def _defaults() -> list[Model]:
         return [
             Model(
-                id="qwen/qwen3.8-27b",
-                provider="groq",
-                supports=DEFAULT_SUPPORTS | Supports.REASONING,
-                context_window=131_072,
-                max_output_tokens=8_192,
-                display_name="Qwen3.8 27B",
+                id="gpt-4o-mini",
+                provider="openai",
+                supports=DEFAULT_SUPPORTS,
+                context_window=128_000,
+                max_output_tokens=16_384,
+                display_name="GPT-4o mini",
                 notes="Modelo padrão do agente SorriDente.",
             ),
             Model(
-                id="qwen/qwen3.6-27b",
-                provider="groq",
-                supports=DEFAULT_SUPPORTS | Supports.REASONING,
-                context_window=131_072,
-                max_output_tokens=8_192,
-                display_name="Qwen3.6 27B",
+                id="gpt-4o",
+                provider="openai",
+                supports=DEFAULT_SUPPORTS,
+                context_window=128_000,
+                max_output_tokens=16_384,
+                display_name="GPT-4o",
             ),
         ]
 
@@ -110,7 +110,7 @@ class ModelCatalog(IModelCatalog):
         self._models[model.id] = model
         return self
 
-    def get(self, model_id: str, provider: str = "groq") -> Model:
+    def get(self, model_id: str, provider: str = "openai") -> Model:
         """Devolve o modelo conhecido ou um perfil conservador para modelos novos."""
         known = self._models.get(model_id)
         if known is not None:

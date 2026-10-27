@@ -1202,19 +1202,19 @@ package "infrastructure" {
       + unsubscribe(queue: asyncio.Queue) -> None
       + subscriber_count() -> int
     }
-    class GroqLLMProvider {
+    class OpenAILLMProvider {
       - __init__(api_key: Optional[str], model: str, timeout: float) -> None
       + model() -> str
       + configured() -> bool
       + configure(api_key: str, model: Optional[str]) -> None
-      + client() -> AsyncGroq
+      + client() -> AsyncOpenAI
       + complete(messages: Sequence[dict[str, Any]], tools: Optional[Sequence[dict[str, Any]]], temperature: float, max_tokens: int) -> dict[str, Any]
       + stream(messages: Sequence[dict[str, Any]], temperature: float, max_tokens: int) -> AsyncIterator[str]
       - _clean(text: str) -> str
     }
     ICredentialStore <|.. JsonCredentialStore
     IEventBus <|.. InMemoryEventBus
-    ILLMProvider <|.. GroqLLMProvider
+    ILLMProvider <|.. OpenAILLMProvider
     domain.repositories ..> TinyDBRepository
 }
 
@@ -1275,9 +1275,9 @@ package "integrations" {
       + default_model() -> str
       + test() -> dict[str, Any]
     }
-    class GroqInferenceIntegration {
+    class OpenAIInferenceIntegration {
     + KEY: str
-      - __init__(provider: Optional[GroqLLMProvider], default_model: str) -> None
+      - __init__(provider: Optional[OpenAILLMProvider], default_model: str) -> None
       + key() -> str
       + name() -> str
       + description() -> str
@@ -1377,7 +1377,7 @@ package "integrations" {
     }
     IIntegration <|.. BaseIntegration
     BaseIntegration <|-- BaseInferenceIntegration
-    BaseInferenceIntegration <|-- GroqInferenceIntegration
+    BaseInferenceIntegration <|-- OpenAIInferenceIntegration
     BaseIntegration <|-- BaseChannelIntegration
     BaseChannelIntegration <|-- TelegramIntegration
     BaseChannelIntegration <|-- WhatsAppIntegration
@@ -1387,7 +1387,7 @@ package "integrations" {
     IntegrationRegistry *-- "0..*" InferenceRegistry
     IntegrationRegistry *-- "0..*" MessagingRegistry
     IntegrationRegistry o-- "1" ICredentialStore
-    GroqInferenceIntegration o-- "1" GroqLLMProvider
+    OpenAIInferenceIntegration o-- "1" OpenAILLMProvider
     TelegramIntegration o-- "1" TelegramChannel
     WhatsAppIntegration o-- "1" WhatsAppChannel
 }
@@ -1659,8 +1659,8 @@ package "composition root" {
     class AppConfig {
     + database_path: Path
     + credentials_path: Path
-    + groq_api_key: str
-    + groq_model: str
+    + openai_api_key: str
+    + openai_model: str
     + host: str
     + port: int
     + cors_origins: tuple[str, ...]

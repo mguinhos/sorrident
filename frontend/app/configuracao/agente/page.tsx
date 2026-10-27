@@ -22,8 +22,8 @@ const TONS = {
 type Tom = keyof typeof TONS;
 
 const MODELOS = [
-  { id: "qwen/qwen3.8-27b", nome: "Qwen3.8 27B", desc: "Padrão do SorriDente. Equilibra qualidade e rapidez. Via Groq (nuvem).", icone: "estrela", selo: "Recomendado" },
-  { id: "qwen/qwen3.6-27b", nome: "Qwen3.6 27B", desc: "Versão anterior, um pouco mais econômica. Via Groq (nuvem).", icone: "cerebro" },
+  { id: "gpt-4o-mini", nome: "GPT-4o mini", desc: "Padrão do SorriDente. Equilibra qualidade e rapidez. Via OpenAI (nuvem).", icone: "estrela", selo: "Recomendado" },
+  { id: "gpt-4o", nome: "GPT-4o", desc: "Mais capacidade de raciocínio, um pouco mais lento. Via OpenAI (nuvem).", icone: "cerebro" },
 ];
 
 const REGRAS = [
@@ -61,7 +61,7 @@ export default function ConfigAgente() {
       setFecha(s.closing_hour || "18:00");
       if (s.working_days?.length) setDias(s.working_days);
     }).catch(() => undefined);
-    api.getIntegration("groq").then((g) => {
+    api.getIntegration("openai").then((g) => {
       const m = g.values?.model;
       if (typeof m === "string" && m) setModelo(m);
     }).catch(() => undefined);
@@ -84,7 +84,7 @@ export default function ConfigAgente() {
     setSalvando(true);
     try {
       await api.updateSettings({ persona: persona(), opening_hour: abre, closing_hour: fecha, working_days: dias });
-      await api.saveIntegration("groq", chave ? { model: modelo, api_key: chave } : { model: modelo });
+      await api.saveIntegration("openai", chave ? { model: modelo, api_key: chave } : { model: modelo });
       message.success(`${nome} está ativo e pronto para atender.`);
       router.push("/gestor/agente");
     } catch (e) {
@@ -138,8 +138,8 @@ export default function ConfigAgente() {
             <Escolha titulo="Modelo local (Ollama)" desc="Roda no computador da clínica. Ainda não integrado ao SorriDente." icone="servidor" ativo={false} />
           </div>
         </GrupoEscolha>
-        <Campo rotulo="Chave de acesso Groq" id="chave" ajuda="Deixe em branco para manter a chave atual. Guardada no cofre de segredos.">
-          <Input.Password id="chave" size="large" prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={chave} onChange={(e) => setChave(e.target.value)} placeholder="gsk_…" style={{ fontFamily: "var(--fonte-mono)" }} />
+        <Campo rotulo="Chave de acesso OpenAI" id="chave" ajuda="Deixe em branco para manter a chave atual. Guardada no cofre de segredos.">
+          <Input.Password id="chave" size="large" prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={chave} onChange={(e) => setChave(e.target.value)} placeholder="sk-…" style={{ fontFamily: "var(--fonte-mono)" }} />
         </Campo>
         <Aviso icone="ok" tom="ok">Na dúvida, mantenha o recomendado. Dá para trocar depois sem perder as conversas.</Aviso>
       </Casca>
@@ -220,7 +220,7 @@ export default function ConfigAgente() {
         irPara={setPasso}
         itens={[
           ["Nome e tom", `${nome} · ${tom}`, 1],
-          ["Modelo", `${MODELOS.find((m) => m.id === modelo)?.nome ?? modelo} (Groq)`, 2],
+          ["Modelo", `${MODELOS.find((m) => m.id === modelo)?.nome ?? modelo} (OpenAI)`, 2],
           ["Regras", `${nRegras} ativas · 2 obrigatórias`, 3],
           ["Horário", `${dias.map((d) => DIAS[d]).join(", ")} · ${abre}–${fecha}`, 4],
           ["Fora do horário", foraHorario ? "Atende e deixa na fila da recepção" : "Só avisa que está fechada", 4],

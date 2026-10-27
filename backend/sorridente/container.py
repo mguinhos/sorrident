@@ -73,9 +73,9 @@ from .export import (
 from .infrastructure.credentials import JsonCredentialStore
 from .infrastructure.database import TinyDBDatabase
 from .infrastructure.event_bus import InMemoryEventBus
-from .infrastructure.llm import GroqLLMProvider
+from .infrastructure.llm import OpenAILLMProvider
 from .integrations import (
-    GroqInferenceIntegration,
+    OpenAIInferenceIntegration,
     IntegrationRegistry,
     RoutingLLMProvider,
     TelegramIntegration,
@@ -210,11 +210,11 @@ class ApplicationContainer:
         )
 
         # Registro das integrações concretas (único ponto que as conhece).
-        self.groq_integration = GroqInferenceIntegration(
-            GroqLLMProvider(self.config.groq_api_key, self.config.groq_model),
-            self.config.groq_model,
+        self.openai_integration = OpenAIInferenceIntegration(
+            OpenAILLMProvider(self.config.openai_api_key, self.config.openai_model),
+            self.config.openai_model,
         )
-        self.integrations.register(self.groq_integration, activate=True)
+        self.integrations.register(self.openai_integration, activate=True)
         self.integrations.register(TelegramIntegration(self.telegram_channel))
         self.integrations.register(WhatsAppIntegration(self.whatsapp_channel))
 

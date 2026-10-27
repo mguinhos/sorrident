@@ -12,7 +12,7 @@ from typing import Any, AsyncIterator, Optional, Sequence
 
 from ..core.exceptions import LLMError
 from ..core.interfaces import ILLMProvider
-from ..infrastructure.llm import GroqLLMProvider
+from ..infrastructure.llm import OpenAILLMProvider
 from .base import BaseIntegration, CredentialField, IntegrationKind, IntegrationStatus
 
 
@@ -43,14 +43,14 @@ class BaseInferenceIntegration(BaseIntegration, ABC):
             return {"ok": False, "erro": exc.message}
 
 
-class GroqInferenceIntegration(BaseInferenceIntegration):
-    """Groq Cloud — inferência via `groq.AsyncGroq`."""
+class OpenAIInferenceIntegration(BaseInferenceIntegration):
+    """OpenAI — inferência via `openai.AsyncOpenAI`."""
 
-    KEY = "groq"
+    KEY = "openai"
 
-    def __init__(self, provider: Optional[GroqLLMProvider] = None, default_model: str = "qwen/qwen3.8-27b") -> None:
+    def __init__(self, provider: Optional[OpenAILLMProvider] = None, default_model: str = "gpt-4o-mini") -> None:
         super().__init__()
-        self._provider = provider or GroqLLMProvider(model=default_model)
+        self._provider = provider or OpenAILLMProvider(model=default_model)
         self._default_model = default_model
         self._enabled = True
 
@@ -60,11 +60,11 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
 
     @property
     def name(self) -> str:
-        return "Groq Cloud"
+        return "OpenAI"
 
     @property
     def description(self) -> str:
-        return "Provedor de inferência do agente SorriDente (modelos Qwen, Llama e outros)."
+        return "Provedor de inferência do agente SorriDente (modelos GPT e outros)."
 
     @property
     def default_model(self) -> str:
@@ -79,10 +79,10 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
         return (
             CredentialField(
                 key="api_key",
-                label="API key do Groq Cloud",
+                label="API key da OpenAI",
                 secret=True,
-                placeholder="gsk_…",
-                help_text="Também pode vir da variável de ambiente GROQ_CLOUD_API_KEY.",
+                placeholder="sk-…",
+                help_text="Também pode vir da variável de ambiente OPENAI_API_KEY.",
             ),
             CredentialField(
                 key="model",
@@ -90,7 +90,7 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
                 required=False,
                 placeholder=self._default_model,
                 default=self._default_model,
-                help_text="Identificador do modelo no Groq Cloud.",
+                help_text="Identificador do modelo na OpenAI.",
             ),
         )
 
@@ -129,7 +129,7 @@ class RoutingLLMProvider(ILLMProvider):
     """Proxy que encaminha as chamadas ao provedor de inferência ativo.
 
     O agente depende deste objeto e não precisa saber qual provedor está
-    configurado — trocar de Groq para Ollama é trocar a integração ativa.
+    configurado — trocar de OpenAI para Ollama é trocar a integração ativa.
     """
 
     def __init__(self, resolver: "InferenceResolver") -> None:
