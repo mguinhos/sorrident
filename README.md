@@ -85,6 +85,14 @@ Ou, se preferir variável de ambiente:
 export OPENCODE_GO_API_KEY="sua-chave"
 ```
 
+O nível de raciocínio (thinking) do agente é configurado por
+`OPENCODE_GO_REASONING_EFFORT` (`minimal`, `low`, `medium`, `high`; padrão
+`low`). Use `off` para desligar o raciocínio estendido:
+
+```bash
+export OPENCODE_GO_REASONING_EFFORT=medium
+```
+
 Suba o backend e, em outro terminal, a interface:
 
 ```bash

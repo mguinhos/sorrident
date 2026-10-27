@@ -211,7 +211,11 @@ class ApplicationContainer:
 
         # Registro das integrações concretas (único ponto que as conhece).
         self.opencode_go_integration = OpenCodeGoInferenceIntegration(
-            OpenCodeGoLLMProvider(self.config.opencode_go_api_key, self.config.opencode_go_model),
+            OpenCodeGoLLMProvider(
+                self.config.opencode_go_api_key,
+                self.config.opencode_go_model,
+                reasoning_effort=self.config.opencode_go_reasoning_effort,
+            ),
             self.config.opencode_go_model,
         )
         self.integrations.register(self.opencode_go_integration, activate=True)

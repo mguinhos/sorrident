@@ -57,6 +57,9 @@ class AppConfig:
     credentials_path: Path = field(default_factory=lambda: Path(_env("SORRIDENTE_CREDENTIALS", str(BASE_DIR / "credentials.json"))))
     opencode_go_api_key: str = field(default_factory=lambda: _env("OPENCODE_GO_API_KEY", ""))
     opencode_go_model: str = field(default_factory=lambda: _env("OPENCODE_GO_MODEL", "kimi-k2.5"))
+    opencode_go_reasoning_effort: str = field(
+        default_factory=lambda: _env("OPENCODE_GO_REASONING_EFFORT", "low")
+    )
     host: str = field(default_factory=lambda: _env("SORRIDENTE_HOST", "0.0.0.0"))
     port: int = field(default_factory=lambda: _env_int("SORRIDENTE_PORT", 8000))
     cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
