@@ -160,7 +160,7 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
               type="button"
               onClick={() => void enviar(a.mensagem)}
               disabled={enviando}
-              style={{ font: "inherit", height: 36, padding: "0 14px", borderRadius: 999, border: `1px solid ${a.destaque ? "#b8d4f1" : "var(--cor-borda)"}`, background: "#fff", color: a.destaque ? "var(--cor-primaria)" : "var(--cor-tinta)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
+              style={{ font: "inherit", height: 36, padding: "0 14px", borderRadius: 999, border: "1px solid #b8d4f1", background: "#fff", color: a.destaque ? "var(--cor-primaria)" : "var(--cor-tinta)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
             >
               <Icone nome={a.icone} tam={15} />
               {a.texto}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Avatar, Icone } from "@/components/ui";
 import { useAuth } from "@/app/providers";
@@ -58,6 +59,16 @@ export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gest
   const router = useRouter();
   const raiz = `/${perfil}`;
   const ativo = (href: string) => (href === raiz ? caminho === raiz : caminho === href || caminho.startsWith(href + "/"));
+  const grupoAtivo = (g: { itens: Item[] }) => g.itens.some((it) => ativo(it.href));
+  const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(MENUS[perfil].map((g) => [g.grupo, g.itens.some((it) => ativo(it.href))])),
+  );
+  // Acordeão: manter só um grupo aberto evita barra de rolagem e preserva o rodapé.
+  const alternar = (grupo: string) =>
+    setAbertos((a) => {
+      const jaAberto = a[grupo];
+      return Object.fromEntries(MENUS[perfil].map((g) => [g.grupo, !jaAberto && g.grupo === grupo]));
+    });
 
   return (
     <nav className="sd-lateral" aria-label="Menu principal">
@@ -68,40 +79,51 @@ export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gest
           <div className="sd-lateral-area">{perfil === "gestor" ? "Gestão da clínica" : "Área clínica"}</div>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {MENUS[perfil].map((g) => (
-          <div key={g.grupo} role="group" aria-label={g.grupo} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div className="sd-lateral-grupo">{g.grupo}</div>
-            {g.itens.map((it) => (
-              <Link key={it.href} href={it.href} className="sd-item-menu" aria-current={ativo(it.href) ? "page" : undefined}>
-                <Icone nome={it.icone} tam={18} />
-                {it.rotulo}
-                {contadores[it.rotulo] ? <span className="sd-contador">{contadores[it.rotulo]}</span> : null}
-              </Link>
-            ))}
-          </div>
-        ))}
+      <div className="sd-lateral-menu">
+        {MENUS[perfil].map((g) => {
+          const aberto = abertos[g.grupo] ?? grupoAtivo(g);
+          return (
+            <div key={g.grupo} role="group" aria-label={g.grupo} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <button
+                type="button"
+                className="sd-lateral-grupo sd-lateral-grupo-btn"
+                aria-expanded={aberto}
+                onClick={() => alternar(g.grupo)}
+              >
+                {g.grupo}
+                <Icone nome="dir" tam={14} style={{ marginLeft: "auto", transition: "transform .2s", transform: aberto ? "rotate(90deg)" : "none" }} />
+              </button>
+              {aberto &&
+                g.itens.map((it) => (
+                  <Link key={it.href} href={it.href} className="sd-item-menu" aria-current={ativo(it.href) ? "page" : undefined}>
+                    <Icone nome={it.icone} tam={18} />
+                    {it.rotulo}
+                    {contadores[it.rotulo] ? <span className="sd-contador">{contadores[it.rotulo]}</span> : null}
+                  </Link>
+                ))}
+            </div>
+          );
+        })}
       </div>
       <div className="sd-usuario">
-        <Avatar nome={user?.display_name || "?"} tam={34} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {user?.display_name}
+        <div className="sd-usuario-dados">
+          <Avatar nome={user?.display_name || "?"} tam={34} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
+            <div className="sd-usuario-nome">{user?.display_name}</div>
+            <div style={{ fontSize: 12, color: "var(--cor-suave)" }}>{user ? PAPEL[user.role] : ""}</div>
           </div>
-          <div style={{ fontSize: 12, color: "var(--cor-suave)" }}>{user ? PAPEL[user.role] : ""}</div>
         </div>
         <button
           type="button"
-          className="sd-sino"
-          style={{ width: 36, height: 36 }}
-          aria-label="Sair"
-          title="Sair"
+          className="sd-sair"
+          title="Sair da conta"
           onClick={() => {
             logout();
             router.replace("/login");
           }}
         >
-          <Icone nome="esq" tam={16} />
+          <Icone nome="sair" tam={15} />
+          Sair da conta
         </button>
       </div>
     </nav>

@@ -56,6 +56,9 @@ const DESENHOS: Record<string, ReactElement> = {
   "esq": (
     <><path d="M15 18l-6-6 6-6" /></>
   ),
+  "sair": (
+    <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" /></>
+  ),
   "dir": (
     <><path d="M9 18l6-6-6-6" /></>
   ),

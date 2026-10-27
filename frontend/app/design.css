@@ -115,10 +115,11 @@
   top: 0;
   background: var(--cor-superficie);
   border-right: 1px solid var(--cor-borda);
+  box-shadow: 8px 0 60px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
   padding: 20px 12px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 .sd-lateral-marca {
   display: flex;
@@ -142,6 +143,42 @@
   color: var(--cor-sutil);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.sd-lateral-grupo-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  background: none;
+  border: 0;
+  border-radius: var(--raio-10);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.sd-lateral-grupo-btn:hover {
+  background: var(--cor-fundo);
+  color: var(--cor-tinta);
+}
+.sd-lateral-grupo-btn svg {
+  color: var(--cor-sutil);
+}
+.sd-lateral-menu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sd-lateral-menu::-webkit-scrollbar {
+  display: none;
 }
 .sd-item-menu {
   height: 38px;
@@ -185,13 +222,50 @@
   justify-content: center;
 }
 .sd-usuario {
-  margin-top: auto;
+  margin-top: 12px;
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   padding: 12px;
   border-radius: var(--raio-12);
   border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+}
+.sd-usuario-dados {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.sd-usuario-nome {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-sair {
+  height: 34px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--raio-10);
+  border: 1px solid var(--cor-borda);
+  background: #fff;
+  color: var(--cor-texto);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.sd-sair:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
 }
 
 /* ---------- topo da página ---------- */
@@ -790,10 +864,15 @@
 }
 .sd-cliente {
   height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
   gap: 24px;
-  background: var(--cor-fundo);
+  background: var(--cor-superficie);
+  border-left: 1px solid var(--cor-borda);
+  border-right: 1px solid var(--cor-borda);
+  box-shadow: 0 8px 60px rgba(15, 23, 42, 0.12);
 }
 .sd-cliente-chat {
   width: 100%;
