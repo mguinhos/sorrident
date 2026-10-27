@@ -70,7 +70,16 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-O agente precisa de uma chave do Groq Cloud para responder:
+O agente precisa de uma chave do Groq Cloud para responder. Copie o
+`.env.example` para `.env` e preencha a chave (o arquivo já está no
+`.gitignore`):
+
+```bash
+cp .env.example .env
+# edite o .env e preencha GROQ_CLOUD_API_KEY
+```
+
+Ou, se preferir variável de ambiente:
 
 ```bash
 export GROQ_CLOUD_API_KEY="sua-chave"
