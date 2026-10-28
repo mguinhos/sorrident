@@ -12,7 +12,7 @@ from typing import Any, AsyncIterator, Optional, Sequence
 
 from ..core.exceptions import LLMError
 from ..core.interfaces import ILLMProvider
-from ..infrastructure.llm import GroqLLMProvider
+from ..infrastructure.llm import OpenCodeGoLLMProvider
 from .base import BaseIntegration, CredentialField, IntegrationKind, IntegrationStatus
 
 
@@ -43,14 +43,14 @@ class BaseInferenceIntegration(BaseIntegration, ABC):
             return {"ok": False, "erro": exc.message}
 
 
-class GroqInferenceIntegration(BaseInferenceIntegration):
-    """Groq Cloud — inferência via `groq.AsyncGroq`."""
+class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
+    """OpenCode Go — inferência via `openai.AsyncOpenAI` na API Zen."""
 
-    KEY = "groq"
+    KEY = "opencode_go"
 
-    def __init__(self, provider: Optional[GroqLLMProvider] = None, default_model: str = "qwen/qwen3.8-27b") -> None:
+    def __init__(self, provider: Optional[OpenCodeGoLLMProvider] = None, default_model: str = "kimi-k2.5") -> None:
         super().__init__()
-        self._provider = provider or GroqLLMProvider(model=default_model)
+        self._provider = provider or OpenCodeGoLLMProvider(model=default_model)
         self._default_model = default_model
         self._enabled = True
 
@@ -60,11 +60,11 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
 
     @property
     def name(self) -> str:
-        return "Groq Cloud"
+        return "OpenCode Go"
 
     @property
     def description(self) -> str:
-        return "Provedor de inferência do agente SorriDente (modelos Qwen, Llama e outros)."
+        return "Provedor de inferência do agente SorriDente (modelos Kimi, GLM, MiniMax e outros)."
 
     @property
     def default_model(self) -> str:
@@ -79,10 +79,10 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
         return (
             CredentialField(
                 key="api_key",
-                label="API key do Groq Cloud",
+                label="API key do OpenCode Go",
                 secret=True,
-                placeholder="gsk_…",
-                help_text="Também pode vir da variável de ambiente GROQ_CLOUD_API_KEY.",
+                placeholder="sk-…",
+                help_text="Também pode vir da variável de ambiente OPENCODE_GO_API_KEY.",
             ),
             CredentialField(
                 key="model",
@@ -90,7 +90,7 @@ class GroqInferenceIntegration(BaseInferenceIntegration):
                 required=False,
                 placeholder=self._default_model,
                 default=self._default_model,
-                help_text="Identificador do modelo no Groq Cloud.",
+                help_text="Identificador do modelo no OpenCode Go (Zen).",
             ),
         )
 

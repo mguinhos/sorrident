@@ -17,11 +17,13 @@ import {
   message as antdMessage,
 } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Patient } from "@/lib/types";
 
 /** CRUD de pacientes com ficha e histórico de consultas. */
-export default function PatientsTab() {
+export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: string } = {}) {
+  const router = useRouter();
   const [items, setItems] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,6 +114,11 @@ export default function PatientsTab() {
             title: "Ações",
             render: (_: unknown, row: Patient) => (
               <Space>
+                {prontuarioBase && (
+                  <Button size="small" type="primary" onClick={() => router.push(`${prontuarioBase}/${row.id}`)}>
+                    Prontuário
+                  </Button>
+                )}
                 <Button size="small" onClick={async () => setDetail(await api.getPatient(row.id))}>
                   Ficha
                 </Button>

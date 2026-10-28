@@ -1,0 +1,55 @@
+/* Tokens de design do SorriDente — mesmos nomes e valores das variáveis do Figma. */
+:root {
+  /* marca */
+  --cor-primaria: #0065c4;
+  --cor-primaria-escura: #004b93;
+  --cor-primaria-suave: #eaf3fd;
+  --cor-acento: #10bbfa;
+  --gradiente: linear-gradient(135deg, #0065c4 0%, #10bbfa 100%);
+
+  /* neutros */
+  --cor-fundo: #f5f8fc;
+  --cor-superficie: #ffffff;
+  --cor-tinta: #0f172a;
+  --cor-texto: #334155;
+  --cor-suave: #64748b;
+  --cor-sutil: #94a3b8;
+  --cor-borda: #e6eaf2;
+  --cor-divisoria: #eef2f7;
+  --cor-cinza-200: #e2e8f0;
+  --cor-cinza-300: #cbd5e1;
+  --cor-ardosia-800: #1e293b;
+
+  /* status (cor fixa por significado) */
+  --cor-sucesso: #15803d;
+  --cor-sucesso-fundo: #e8f7ee;
+  --cor-info: #0058ab;
+  --cor-info-fundo: #e6f0fa;
+  --cor-alerta: #b45309;
+  --cor-alerta-fundo: #fef3e2;
+  --cor-erro: #b91c1c;
+  --cor-erro-forte: #dc2626;
+  --cor-erro-fundo: #fdecec;
+  --cor-erro-borda: #f5c2c2;
+  --cor-neutro: #475569;
+  --cor-neutro-fundo: #f1f5f9;
+
+  /* canais */
+  --cor-whatsapp: #25d366;
+  --cor-telegram: #229ed9;
+
+  /* forma */
+  --raio-8: 8px;
+  --raio-10: 10px;
+  --raio-12: 12px;
+  --raio-14: 14px;
+  --raio-16: 16px;
+  --raio-24: 24px;
+  --raio-pilula: 999px;
+  --sombra: 0 6px 24px rgba(15, 23, 42, 0.06);
+  --anel-foco: 0 0 0 4px rgba(0, 101, 196, 0.18);
+
+  /* tipografia */
+  --fonte: var(--fonte-inter), Inter, system-ui, sans-serif;
+  --fonte-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

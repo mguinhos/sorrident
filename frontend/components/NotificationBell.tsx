@@ -1,17 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, Drawer, Empty, List, Space, Tag, Typography, notification as antdNotification } from "antd";
-import { BellOutlined } from "@ant-design/icons";
+import { Button, Drawer, Empty, List, Space, Typography, notification as antdNotification } from "antd";
+import { Etiqueta, Icone } from "@/components/ui";
+import type { Tom } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { Notification } from "@/lib/types";
 
-const LEVEL_COLOR: Record<string, string> = {
-  info: "blue",
-  sucesso: "green",
-  alerta: "orange",
-  erro: "red",
-};
+const TOM_NIVEL: Record<string, Tom> = { info: "info", sucesso: "ok", alerta: "alerta", erro: "erro" };
 
 /** Sino de notificações alimentado por SSE (`/api/events`). */
 export default function NotificationBell() {
@@ -50,9 +46,10 @@ export default function NotificationBell() {
   return (
     <>
       {contextHolder}
-      <Badge count={unread} size="small">
-        <Button icon={<BellOutlined />} onClick={() => setOpen(true)} />
-      </Badge>
+      <button type="button" className="sd-sino" onClick={() => setOpen(true)} aria-label={`Notificações (${unread} não lidas)`}>
+        <Icone nome="sino" tam={18} />
+        {unread > 0 && <span className="sd-sino-qtd">{unread}</span>}
+      </button>
       <Drawer
         title="Notificações"
         open={open}
@@ -88,7 +85,7 @@ export default function NotificationBell() {
                 <List.Item.Meta
                   title={
                     <Space>
-                      <Tag color={LEVEL_COLOR[item.level]}>{item.level}</Tag>
+                      <Etiqueta texto={item.level} tom={TOM_NIVEL[item.level]} />
                       <Typography.Text strong>{item.title}</Typography.Text>
                     </Space>
                   }

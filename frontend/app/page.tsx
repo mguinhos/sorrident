@@ -1,84 +1,155 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Alert, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { HOME_BY_ROLE, useAuth } from "./providers";
-import type { Role } from "@/lib/types";
+import { BellOutlined, CalendarOutlined, ScheduleOutlined } from "@ant-design/icons";
+import { Button } from "antd";
+import { HOME_BY_ROLE, useAuth } from "@/app/providers";
+import Transicao from "@/components/layout/Transicao";
 
-const PERFIS: { label: string; value: Role; hint: string; demo: [string, string] }[] = [
-  { label: "Cliente", value: "cliente", hint: "Converse com o SorriDente e agende sua consulta.", demo: ["cliente", "cliente123"] },
-  { label: "Gestor", value: "gestor", hint: "Dashboard completo, conversas, agenda e integrações.", demo: ["gestor", "gestor123"] },
-  { label: "Médico", value: "medico", hint: "Sua agenda e o histórico dos pacientes.", demo: ["medico", "medico123"] },
+const PILARES = [
+  {
+    titulo: "Agendamento a qualquer hora",
+    texto: "Marque, remarque ou cancele pelo WhatsApp e pelo portal — inclusive fora do horário comercial.",
+    icone: ScheduleOutlined,
+  },
+  {
+    titulo: "Horários compatíveis com os dentistas",
+    texto: "O assistente consulta a agenda real dos dentistas e só oferece horários livres.",
+    icone: CalendarOutlined,
+  },
+  {
+    titulo: "Lembrete antes da consulta",
+    texto: "Um aviso 24 horas antes, com confirmação em um toque, para reduzir faltas e espera na recepção.",
+    icone: BellOutlined,
+  },
 ];
 
-export default function LoginPage() {
-  const [perfil, setPerfil] = useState<Role>("cliente");
-  const [erro, setErro] = useState("");
-  const [carregando, setCarregando] = useState(false);
-  const [form] = Form.useForm();
-  const { user, login } = useAuth();
+export default function ApresentacaoPage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
+  const [abrindo, setAbrindo] = useState(false);
 
+  const destino = user ? HOME_BY_ROLE[user.role] : "/login";
+
+  // quem já tem sessão aberta vai direto para o seu painel
   useEffect(() => {
-    if (user) router.replace(HOME_BY_ROLE[user.role]);
-  }, [user, router]);
+    if (!loading && user) router.replace(HOME_BY_ROLE[user.role]);
+  }, [loading, user, router]);
 
-  const perfilAtual = PERFIS.find((p) => p.value === perfil)!;
-
+  // deixa o login pronto antes do clique
   useEffect(() => {
-    form.setFieldsValue({ username: perfilAtual.demo[0], password: perfilAtual.demo[1] });
-  }, [perfil, form, perfilAtual]);
+    router.prefetch("/login");
+  }, [router]);
 
-  async function onFinish(values: { username: string; password: string }) {
-    setCarregando(true);
-    setErro("");
-    try {
-      const logged = await login(values.username, values.password);
-      router.replace(HOME_BY_ROLE[logged.role]);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Falha ao entrar.");
-    } finally {
-      setCarregando(false);
+  // segura a tela de transição por um instante antes de trocar de rota
+  useEffect(() => {
+    if (!abrindo) return;
+    const id = window.setTimeout(() => router.push(destino), 750);
+    return () => window.clearTimeout(id);
+  }, [abrindo, destino, router]);
+
+  function abrirAcesso() {
+    if (abrindo) return;
+    const semAnimacao =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (user || semAnimacao) {
+      router.push(destino);
+      return;
     }
+    setAbrindo(true);
   }
 
+  if (abrindo) return <Transicao mensagem="Abrindo o acesso…" />;
+
   return (
-    <div className="sd-login-bg">
-      <Card style={{ width: 420, boxShadow: "0 12px 40px rgba(0,0,0,.18)" }}>
-        <Space direction="vertical" size={4} style={{ width: "100%", marginBottom: 20 }}>
-          <Typography.Title level={2} style={{ margin: 0 }}>
-            🦷 SorriDente
-          </Typography.Title>
-          <Typography.Text type="secondary">Clínica Ortodôntica — acesso ao sistema</Typography.Text>
-        </Space>
+    <main className="sd-apresentacao">
+      <header className="sd-apresentacao-topo">
+        <div className="sd-apresentacao-marca">
+          <Image src="/logo.svg" alt="" width={40} height={40} priority />
+          <strong>SorriDente</strong>
+        </div>
+      </header>
 
-        <Segmented
-          block
-          value={perfil}
-          onChange={(v) => setPerfil(v as Role)}
-          options={PERFIS.map((p) => ({ label: p.label, value: p.value }))}
-          style={{ marginBottom: 12 }}
-        />
-        <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-          {perfilAtual.hint}
-        </Typography.Paragraph>
+      <section className="sd-apresentacao-hero">
+        <div className="sd-apresentacao-texto">
+          <h1>
+            Seu sorriso cuidado <em>sem espera</em> na recepção
+          </h1>
+          <p>
+            A SorriDente une ortodontia e atendimento inteligente: um assistente virtual
+            conversa com você pelo WhatsApp e pelo portal, encontra o melhor horário na
+            agenda dos dentistas e cuida dos lembretes da sua consulta.
+          </p>
 
-        {erro && <Alert type="error" message={erro} showIcon style={{ marginBottom: 12 }} />}
+          <div className="sd-apresentacao-acoes">
+            <Button
+              type="primary"
+              size="large"
+              className="sd-apresentacao-cta"
+              onClick={abrirAcesso}
+              loading={abrindo}
+            >
+              {user ? "Ir para o painel" : "Experimente o App"}
+            </Button>
+            <Link href="/como-funciona" className="sd-apresentacao-secundario">
+              Como funciona
+            </Link>
+          </div>
+        </div>
 
-        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
-          <Form.Item name="username" label="Usuário" rules={[{ required: true, message: "Informe o usuário" }]}>
-            <Input prefix={<UserOutlined />} placeholder="usuário" size="large" />
-          </Form.Item>
-          <Form.Item name="password" label="Senha" rules={[{ required: true, message: "Informe a senha" }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="senha" size="large" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={carregando}>
-            Entrar como {perfilAtual.label.toLowerCase()}
-          </Button>
-        </Form>
-      </Card>
-    </div>
+        <div className="sd-apresentacao-cartao" aria-hidden>
+          <div className="sd-apresentacao-cartao-topo">
+            <Image src="/logo.svg" alt="" width={56} height={56} priority />
+            <div>
+              <strong>SorriDente</strong>
+              <span>Atendimento e gestão da clínica</span>
+            </div>
+          </div>
+          <ul>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Agende sua avaliação em minutos
+            </li>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Confirme a consulta por mensagem
+            </li>
+            <li>
+              <span className="sd-apresentacao-ponto" />
+              Tire as suas dúvidas antes de vir
+            </li>
+          </ul>
+          <div className="sd-apresentacao-cartao-rodape">
+            <span>Seg a sex · 8h às 18h</span>
+            <span>Sábado · 8h às 12h</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="sd-apresentacao-pilares">
+        {PILARES.map(({ titulo, texto, icone: Icone }) => (
+          <article key={titulo} className="sd-apresentacao-pilar">
+            <span className="sd-apresentacao-pilar-icone" aria-hidden>
+              <Icone />
+            </span>
+            <h2>{titulo}</h2>
+            <p>{texto}</p>
+          </article>
+        ))}
+      </section>
+
+      <footer className="sd-apresentacao-rodape">
+        <div>
+          <strong>SorriDente</strong> · para sua clínica ortodôntica
+        </div>
+        <div className="sd-apresentacao-lgpd">
+          Seus dados são tratados conforme a LGPD.
+        </div>
+      </footer>
+    </main>
   );
 }

@@ -70,10 +70,27 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-O agente precisa de uma chave do Groq Cloud para responder:
+O agente precisa de uma chave do OpenCode Go para responder. Copie o
+`.env.example` para `.env` e preencha a chave (o arquivo já está no
+`.gitignore`):
 
 ```bash
-export GROQ_CLOUD_API_KEY="sua-chave"
+cp .env.example .env
+# edite o .env e preencha OPENCODE_GO_API_KEY
+```
+
+Ou, se preferir variável de ambiente:
+
+```bash
+export OPENCODE_GO_API_KEY="sua-chave"
+```
+
+O nível de raciocínio (thinking) do agente é configurado por
+`OPENCODE_GO_REASONING_EFFORT` (`minimal`, `low`, `medium`, `high`; padrão
+`low`). Use `off` para desligar o raciocínio estendido:
+
+```bash
+export OPENCODE_GO_REASONING_EFFORT=medium
 ```
 
 Suba o backend e, em outro terminal, a interface:
@@ -216,7 +233,7 @@ outro encontra o sentido parecido.
 
 Aqui estão as versões concretas dos contratos do núcleo: o banco de dados
 (o pacote em forma de cilindro), as credenciais, a fila de eventos, o
-provedor de IA da Groq (a nuvem, porque é um serviço de fora), a carga
+provedor de IA do OpenCode Go (a nuvem, porque é um serviço de fora), a carga
 inicial de dados e os trabalhos que rodam de tempos em tempos, como os
 lembretes de consulta.
 

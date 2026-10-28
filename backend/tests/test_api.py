@@ -19,7 +19,7 @@ async def client(tmp_path) -> AsyncIterator[httpx.AsyncClient]:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        groq_api_key="",
+        opencode_go_api_key="",
         autostart_telegram=False,
     )
     app = ApplicationFactory(config).create()
@@ -93,10 +93,10 @@ async def test_integracoes_expoem_campos_e_tipos(client: httpx.AsyncClient) -> N
     data = (await client.get("/api/integrations", headers=headers)).json()
     por_chave = {i["key"]: i for i in data["integrations"]}
 
-    assert por_chave["groq"]["kind"] == "inference_provider"
+    assert por_chave["opencode_go"]["kind"] == "inference_provider"
     assert por_chave["telegram"]["kind"] == "messaging_channel"
-    assert [f["key"] for f in por_chave["groq"]["fields"]] == ["api_key", "model"]
-    assert por_chave["groq"]["active_inference"] is True
+    assert [f["key"] for f in por_chave["opencode_go"]["fields"]] == ["api_key", "model"]
+    assert por_chave["opencode_go"]["active_inference"] is True
 
 
 async def test_salvar_credencial_do_telegram_mascara_segredo(client: httpx.AsyncClient) -> None:

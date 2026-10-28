@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Avatar, Button, Card, Input, Space, Spin, Tag, Typography } from "antd";
-import { SendOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
+import { Alert, Input, Spin } from "antd";
+import { Icone } from "@/components/ui";
 import { api } from "@/lib/api";
+import { hora } from "@/lib/formato";
 import type { ChatMessage } from "@/lib/types";
 
 const SESSION_KEY = "sorridente.chat.session";
@@ -18,149 +20,177 @@ function sessionId(): string {
   return id;
 }
 
-/** Janela de conversa do paciente com o agente SorriDente. */
-export default function ChatPanel() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [handoff, setHandoff] = useState(false);
-  const [erro, setErro] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+const ATALHOS = [
+  { texto: "Ver horários", icone: "agenda", mensagem: "Quais horários estão disponíveis esta semana?", destaque: true },
+  { texto: "Dúvidas frequentes", icone: "livro", mensagem: "Quais são as dúvidas mais frequentes?", destaque: true },
+  { texto: "Falar com atendente", icone: "pessoas", mensagem: "Quero falar com um atendente.", destaque: false },
+];
 
-  const scrollToEnd = useCallback(() => {
+function DoBot({ children, avatar = true, equipe = false }: { children: ReactNode; avatar?: boolean; equipe?: boolean }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", maxWidth: 360 }}>
+      {avatar ? <Image src="/logo.svg" alt="" width={28} height={28} style={{ flexShrink: 0 }} /> : <span style={{ width: 28, flexShrink: 0 }} />}
+      <div className="sd-bolha sd-bolha-bot" style={equipe ? { background: "var(--cor-sucesso-fundo)", borderColor: "#b7e2c6" } : undefined}>
+        {equipe && <div style={{ fontSize: 11, fontWeight: 700, color: "var(--cor-sucesso)", marginBottom: 2 }}>Equipe da clínica</div>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Chat do paciente com o assistente: cabeçalho com status, bolhas com direção, atalhos e envio. */
+export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: ReactNode; altura?: string | number }) {
+  const [mensagens, setMensagens] = useState<ChatMessage[]>([]);
+  const [rascunho, setRascunho] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [humano, setHumano] = useState(false);
+  const [erro, setErro] = useState("");
+  const rolagem = useRef<HTMLDivElement>(null);
+
+  const rolarAoFim = useCallback(() => {
     requestAnimationFrame(() => {
-      const el = scrollRef.current;
+      const el = rolagem.current;
       if (el) el.scrollTop = el.scrollHeight;
     });
   }, []);
 
-  const load = useCallback(async () => {
+  const carregar = useCallback(async () => {
     try {
-      const data = await api.chatHistory(sessionId());
-      setMessages(data.messages);
-      setHandoff(data.handoff);
+      const dados = await api.chatHistory(sessionId());
+      setMensagens(dados.messages ?? []);
+      setHumano(dados.handoff);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível carregar a conversa.");
     } finally {
-      setLoading(false);
-      scrollToEnd();
+      setCarregando(false);
+      rolarAoFim();
     }
-  }, [scrollToEnd]);
+  }, [rolarAoFim]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void carregar();
+  }, [carregar]);
 
-  // Enquanto o atendimento estiver com um humano, busca respostas periodicamente.
+  // Com atendimento humano, busca as respostas periodicamente.
   useEffect(() => {
-    if (!handoff) return;
-    const timer = setInterval(() => void load(), 6000);
-    return () => clearInterval(timer);
-  }, [handoff, load]);
+    if (!humano) return;
+    const t = setInterval(() => void carregar(), 6000);
+    return () => clearInterval(t);
+  }, [humano, carregar]);
 
-  async function send() {
-    const text = draft.trim();
-    if (!text || sending) return;
-    setDraft("");
+  async function enviar(texto = rascunho) {
+    const t = texto.trim();
+    if (!t || enviando) return;
+    setRascunho("");
     setErro("");
-    const optimistic: ChatMessage = {
-      id: `tmp-${Date.now()}`,
-      conversation_id: "",
-      author: "user",
-      content: text,
-      tool_name: "",
-      tool_payload: {},
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    scrollToEnd();
-    setSending(true);
+    setMensagens((prev) => [
+      ...prev,
+      { id: `tmp-${Date.now()}`, conversation_id: "", author: "user", content: t, tool_name: "", tool_payload: {}, created_at: new Date().toISOString() },
+    ]);
+    rolarAoFim();
+    setEnviando(true);
     try {
-      const answer = await api.sendChat(sessionId(), text);
-      setHandoff(answer.handoff);
-      await load();
+      const r = await api.sendChat(sessionId(), t);
+      setHumano(r.handoff);
+      await carregar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao enviar a mensagem.");
     } finally {
-      setSending(false);
-      scrollToEnd();
+      setEnviando(false);
+      rolarAoFim();
     }
   }
 
+  const visiveis = mensagens.filter((m) => m.author === "user" || m.author === "assistant" || m.author === "human_agent");
+
   return (
-    <Card
-      title={
-        <Space>
-          <Avatar style={{ background: "#1677ff" }}>🦷</Avatar>
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>SorriDente</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {handoff ? "Atendimento com a equipe da clínica" : "Assistente virtual · online"}
-            </Typography.Text>
-          </Space>
-          {handoff && <Tag color="green">humano</Tag>}
-        </Space>
-      }
-      styles={{ body: { padding: 0, display: "flex", flexDirection: "column", height: "70vh" } }}
-    >
-      <div ref={scrollRef} className="sd-chat-scroll" style={{ flex: 1, background: "#f7f9fc" }}>
-        {loading ? (
+    <section className="sd-chat" style={{ height: altura }} aria-label="Conversa com o SorriDente">
+      <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 14px", background: "#fff", borderBottom: "1px solid var(--cor-borda)" }}>
+        <Image src="/logo.svg" alt="" width={40} height={40} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>SorriDente</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--cor-suave)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: "#16a34a" }} />
+            {humano ? "Atendimento com a equipe da clínica" : "Assistente virtual · online agora"}
+          </div>
+        </div>
+        {acaoTopo}
+      </header>
+
+      <div ref={rolagem} className="sd-chat-rolagem" aria-live="polite">
+        <div style={{ alignSelf: "center", fontSize: 12, fontWeight: 600, color: "var(--cor-suave)", background: "#e9eef5", padding: "4px 10px", borderRadius: 999 }}>Hoje</div>
+        {carregando ? (
           <Spin style={{ margin: "auto" }} />
-        ) : messages.length === 0 ? (
-          <div className="sd-bubble sd-bubble-bot">
-            Olá! Eu sou o SorriDente 🦷 Posso agendar, remarcar ou cancelar sua consulta e tirar
-            dúvidas sobre o tratamento. Como posso ajudar?
-          </div>
         ) : (
-          messages.map((m) => (
-            <div
-              key={m.id}
-              className={`sd-bubble ${
-                m.author === "user"
-                  ? "sd-bubble-user"
-                  : m.author === "human_agent"
-                    ? "sd-bubble-staff"
-                    : "sd-bubble-bot"
-              }`}
-            >
-              {m.author === "human_agent" && (
-                <Typography.Text type="secondary" style={{ fontSize: 11, display: "block" }}>
-                  Equipe SorriDente
-                </Typography.Text>
-              )}
-              {m.content}
-            </div>
-          ))
-        )}
-        {sending && (
-          <div className="sd-bubble sd-bubble-bot">
-            <Spin size="small" /> digitando…
-          </div>
+          <>
+            {visiveis.length === 0 && (
+              <>
+                <DoBot avatar={false}>Olá! Sou o SorriDente. Como posso ajudar hoje?</DoBot>
+                <DoBot>Posso agendar consultas, tirar dúvidas e chamar a recepção quando precisar.</DoBot>
+              </>
+            )}
+            {visiveis.map((m, i) =>
+              m.author === "user" ? (
+                <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: "flex-end" }}>
+                  <div className="sd-bolha sd-bolha-eu">{m.content}</div>
+                  <div style={{ fontSize: 11, color: "var(--cor-sutil)", display: "flex", alignItems: "center", gap: 3 }}>
+                    {hora(m.created_at)}
+                    <Icone nome="check" tam={12} cor="var(--cor-primaria)" esp={2.4} />
+                  </div>
+                </div>
+              ) : (
+                <DoBot key={m.id} avatar={visiveis[i + 1]?.author === "user" || i === visiveis.length - 1} equipe={m.author === "human_agent"}>
+                  {m.content}
+                </DoBot>
+              ),
+            )}
+            {enviando && <DoBot><span style={{ color: "var(--cor-suave)" }}>digitando…</span></DoBot>}
+          </>
         )}
       </div>
 
       {erro && <Alert type="error" message={erro} banner />}
 
-      <div style={{ padding: 12, borderTop: "1px solid #eef1f6", background: "#fff" }}>
-        <Space.Compact style={{ width: "100%" }}>
-          <Input.TextArea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Escreva sua mensagem…"
-            autoSize={{ minRows: 1, maxRows: 4 }}
-            onPressEnter={(e) => {
-              if (!e.shiftKey) {
-                e.preventDefault();
-                void send();
-              }
-            }}
+      <footer style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px 20px", background: "#fff", borderTop: "1px solid var(--cor-borda)" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {ATALHOS.map((a) => (
+            <button
+              key={a.texto}
+              type="button"
+              onClick={() => void enviar(a.mensagem)}
+              disabled={enviando}
+              style={{ font: "inherit", height: 36, padding: "0 14px", borderRadius: 999, border: "1px solid #b8d4f1", background: "#fff", color: a.destaque ? "var(--cor-primaria)" : "var(--cor-tinta)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
+            >
+              <Icone nome={a.icone} tam={15} />
+              {a.texto}
+            </button>
+          ))}
+        </div>
+        <form
+          style={{ display: "flex", gap: 8, alignItems: "center" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void enviar();
+          }}
+        >
+          <Input
+            value={rascunho}
+            onChange={(e) => setRascunho(e.target.value)}
+            placeholder="Escreva uma mensagem…"
+            aria-label="Mensagem"
+            style={{ flex: 1, height: 48, borderRadius: 999, background: "var(--cor-fundo)", paddingInline: 18, fontSize: 15 }}
           />
-          <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => void send()}>
-            Enviar
-          </Button>
-        </Space.Compact>
-      </div>
-    </Card>
+          <button
+            type="submit"
+            aria-label="Enviar"
+            disabled={enviando || !rascunho.trim()}
+            style={{ width: 48, height: 48, borderRadius: 999, border: 0, background: "var(--cor-primaria)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: enviando || !rascunho.trim() ? 0.6 : 1 }}
+          >
+            <Icone nome="enviar" tam={20} cor="#fff" />
+          </button>
+        </form>
+      </footer>
+    </section>
   );
 }
