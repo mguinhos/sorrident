@@ -40,6 +40,10 @@ consulta, receber um lembrete antes do dia e falar com a equipe quando
 precisar. Tudo isso sem depender da recepção, que ganha um painel para
 acompanhar a fila de pendências e ver o histórico de cada conversa.
 
+## Evidencias de uso do cliente
+
+> [📷 OneDrive](https://1drv.ms/v/c/b1599c0a0d00128c/IQAMEF0Z_ydsQLXq9WV0vSi1AUAKCO8UMZxVrdWL9lpT0Pc?e=tujPcj)
+
 ## Utilidade
 
 O agente agenda, remarca e cancela consultas. Ele tira dúvidas frequentes,
