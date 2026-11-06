@@ -15,11 +15,12 @@ from .base_tools import PatientAwareTool
 
 CAMPOS_CADASTRO: dict[str, Any] = {
     "nome_completo": {"type": "string", "description": "Nome completo do paciente."},
+    "idade": {"type": "string", "description": "Idade do paciente em anos (ex.: 34)."},
+    "convenio": {"type": "string", "description": "Convênio odontológico, ou 'particular'."},
     "cpf": {"type": "string", "description": "CPF, apenas números ou formatado."},
     "telefone": {"type": "string", "description": "Telefone com DDD."},
     "data_nascimento": {"type": "string", "description": "Data de nascimento (AAAA-MM-DD ou DD/MM/AAAA)."},
     "email": {"type": "string", "description": "E-mail para contato."},
-    "convenio": {"type": "string", "description": "Convênio odontológico, ou 'particular'."},
     "carteirinha": {"type": "string", "description": "Número da carteirinha do convênio."},
     "responsavel": {"type": "string", "description": "Nome do responsável, se o paciente for menor de idade."},
     "observacoes": {"type": "string", "description": "Queixa principal ou observações relevantes."},
@@ -30,6 +31,7 @@ def _to_entity_fields(values: dict[str, Any]) -> dict[str, Any]:
     """Traduz os nomes usados pelo agente para os campos da entidade."""
     mapa = {
         "nome_completo": "name",
+        "idade": "age",
         "cpf": "document",
         "telefone": "phone",
         "data_nascimento": "birth_date",
@@ -64,9 +66,9 @@ class CadastrarClienteTool(PatientAwareTool):
     @property
     def description(self) -> str:
         return (
-            "Cadastra o paciente na clínica com nome completo, CPF, telefone e demais dados. "
-            "Use assim que tiver ao menos nome completo e CPF; se o CPF já existir, o "
-            "cadastro é reaproveitado e atualizado."
+            "Cadastra o paciente na clínica com nome, idade, convênio e demais dados. "
+            "Para marcar consulta basta nome completo (idade e convênio também são pedidos). "
+            "Se o CPF for informado e já existir, o cadastro é reaproveitado e atualizado."
         )
 
     @property
@@ -157,7 +159,7 @@ class ConsultarCadastroTool(PatientAwareTool):
         if patient is None:
             return {
                 "cadastrado": False,
-                "campos_faltando": ["nome_completo", "cpf", "telefone", "data_nascimento"],
-                "orientacao": "Paciente ainda não cadastrado. Colete os dados e chame cadastrar_cliente.",
+                "campos_faltando": ["nome_completo", "idade", "convenio"],
+                "orientacao": "Paciente ainda não cadastrado. Colete nome, idade e convênio e chame cadastrar_cliente.",
             }
         return {"cadastrado": True, **self.summarize(patient)}

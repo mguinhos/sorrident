@@ -65,6 +65,7 @@ class HumanHandoffTool(BaseTool):
             NotificationLevel.ERRO.value if urgente else NotificationLevel.ALERTA.value,
             conversation_id=context.conversation_id,
             urgente=urgente,
+            whatsapp=True,
         )
         if assumir_conversa:
             return {

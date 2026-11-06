@@ -25,6 +25,20 @@ async def get_current_user(
     return await container.auth_service.resolve_token(token)
 
 
+async def get_optional_user(
+    authorization: Optional[str] = Header(default=None),
+    container: ApplicationContainer = Depends(get_container),
+) -> Optional[User]:
+    """Autenticação opcional: visitantes podem usar o chat sem cadastro."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        return await container.auth_service.resolve_token(token)
+    except AuthenticationError:
+        return None
+
+
 class RoleChecker:
     """Dependência que autoriza apenas determinados perfis (RBAC)."""
 

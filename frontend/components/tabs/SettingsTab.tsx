@@ -109,6 +109,40 @@ export default function SettingsTab() {
         </Col>
 
         <Col span={24}>
+          <Card title="Atendimento humano">
+            <Row gutter={12}>
+              <Col xs={24} lg={8}>
+                <Form.Item
+                  name="notify_whatsapp_phone"
+                  label="WhatsApp da recepção para avisos"
+                  extra="Recebe alerta quando o paciente pedir para falar com um atendente."
+                >
+                  <Input placeholder="5511999999999" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={8}>
+                <Form.Item
+                  name="handoff_eta_minutes"
+                  label="Prazo prometido no aviso de espera (minutos)"
+                  extra="Aparece no chat: “um atendente responde em até X minutos”."
+                >
+                  <InputNumber min={1} max={60} step={1} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={8}>
+                <Form.Item
+                  name="handoff_notice_cooldown_minutes"
+                  label="Intervalo entre avisos de espera (minutos)"
+                  extra="Evita repetir o aviso a cada mensagem do paciente."
+                >
+                  <InputNumber min={1} max={240} step={5} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+
+        <Col span={24}>
           <Card title="Persona do agente SorriDente">
             <Typography.Paragraph type="secondary">
               Esta instrução entra no início do prompt de sistema, antes das regras de atendimento.

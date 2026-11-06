@@ -6,7 +6,7 @@ import PatientsTab from "@/components/tabs/PatientsTab";
 export default function PacientesMedico() {
   return (
     <>
-      <Topo titulo="Pacientes" sub="Abra o prontuário para ver odontograma e evoluções" />
+      <Topo titulo="Pacientes" sub="Abra o prontuário para ver odontograma" />
       <Conteudo><PatientsTab prontuarioBase="/medico/pacientes" /></Conteudo>
     </>
   );

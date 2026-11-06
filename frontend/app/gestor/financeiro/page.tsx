@@ -116,6 +116,7 @@ export default function Financeiro() {
         </div>
 
         <Cartao pad={18} gap={0}>
+          <div style={{ overflowX: "auto", margin: "0 -4px", padding: "0 4px" }}>
           <table className="sd-tabela">
             <thead>
               <tr>
@@ -141,6 +142,7 @@ export default function Financeiro() {
               ))}
             </tbody>
           </table>
+          </div>
         </Cartao>
       </Conteudo>
     </>

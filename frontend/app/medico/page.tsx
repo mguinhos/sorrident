@@ -20,7 +20,7 @@ const CANAL: Record<string, string> = { web: "chat do site", whatsapp: "WhatsApp
 
 function Numero({ rotulo, valor, cor, borda = true }: { rotulo: string; valor: number; cor?: string; borda?: boolean }) {
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, padding: "0 20px", borderLeft: borda ? "1px solid var(--cor-borda)" : undefined }}>
+    <div style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 6, padding: "0 20px", borderLeft: borda ? "1px solid var(--cor-borda)" : undefined }}>
       <div style={{ fontSize: 13, color: "var(--cor-suave)", fontWeight: 500 }}>{rotulo}</div>
       <div style={{ fontSize: 26, fontWeight: 700, color: cor, lineHeight: 1 }}>{valor}</div>
     </div>
@@ -41,12 +41,14 @@ export default function PainelMedico() {
   const carregar = useCallback(async () => {
     const ini = visao === "Semana" ? dia.startOf("week") : dia;
     try {
+      // Sem Google Calendar, o dashboard do médico é o registro oficial das
+      // consultas: mostra todas as marcadas (de qualquer profissional).
       const lista = await api.agenda(ini.format("YYYY-MM-DD"), visao === "Semana" ? 7 : 1);
-      setConsultas(lista.filter((a) => (!user?.linked_id || a.dentist_id === user.linked_id) && a.status !== "cancelado"));
+      setConsultas(lista.filter((a) => a.status !== "cancelado"));
     } catch {
       setConsultas([]);
     }
-  }, [dia, visao, user?.linked_id]);
+  }, [dia, visao]);
 
   useEffect(() => {
     void carregar();
@@ -70,7 +72,6 @@ export default function PainelMedico() {
         sub={eu ? `${eu.name} · ${eu.specialty}` : user?.display_name}
         acoes={
           <>
-            <NotificationBell />
             <Botao
               icone="megafone"
               disabled={!proximo}
@@ -84,6 +85,7 @@ export default function PainelMedico() {
             >
               Chamar próximo paciente
             </Botao>
+            <NotificationBell />
           </>
         }
       />
@@ -109,7 +111,7 @@ export default function PainelMedico() {
             titulo={visao === "Dia" ? "Hoje na clínica" : "Minha semana"}
             acao={<Segmented value={visao} onChange={(v) => setVisao(v as "Dia" | "Semana")} options={["Dia", "Semana"]} />}
           >
-            <div style={{ display: "flex", padding: "16px 0", borderRadius: 12, background: "var(--cor-fundo)" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", rowGap: 16, padding: "16px 0", borderRadius: 12, background: "var(--cor-fundo)" }}>
               <Numero rotulo={visao === "Dia" ? "Consultas hoje" : "Consultas"} valor={lista.length} borda={false} />
               <Numero rotulo="Confirmadas" valor={confirmadas} cor="var(--cor-sucesso)" />
               <Numero rotulo="A confirmar" valor={aConfirmar.length} cor="var(--cor-alerta)" />
@@ -133,11 +135,13 @@ export default function PainelMedico() {
                         <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 3 }}>
                           <div style={{ fontSize: 15, fontWeight: 600 }}>{a.patient_name}</div>
                           <div style={{ fontSize: 13, color: "var(--cor-suave)" }}>
-                            {a.procedure_name} · {Math.round((new Date(a.end).getTime() - new Date(a.start).getTime()) / 60000)} min
+                            {a.procedure_name || "Consulta"} · {Math.round((new Date(a.end).getTime() - new Date(a.start).getTime()) / 60000)} min
+                            {a.dentist_name && ` · ${a.dentist_name}`}
                             {visao === "Semana" && ` · ${hora(a.start)}`}
                           </div>
                         </div>
                         <Etiqueta texto={statusExibido(a.status)} />
+                        {a.cadastrado === false && <Etiqueta texto="não cadastrado" tom="alerta" />}
                         <Botao tipo="secundario" tam="P" href={`/medico/pacientes/${a.patient_id}`}>Abrir prontuário</Botao>
                       </div>
                     </div>

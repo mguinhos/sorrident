@@ -152,8 +152,10 @@ class MarcarAgendamentoTool(PatientAwareTool):
     @property
     def description(self) -> str:
         return (
-            "Marca a consulta em um horário confirmado como livre. O paciente já deve "
-            "estar cadastrado (use cadastrar_cliente antes) e ter confirmado o horário."
+            "Marca a consulta em um horário confirmado como livre. Use o paciente já "
+            "vinculado à conversa quando existir (cadastro do site ou do chat); só chame "
+            "cadastrar_cliente antes se o cadastro estiver vazio. O paciente deve ter "
+            "confirmado o horário."
         )
 
     @property
@@ -166,6 +168,8 @@ class MarcarAgendamentoTool(PatientAwareTool):
                 "procedimento": {"type": "string", "description": "Alternativa ao id: nome do procedimento."},
                 "profissional_id": {"type": "string", "description": "Opcional: id do ortodontista escolhido."},
                 "nome_paciente": {"type": "string", "description": "Nome completo, se ainda não cadastrado."},
+                "idade": {"type": "string", "description": "Idade, se ainda não cadastrado."},
+                "convenio": {"type": "string", "description": "Convênio ou 'particular', se ainda não cadastrado."},
                 "telefone": {"type": "string", "description": "Telefone, se ainda não cadastrado."},
                 "observacoes": {"type": "string", "description": "Queixa ou observação para a equipe."},
             },
@@ -194,6 +198,8 @@ class MarcarAgendamentoTool(PatientAwareTool):
         procedimento: str = "",
         profissional_id: str = "",
         nome_paciente: str = "",
+        idade: str = "",
+        convenio: str = "",
         telefone: str = "",
         observacoes: str = "",
         **kwargs: Any,
@@ -202,10 +208,10 @@ class MarcarAgendamentoTool(PatientAwareTool):
         if patient is None:
             if not nome_paciente:
                 return {
-                    "erro": "Paciente não cadastrado. Colete nome completo e CPF e chame "
+                    "erro": "Paciente não cadastrado. Colete nome completo e chame "
                     "cadastrar_cliente antes de marcar."
                 }
-            patient = await self.resolve_patient(context, nome_paciente, telefone)
+            patient = await self.resolve_patient(context, nome_paciente, telefone, idade, convenio)
 
         appointment = await self._appointments.schedule(
             patient_id=patient.id,

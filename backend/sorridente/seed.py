@@ -115,13 +115,13 @@ KNOWLEDGE: list[dict[str, object]] = [
 ]
 
 DENTISTS: list[dict[str, object]] = [
-    {"name": "Dra. Helena Martins", "cro": "CRO-SP 48211", "specialty": "Ortodontia", "color": "#1677ff", "availability": COMERCIAL},
+    {"name": "Dra. Mônica Cristiane", "cro": "CRO-SP 48211", "specialty": "Ortodontia", "color": "#1677ff", "availability": COMERCIAL},
     {"name": "Dr. Rafael Nogueira", "cro": "CRO-SP 51907", "specialty": "Ortodontia e Odontopediatria", "color": "#52c41a", "availability": COMERCIAL},
 ]
 
 USERS: list[tuple[str, str, str, str]] = [
     ("gestor", "gestor123", Role.GESTOR.value, "Gestão SorriDente"),
-    ("medico", "medico123", Role.MEDICO.value, "Dra. Helena Martins"),
+    ("medico", "medico123", Role.MEDICO.value, "Dra. Mônica Cristiane"),
     ("cliente", "cliente123", Role.CLIENTE.value, "Paciente Demonstração"),
 ]
 

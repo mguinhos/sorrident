@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Icone } from "@/components/ui";
 import { CONFIG_PADRAO, CORES_QUIOSQUE, emitirSenha, lerConfigQuiosque, type ConfigQuiosque, type Senha, type TipoAtendimento } from "@/lib/senhas";
 
-const u = (n: number) => `calc(${n} * var(--u))`;
+const u = (n: number) => `calc(${n} * var(--u) * var(--uc))`;
 
 function Cartao({ t, onEscolher }: { t: TipoAtendimento; onEscolher: () => void }) {
   const [fundo, cor] = t.prioridade ? ["var(--cor-erro-fundo)", "var(--cor-erro-forte)"] : ["var(--cor-primaria-suave)", "var(--cor-primaria)"];
@@ -23,9 +23,9 @@ function Cartao({ t, onEscolher }: { t: TipoAtendimento; onEscolher: () => void 
         </span>
         <span style={{ fontSize: u(22), fontWeight: 700, color: cor, background: fundo, padding: `${u(8)} ${u(16)}`, borderRadius: 999, letterSpacing: ".04em" }}>{t.sigla}</span>
       </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: u(8), textAlign: "left" }}>
-        <span style={{ fontSize: u(44), fontWeight: 700, letterSpacing: "-0.02em" }}>{t.nome}</span>
-        <span style={{ fontSize: u(26), color: "var(--cor-suave)" }}>{t.desc}</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: u(8), textAlign: "left", minWidth: 0 }}>
+        <span style={{ fontSize: u(44), fontWeight: 700, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.nome}</span>
+        <span style={{ fontSize: u(26), color: "var(--cor-suave)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>
       </span>
     </button>
   );
@@ -48,7 +48,7 @@ export default function Quiosque() {
   const tipos = config.tipos.filter((t) => t.ativo);
 
   return (
-    <main className="sd-quiosque">
+    <main className={`sd-quiosque${config.retrato ? "" : " sd-quiosque-paisagem"}`}>
       <header style={{ background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`, padding: `${u(72)} ${u(64)}`, display: "flex", alignItems: "center", gap: u(32) }}>
         {config.mostrarLogo && (
           <div style={{ width: u(128), height: u(128), borderRadius: 999, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -63,7 +63,7 @@ export default function Quiosque() {
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: u(40), padding: u(64), minHeight: 0 }}>
         <h2 style={{ margin: 0, fontSize: u(52), fontWeight: 700, letterSpacing: "-0.02em" }}>Qual o tipo de atendimento?</h2>
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gridAutoRows: "1fr", gap: u(32), minHeight: 0 }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: config.retrato ? "1fr 1fr" : "1fr 1fr 1fr", gridAutoRows: "1fr", gap: u(32), minHeight: 0 }}>
           {tipos.map((t) => (
             <Cartao key={t.sigla} t={t} onEscolher={() => setSenha(emitirSenha(t))} />
           ))}

@@ -49,12 +49,6 @@ class MessageDispatcher(IMessageDispatcher):
     handoff e chamada ao agente (GRASP — Controller / Pure Fabrication).
     """
 
-    ESPERA = (
-        "Sua solicitação já está com a equipe da SorriDente e alguém responde por aqui "
-        "assim que possível. Se for uma emergência com dor intensa, sangramento que não "
-        "para ou inchaço no rosto, procure um pronto-socorro odontológico."
-    )
-
     def __init__(
         self,
         agent: IAgent,
@@ -67,9 +61,20 @@ class MessageDispatcher(IMessageDispatcher):
         self._patients = patients
         self._settings = settings
 
-    async def _should_send_waiting_notice(self, conversation: Any) -> bool:
+    def _waiting_notice(self, settings: Any) -> str:
+        """Aviso de espera com o prazo prometido ao paciente."""
+        eta = max(1, getattr(settings, "handoff_eta_minutes", 5) or 5)
+        plural = "s" if eta > 1 else ""
+        return (
+            "Sua solicitação já está com a equipe da SorriDente e um atendente responde por aqui "
+            f"em até {eta} minuto{plural}. Se for uma emergência com dor intensa, sangramento que "
+            "não para ou inchaço no rosto, procure um pronto-socorro odontológico."
+        )
+
+    async def _should_send_waiting_notice(self, conversation: Any, settings: Any = None) -> bool:
         """Evita repetir o aviso de espera a cada mensagem do paciente."""
-        settings = await self._settings.get()
+        if settings is None:
+            settings = await self._settings.get()
         if not conversation.handoff_notice_at:
             return True
         try:
@@ -92,14 +97,14 @@ class MessageDispatcher(IMessageDispatcher):
             campo
             for campo, valor in (
                 ("nome completo", patient.name),
-                ("CPF", patient.document),
-                ("telefone", patient.phone),
-                ("data de nascimento", patient.birth_date),
+                ("idade", patient.age),
+                ("convênio", patient.insurance_provider),
+                ("e-mail", patient.email),
             )
             if not valor
         ]
-        pendencia = f"falta {', '.join(faltando)}" if faltando else "completo"
-        return f"{patient.name or 'sem nome'} ({pendencia})"
+        pendencia = f"falta: {', '.join(faltando)}" if faltando else "completo"
+        return f"{patient.name or 'sem nome'} — cadastro {pendencia}"
 
     async def handle(self, inbound: InboundMessage) -> Optional[str]:
         conversation = await self._conversations.get_or_create(
@@ -113,13 +118,15 @@ class MessageDispatcher(IMessageDispatcher):
             # O agente não responde no lugar da equipe, mas o paciente nunca fica no
             # vácuo: um aviso de espera é enviado, com intervalo mínimo entre eles.
             logger.info("Conversa %s em atendimento humano; agente silenciado.", conversation.id)
-            if not await self._should_send_waiting_notice(conversation):
+            settings = await self._settings.get()
+            if not await self._should_send_waiting_notice(conversation, settings):
                 return None
+            notice = self._waiting_notice(settings)
             await self._conversations.append(
-                conversation.id, MessageAuthor.ASSISTANT.value, self.ESPERA
+                conversation.id, MessageAuthor.ASSISTANT.value, notice
             )
             await self._conversations.mark_handoff_notice(conversation.id)
-            return self.ESPERA
+            return notice
 
         context = AgentContext(
             conversation_id=conversation.id,

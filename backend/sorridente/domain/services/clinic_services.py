@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import date, datetime, time, timedelta
 from typing import Any, Optional
@@ -58,6 +59,8 @@ from .interfaces import (
     ISchedulingService,
     ISettingsService,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _apply(entity: Any, data: dict[str, Any]) -> None:
@@ -319,6 +322,8 @@ class AppointmentService(IAppointmentService):
         scheduling: SchedulingService,
         notifications: "NotificationService",
         settings: SettingsRepository,
+        email: Optional[Any] = None,
+        calendar: Optional[Any] = None,
     ) -> None:
         self._appointments = appointments
         self._patients = patients
@@ -327,6 +332,40 @@ class AppointmentService(IAppointmentService):
         self._scheduling = scheduling
         self._notifications = notifications
         self._settings = settings
+        self._email = email
+        self._calendar = calendar
+
+    async def _sync_calendar(self, appointment: Appointment, acao: str) -> None:
+        """Espelha o agendamento no Google Calendar — best-effort."""
+        if self._calendar is None:
+            return
+        try:
+            patient = await self._patients.get(appointment.patient_id)
+            if patient is None:
+                return
+            if acao == "cancelado":
+                await self._calendar.sync_cancel(appointment)
+            else:
+                await self._calendar.sync_upsert(appointment, patient)
+        except Exception as exc:  # noqa: BLE001 - sincronização best-effort
+            logger.warning("Sincronização com a agenda externa falhou (%s): %s", appointment.id, exc)
+
+    async def _send_email(self, appointment: Appointment, kind: str) -> None:
+        """Confirmação/aviso por e-mail — best-effort, nunca quebra o agendamento."""
+        if self._email is None:
+            return
+        try:
+            patient = await self._patients.get(appointment.patient_id)
+            if patient is None or not patient.email:
+                return
+            if kind == "confirmacao":
+                await self._email.send_appointment_confirmation(appointment, patient)
+            elif kind == "remarcada":
+                await self._email.send_appointment_update(appointment, patient, "remarcada")
+            elif kind == "cancelada":
+                await self._email.send_appointment_update(appointment, patient, "cancelada")
+        except Exception as exc:  # noqa: BLE001 - envio best-effort
+            logger.warning("E-mail de %s não enviado (%s): %s", kind, appointment.id, exc)
 
     async def _resolve_duration(self, procedure_id: str) -> tuple[int, str, str]:
         if procedure_id:
@@ -404,6 +443,8 @@ class AppointmentService(IAppointmentService):
             encaixe=encaixe,
             urgente=urgente,
         )
+        await self._send_email(appointment, "confirmacao")
+        await self._sync_calendar(appointment, "criado")
         return appointment
 
     async def schedule_emergency(
@@ -463,6 +504,8 @@ class AppointmentService(IAppointmentService):
             NotificationLevel.ALERTA.value,
             appointment_id=appointment.id,
         )
+        await self._send_email(appointment, "remarcada")
+        await self._sync_calendar(appointment, "remarcado")
         return appointment
 
     async def cancel(self, appointment_id: str, reason: str = "") -> Appointment:
@@ -477,6 +520,8 @@ class AppointmentService(IAppointmentService):
             NotificationLevel.ALERTA.value,
             appointment_id=appointment.id,
         )
+        await self._send_email(appointment, "cancelada")
+        await self._sync_calendar(appointment, "cancelado")
         return appointment
 
     async def set_status(self, appointment_id: str, status: str) -> Appointment:
@@ -516,6 +561,11 @@ class AppointmentService(IAppointmentService):
     async def mark_reminder_sent(self, appointment_id: str) -> Appointment:
         appointment = await self.get(appointment_id)
         appointment.reminder_sent = True
+        return await self._appointments.update(appointment)
+
+    async def mark_confirmation_sent(self, appointment_id: str) -> Appointment:
+        appointment = await self.get(appointment_id)
+        appointment.confirmation_email_sent = True
         return await self._appointments.update(appointment)
 
 
@@ -594,8 +644,11 @@ class ConversationService(IConversationService):
     async def set_handoff(self, conversation_id: str, handoff: bool) -> Conversation:
         conversation = await self.get(conversation_id)
         conversation.handoff = handoff
-        if not handoff:
+        if handoff:
+            conversation.handoff_since = now_iso()
+        else:
             conversation.handoff_notice_at = ""
+            conversation.handoff_since = ""
         return await self._conversations.update(conversation)
 
     async def link_patient(self, conversation_id: str, patient_id: str) -> Conversation:
@@ -710,18 +763,72 @@ class SettingsService(ISettingsService):
 
 # Autenticação
 class AuthService(IAuthService):
-    """Autenticação simples por token opaco em memória (sessões)."""
+    """Autenticação simples por token opaco em memória (sessões) + gestão de usuários."""
 
-    def __init__(self, users: UserRepository) -> None:
+    def __init__(
+        self,
+        users: UserRepository,
+        patients: Optional[PatientRepository] = None,
+        notifications: Optional["NotificationService"] = None,
+    ) -> None:
         self._users = users
+        self._patients = patients
+        self._notifications = notifications
         self._sessions: dict[str, str] = {}
 
     @staticmethod
     def hash_password(password: str, salt: str = "sorridente") -> str:
         return hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
 
+    async def _create_own_patient(self, user: User, email: str, phone: str, document: str, name: str) -> User:
+        """Cria uma entidade de paciente exclusiva para o usuário da conta.
+
+        Cada usuário cadastrado tem sua própria entidade no banco: nunca
+        reaproveitamos pacientes criados pelo chat (que podem ter dados
+        errados ou duplicados) para vincular uma conta.
+        """
+        if self._patients is None:
+            return user
+        if not email and "@" in (user.username or ""):
+            email = user.username
+        email = (email or "").strip().lower()
+        document = (document or "").strip()
+        phone = (phone or "").strip()
+        name = (name or user.display_name or "").strip()
+
+        # Sem nenhum dado de contato não há o que registrar (ex.: seed/demo).
+        if not email and not phone and not document:
+            return user
+
+        patient = Patient(name=name or email or "Paciente")
+        if email:
+            patient.email = email
+        if phone:
+            patient.phone = phone
+        if document:
+            patient.document = document
+        patient = await self._patients.add(patient)
+        if self._notifications is not None:
+            await self._notifications.notify(
+                "Novo paciente cadastrado",
+                f"{patient.name} criou uma conta no portal.",
+                NotificationLevel.SUCESSO.value,
+            )
+
+        user.linked_id = patient.id
+        if not user.display_name:
+            user.display_name = patient.name
+        return await self._users.update(user)
+
     async def register(
-        self, username: str, password: str, role: str, display_name: str = ""
+        self,
+        username: str,
+        password: str,
+        role: str,
+        display_name: str = "",
+        email: str = "",
+        phone: str = "",
+        document: str = "",
     ) -> User:
         username = (username or "").strip().lower()
         if not username or not password:
@@ -736,7 +843,51 @@ class AuthService(IAuthService):
             role=role,
             display_name=display_name or username,
         )
-        return await self._users.add(user)
+        user = await self._users.add(user)
+        if role == Role.CLIENTE.value:
+            user = await self._create_own_patient(user, email, phone, document, display_name)
+        return user
+
+    async def get_user(self, user_id: str) -> User:
+        user = await self._users.get(user_id)
+        if user is None:
+            raise NotFoundError(f"Usuário {user_id} não encontrado.")
+        return user
+
+    async def update_user(self, user_id: str, **data: Any) -> User:
+        user = await self.get_user(user_id)
+        username = (data.get("username") or "").strip().lower()
+        if username and username != user.username:
+            if await self._users.find_by_username(username) is not None:
+                raise ConflictError("Este nome de usuário já existe.")
+            user.username = username
+        if "display_name" in data and data["display_name"] is not None:
+            user.display_name = (data["display_name"] or "").strip() or user.username
+        if "role" in data and data["role"] is not None:
+            role = data["role"]
+            if role not in {r.value for r in Role}:
+                raise ValidationError("Perfil inválido.")
+            user.role = role
+        if "active" in data and data["active"] is not None:
+            user.active = bool(data["active"])
+        if "linked_id" in data and data["linked_id"] is not None:
+            user.linked_id = data["linked_id"]
+        if data.get("password"):
+            user.password_hash = self.hash_password(str(data["password"]))
+        return await self._users.update(user)
+
+    async def delete_user(self, user_id: str) -> bool:
+        user = await self.get_user(user_id)
+        if user.role == Role.GESTOR.value:
+            remaining = [u for u in await self._users.list() if u.role == Role.GESTOR.value and u.id != user_id and u.active]
+            if not remaining:
+                raise ConflictError("Não é possível excluir o último gestor ativo do sistema.")
+        await self._users.remove(user_id)
+        # encerra qualquer sessão aberta deste usuário
+        for token, uid in list(self._sessions.items()):
+            if uid == user_id:
+                del self._sessions[token]
+        return True
 
     async def authenticate(self, username: str, password: str) -> tuple[User, str]:
         user = await self._users.find_by_username((username or "").strip().lower())

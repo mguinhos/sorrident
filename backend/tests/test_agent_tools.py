@@ -57,16 +57,18 @@ async def test_cadastro_do_cliente_pelo_agente(container: ApplicationContainer) 
 
     inicial = await consultar.execute(context)
     assert inicial["cadastrado"] is False
-    assert "cpf" in inicial["campos_faltando"]
+    assert inicial["campos_faltando"] == ["nome_completo", "idade", "convenio"]
 
     criado = await cadastrar.execute(
         context,
         nome_completo="Marcos Vinícius Guinho",
+        idade="28",
+        convenio="particular",
         cpf="123.456.789-00",
         telefone="11987654321",
     )
     assert criado["status"] == "cadastrado"
-    assert criado["campos_faltando"] == ["data_nascimento"]
+    assert criado["campos_faltando"] == []
 
     atualizado = await atualizar.execute(
         context,

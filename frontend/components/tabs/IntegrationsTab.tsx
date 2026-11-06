@@ -17,7 +17,7 @@ import {
   Typography,
   message as antdMessage,
 } from "antd";
-import { ApiOutlined, MessageOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { ApiOutlined, CalendarOutlined, MessageOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { api } from "@/lib/api";
 
 interface CredentialField {
@@ -63,6 +63,7 @@ const KIND_LABEL: Record<string, string> = {
 const KIND_ICON: Record<string, React.ReactNode> = {
   inference_provider: <ThunderboltOutlined />,
   messaging_channel: <MessageOutlined />,
+  calendar: <CalendarOutlined />,
 };
 
 /**
@@ -228,6 +229,7 @@ export default function IntegrationsTab() {
 
   const inference = items.filter((i) => i.kind === "inference_provider");
   const messaging = items.filter((i) => i.kind === "messaging_channel");
+  const demais = items.filter((i) => i.kind !== "inference_provider" && i.kind !== "messaging_channel");
 
   return (
     <Space direction="vertical" size={20} style={{ width: "100%" }}>
@@ -259,6 +261,19 @@ export default function IntegrationsTab() {
           ))}
         </Row>
       </div>
+
+      {demais.length > 0 && (
+        <div>
+          <Typography.Title level={5}>Agendas e serviços externos</Typography.Title>
+          <Row gutter={[16, 16]}>
+            {demais.map((item) => (
+              <Col xs={24} lg={12} key={item.key}>
+                <IntegrationCard item={item} onChanged={load} />
+              </Col>
+            ))}
+          </Row>
+        </div>
+      )}
     </Space>
   );
 }

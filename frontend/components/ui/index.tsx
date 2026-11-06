@@ -184,7 +184,7 @@ export function GrupoEscolha({ rotulo, children, linha }: { rotulo?: string; chi
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rotulo && <div className="sd-campo-rotulo">{rotulo}</div>}
-      <div role="radiogroup" aria-label={rotulo} style={{ display: "flex", flexDirection: linha ? "row" : "column", gap: linha ? 12 : 8 }}>
+      <div role="radiogroup" aria-label={rotulo} style={{ display: "flex", flexDirection: linha ? "row" : "column", gap: linha ? 12 : 8, flexWrap: linha ? "wrap" : undefined }}>
         {children}
       </div>
     </div>

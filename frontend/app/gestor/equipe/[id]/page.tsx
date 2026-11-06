@@ -134,7 +134,7 @@ export default function CadastroOdontologista() {
                 <div style={{ ...grade3, marginTop: 10 }}>
                   <Form.Item name="usuario" label={<b>Usuário</b>}><Input size="large" placeholder="nome.sobrenome" /></Form.Item>
                   <Form.Item name="perfil" label={<b>Perfil</b>}>
-                    <Select size="large" options={[{ value: "medico", label: "Médico(a)" }, { value: "gestor", label: "Gestor" }]} />
+                    <Select size="large" options={[{ value: "medico", label: "Dentista" }, { value: "gestor", label: "Gestor" }]} />
                   </Form.Item>
                   <Form.Item name="senha" label={<b>Senha inicial</b>}><Input.Password size="large" /></Form.Item>
                 </div>

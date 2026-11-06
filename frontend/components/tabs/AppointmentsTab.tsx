@@ -20,6 +20,7 @@ import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import { api } from "@/lib/api";
 import type { Appointment, Dentist, Patient, Procedure, Slot } from "@/lib/types";
+import TabelaRolavel from "@/components/ui/TabelaRolavel";
 
 const STATUS = ["agendado", "confirmado", "concluido", "cancelado", "faltou"] as const;
 const STATUS_COLOR: Record<string, string> = {
@@ -103,17 +104,18 @@ export default function AppointmentsTab() {
             options={STATUS.map((s) => ({ label: s, value: s }))}
           />
           <Button icon={<ReloadOutlined />} onClick={() => void load()} />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} className="sd-btn-so-icone" onClick={() => setOpen(true)}>
             Novo agendamento
           </Button>
         </Space>
       }
     >
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={items}
-        scroll={{ x: 900 }}
+      <TabelaRolavel>
+        <Table
+          rowKey="id"
+          loading={loading}
+          dataSource={items}
+          scroll={{ x: 900 }}
         columns={[
           {
             title: "Data e hora",
@@ -122,6 +124,7 @@ export default function AppointmentsTab() {
             render: (v: string) => new Date(v).toLocaleString("pt-BR"),
           },
           { title: "Paciente", dataIndex: "patient_name" },
+          { title: "Cadastro", dataIndex: "cadastrado", render: (v: boolean) => (v ? <Tag color="green">cadastrado</Tag> : <Tag color="orange">não cadastrado</Tag>) },
           { title: "Profissional", dataIndex: "dentist_name" },
           { title: "Procedimento", dataIndex: "procedure_name" },
           { title: "Origem", dataIndex: "origin", render: (v: string) => <Tag>{v}</Tag> },
@@ -162,6 +165,7 @@ export default function AppointmentsTab() {
           },
         ]}
       />
+      </TabelaRolavel>
 
       <Modal
         title="Novo agendamento"

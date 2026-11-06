@@ -72,9 +72,11 @@ from .export import (
 )
 from .infrastructure.credentials import JsonCredentialStore
 from .infrastructure.database import TinyDBDatabase
+from .infrastructure.email import EmailSender
 from .infrastructure.event_bus import InMemoryEventBus
 from .infrastructure.llm import OpenCodeGoLLMProvider
 from .integrations import (
+    GoogleCalendarIntegration,
     OpenCodeGoInferenceIntegration,
     IntegrationRegistry,
     RoutingLLMProvider,
@@ -94,7 +96,9 @@ from .scheduler import (
     AppointmentReminderJob,
     BackgroundScheduler,
     ConversationTimeoutJob,
+    HandoffAutoReleaseJob,
     KnowledgeReindexJob,
+    WhatsAppNotificationJob,
 )
 from .seed import DataSeeder
 
@@ -111,10 +115,23 @@ class ApplicationContainer:
         self.database = TinyDBDatabase(self.config.database_path)
         self.credentials = JsonCredentialStore(self.config.credentials_path)
         self.event_bus = InMemoryEventBus()
+        self.email_sender = EmailSender(
+            host=self.config.smtp_host,
+            port=self.config.smtp_port,
+            username=self.config.smtp_user,
+            password=self.config.smtp_password,
+            sender=self.config.smtp_from,
+            starttls=self.config.smtp_starttls,
+            use_ssl=self.config.smtp_use_ssl,
+        )
 
         # Integrações: o agente fala com o provedor ativo através do proxy.
         self.integrations = IntegrationRegistry(self.credentials)
         self.llm = RoutingLLMProvider(self.integrations.inference)
+
+        # Agenda externa (Google Calendar): criada cedo porque o serviço de
+        # agendamento espelha consultas nela.
+        self.google_calendar = GoogleCalendarIntegration(self.credentials)
 
         # Repositórios
         self.patient_repository = PatientRepository(self.database)
@@ -146,12 +163,16 @@ class ApplicationContainer:
             self.scheduling_service,
             self.notification_service,
             self.settings_repository,
+            self.email_sender,
+            self.google_calendar,
         )
         self.conversation_service = ConversationService(
             self.conversation_repository, self.message_repository, self.event_bus
         )
         self.faq_service = FAQService(self.faq_repository)
-        self.auth_service = AuthService(self.user_repository)
+        self.auth_service = AuthService(
+            self.user_repository, self.patient_repository, self.notification_service
+        )
         # RAG: recuperação híbrida (TF-IDF + BM25) sobre a base da clínica
         self.chunker = ParagraphChunker()
         self.embedder = TfIdfEmbedder()
@@ -221,6 +242,7 @@ class ApplicationContainer:
         self.integrations.register(self.opencode_go_integration, activate=True)
         self.integrations.register(TelegramIntegration(self.telegram_channel))
         self.integrations.register(WhatsAppIntegration(self.whatsapp_channel))
+        self.integrations.register(self.google_calendar)
 
         # Exportação de conversas (formatos plugáveis). Depende dos canais, que só
         # existem depois do agente — por isso a ferramenta entra no registro agora,
@@ -244,6 +266,7 @@ class ApplicationContainer:
                     self.notification_service,
                     self.config.reminder_interval_seconds,
                     self.config.reminder_window_hours,
+                    self.email_sender,
                 )
             )
             .register(
@@ -254,6 +277,14 @@ class ApplicationContainer:
                     self.config.inactivity_check_seconds,
                 )
             )
+            .register(
+                HandoffAutoReleaseJob(
+                    self.conversation_service,
+                    self.channels,
+                    self.settings_service,
+                )
+            )
+            .register(WhatsAppNotificationJob(self.event_bus, self.channels, self.settings_service))
             .register(KnowledgeReindexJob(self.knowledge_service, self.config.reindex_seconds))
         )
 
@@ -310,6 +341,19 @@ class ApplicationContainer:
             self.auth_service,
         ).run()
         await self.integrations.load_all()
+        # Bootstrap via ambiente (opcional): poupa digitar no painel.
+        if not self.google_calendar.is_configured():
+            gc_id = self.config.google_calendar_id
+            gc_json = self.config.google_service_account_json
+            if gc_id or gc_json:
+                await self.google_calendar.configure(
+                    {"calendar_id": gc_id, "service_account_json": gc_json}
+                )
+                if self.google_calendar.is_configured():
+                    try:
+                        await self.google_calendar.enable()
+                    except Exception as exc:  # noqa: BLE001 - agenda externa não derruba o boot
+                        logger.warning("Google Calendar não habilitado via ambiente: %s", exc)
         await self.knowledge_service.reindex()
         await self.web_channel.start()
         await self.scheduler.start()

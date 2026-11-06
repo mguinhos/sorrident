@@ -8,6 +8,7 @@ import { BellOutlined, CalendarOutlined, ScheduleOutlined } from "@ant-design/ic
 import { Button } from "antd";
 import { HOME_BY_ROLE, useAuth } from "@/app/providers";
 import Transicao from "@/components/layout/Transicao";
+import { Icone } from "@/components/ui";
 
 const PILARES = [
   {
@@ -28,21 +29,17 @@ const PILARES = [
 ];
 
 export default function ApresentacaoPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [abrindo, setAbrindo] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
 
-  const destino = user ? HOME_BY_ROLE[user.role] : "/login";
+  const destino = user ? HOME_BY_ROLE[user.role] : "/chat";
 
-  // quem já tem sessão aberta vai direto para o seu painel
+  // deixa a rota pronta antes do clique
   useEffect(() => {
-    if (!loading && user) router.replace(HOME_BY_ROLE[user.role]);
-  }, [loading, user, router]);
-
-  // deixa o login pronto antes do clique
-  useEffect(() => {
-    router.prefetch("/login");
-  }, [router]);
+    router.prefetch(destino);
+  }, [router, destino]);
 
   // segura a tela de transição por um instante antes de trocar de rota
   useEffect(() => {
@@ -72,6 +69,25 @@ export default function ApresentacaoPage() {
           <Image src="/logo.svg" alt="" width={40} height={40} priority />
           <strong>SorriDente</strong>
         </div>
+        <button
+          type="button"
+          className="sd-apresentacao-hamburguer"
+          aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={menuAberto}
+          onClick={() => setMenuAberto((v) => !v)}
+        >
+          <Icone nome={menuAberto ? "fechar" : "lista"} tam={20} />
+        </button>
+        <nav className={`sd-apresentacao-atalhos${menuAberto ? " sd-apresentacao-atalhos-aberta" : ""}`} aria-label="Atalhos">
+          <Link href="/como-funciona" className="sd-apresentacao-secundario" onClick={() => setMenuAberto(false)}>
+            Como funciona
+          </Link>
+          {!user && (
+            <Link href="/login" className="sd-apresentacao-secundario" onClick={() => setMenuAberto(false)}>
+              Logar
+            </Link>
+          )}
+        </nav>
       </header>
 
       <section className="sd-apresentacao-hero">
@@ -93,11 +109,8 @@ export default function ApresentacaoPage() {
               onClick={abrirAcesso}
               loading={abrindo}
             >
-              {user ? "Ir para o painel" : "Experimente o App"}
+              {user ? "Ir para o painel" : "Falar com o SorriDente"}
             </Button>
-            <Link href="/como-funciona" className="sd-apresentacao-secundario">
-              Como funciona
-            </Link>
           </div>
         </div>
 
@@ -131,10 +144,10 @@ export default function ApresentacaoPage() {
       </section>
 
       <section className="sd-apresentacao-pilares">
-        {PILARES.map(({ titulo, texto, icone: Icone }) => (
+        {PILARES.map(({ titulo, texto, icone: IconePilar }) => (
           <article key={titulo} className="sd-apresentacao-pilar">
             <span className="sd-apresentacao-pilar-icone" aria-hidden>
-              <Icone />
+              <IconePilar />
             </span>
             <h2>{titulo}</h2>
             <p>{texto}</p>

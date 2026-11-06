@@ -96,6 +96,7 @@ class Patient(Entity):
     name: str = ""
     phone: str = ""
     email: str = ""
+    age: str = ""                  # idade informada no atendimento
     birth_date: str = ""            # ISO YYYY-MM-DD
     document: str = ""              # CPF
     insurance_provider: str = ""    # convênio odontológico
@@ -153,6 +154,7 @@ class Appointment(Entity):
     notes: str = ""
     origin: str = ChannelType.WEB.value
     reminder_sent: bool = False
+    confirmation_email_sent: bool = False
 
     @property
     def is_encaixe(self) -> bool:
@@ -197,6 +199,7 @@ class Conversation(Entity):
     last_message_at: str = field(default_factory=now_iso)
     unread_for_staff: int = 0
     handoff: bool = False           # atendimento assumido por humano
+    handoff_since: str = ""         # quando o humano assumiu (para liberação automática)
     open: bool = True
     closed_at: str = ""             # encerramento por inatividade ou pela equipe
     closed_reason: str = ""
@@ -241,7 +244,7 @@ class KnowledgeDocument(Entity):
 class ClinicSettings(Entity):
     """Configurações gerais da clínica."""
 
-    clinic_name: str = "Clínica Ortodôntica SorriDente"
+    clinic_name: str = "Clínica Ortodôntica"
     address: str = ""
     phone: str = ""
     email: str = ""
@@ -255,6 +258,9 @@ class ClinicSettings(Entity):
     emergency_slot_minutes: int = 30       # duração do encaixe de urgência
     max_emergency_per_day: int = 4         # limite de encaixes de urgência por dia
     handoff_notice_cooldown_minutes: int = 5
+    handoff_eta_minutes: int = 5          # prazo prometido ao paciente no aviso de espera
+    handoff_timeout_minutes: int = 10     # devolve a conversa ao bot se a equipe não responder; 0 desliga
+    notify_whatsapp_phone: str = ""       # WhatsApp da recepção para avisos de atendimento humano
     persona: str = (
         "Você é o SorriDente, atendente virtual da Clínica Ortodôntica SorriDente, "
         "especialista em atendimento clínico odontológico: acolhedor, objetivo e "

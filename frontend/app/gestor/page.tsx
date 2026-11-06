@@ -56,9 +56,9 @@ export default function VisaoGeral() {
         sub={`${saudacao()}! Este é o resumo da clínica hoje.`}
         acoes={
           <>
-            <NotificationBell />
             <Botao tipo="secundario" icone="pessoas" href="/gestor/pacientes">Cadastrar paciente</Botao>
             <Botao icone="mais" href="/gestor/agenda">Novo agendamento</Botao>
+            <NotificationBell />
           </>
         }
       />

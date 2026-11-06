@@ -99,7 +99,7 @@ export default function ConfigAgente() {
   const chat = (msgs: React.ReactNode) => <MiniChat nome={nome || "Sorri"}>{msgs}</MiniChat>;
 
   const comum = {
-    fluxo: "Configuração do agente",
+    fluxo: "Agente",
     sub: "O assistente que responde os pacientes no chat e no WhatsApp",
     passos: PASSOS,
     atual: passo,
@@ -185,10 +185,10 @@ export default function ConfigAgente() {
             })}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, width: 90 }}>Expediente</span>
-            <TimePicker size="large" format="HH:mm" minuteStep={15} value={dayjs(abre, "HH:mm")} onChange={(v) => v && setAbre(v.format("HH:mm"))} allowClear={false} aria-label="Abre às" />
+            <span className="sd-expediente" style={{ fontSize: 14, fontWeight: 600, width: 90 }}>Expediente</span>
+            <TimePicker className="sd-hora" size="large" format="HH:mm" minuteStep={15} value={dayjs(abre, "HH:mm")} onChange={(v) => v && setAbre(v.format("HH:mm"))} allowClear={false} aria-label="Abre às" />
             <span style={{ color: "var(--cor-suave)", fontSize: 13 }}>até</span>
-            <TimePicker size="large" format="HH:mm" minuteStep={15} value={dayjs(fecha, "HH:mm")} onChange={(v) => v && setFecha(v.format("HH:mm"))} allowClear={false} aria-label="Fecha às" />
+            <TimePicker className="sd-hora" size="large" format="HH:mm" minuteStep={15} value={dayjs(fecha, "HH:mm")} onChange={(v) => v && setFecha(v.format("HH:mm"))} allowClear={false} aria-label="Fecha às" />
           </div>
         </div>
         <GrupoEscolha rotulo="Fora do horário, o assistente…">
@@ -208,7 +208,7 @@ export default function ConfigAgente() {
   </>);
   const nRegras = REGRAS.filter((r) => regras[r.id]).length;
   return (
-    <Casca {...comum} titulo="Confira e ative o assistente" descricao="Ao concluir, o assistente começa a responder no chat do site e nos canais conectados." previa={<Celular3D tela={tela} selo={<SeloFlutuante texto="Assistente ativo" />} />} previaRotulo="Atendimento completo" textoProximo="Ativar assistente">
+    <Casca {...comum} titulo="Confira e ative o assistente" descricao="Ao concluir, o assistente começa a responder no chat do site e nos canais conectados." previa={<Celular3D tela={tela} selo={<SeloFlutuante />} />} previaRotulo="Atendimento completo" textoProximo="Ativar assistente">
       <div className="sd-tom-ok" style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: 14 }}>
         <div style={{ width: 44, height: 44, borderRadius: 999, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icone nome="ok" tam={26} esp={2} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, color: "var(--cor-tinta)" }}>

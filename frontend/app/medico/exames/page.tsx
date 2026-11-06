@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input, Upload, message } from "antd";
+import type { InputRef } from "antd";
 import Topo, { Conteudo } from "@/components/layout/Topo";
 import { Avatar, Botao, Cartao, Etiqueta, Icone } from "@/components/ui";
+import TabelaRolavel from "@/components/ui/TabelaRolavel";
 import { EXAMES, type Exame } from "@/lib/demo";
 
 const FILTROS: { rotulo: string; status?: Exame["status"] }[] = [
@@ -18,6 +20,21 @@ export default function Exames() {
   const [filtro, setFiltro] = useState<Exame["status"] | undefined>();
   const [busca, setBusca] = useState("");
   const [selId, setSelId] = useState(EXAMES[0].id);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const buscaRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (buscaAberta) buscaRef.current?.focus();
+  }, [buscaAberta]);
+
+  function alternarBusca() {
+    if (buscaAberta) {
+      setBusca("");
+      setBuscaAberta(false);
+    } else {
+      setBuscaAberta(true);
+    }
+  }
 
   const lista = useMemo(
     () => EXAMES.filter((e) => (!filtro || e.status === filtro) && `${e.paciente} ${e.exame}`.toLowerCase().includes(busca.toLowerCase())),
@@ -29,29 +46,49 @@ export default function Exames() {
     <>
       <Topo titulo="Exames" sub="Exames e resultados dos pacientes" acoes={<Botao icone="mais">Novo exame</Botao>} />
       <Conteudo gap={16}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} role="group" aria-label="Filtrar por status">
-            {FILTROS.map((f) => (
-              <button key={f.rotulo} type="button" className="sd-filtro" aria-pressed={filtro === f.status} onClick={() => setFiltro(f.status)}>
-                {f.rotulo}
-                <span className="sd-filtro-qtd">{EXAMES.filter((e) => !f.status || e.status === f.status).length}</span>
-              </button>
-            ))}
-          </div>
-          <Input
-            allowClear
-            prefix={<Icone nome="busca" tam={16} cor="var(--cor-sutil)" />}
-            placeholder="Buscar paciente ou exame"
-            style={{ width: 260 }}
-            onChange={(e) => setBusca(e.target.value)}
-            aria-label="Buscar paciente ou exame"
-          />
-        </div>
-
         <div className="sd-linha sd-linha-quebra" style={{ alignItems: "flex-start" }}>
           <div className="sd-coluna" style={{ flex: 1 }}>
             <Cartao pad={16} gap={0}>
-              <table className="sd-tabela">
+              <div className="sd-filtros-linha" style={{ marginBottom: 14 }}>
+                <div className="sd-filtros-grupo" style={{ display: "flex", gap: 8, flexWrap: "wrap" }} role="group" aria-label="Filtrar por status">
+                  <div className="sd-filtros-centro">
+                    {FILTROS.slice(0, 3).map((f) => (
+                      <button key={f.rotulo} type="button" className="sd-filtro" aria-pressed={filtro === f.status} onClick={() => setFiltro(f.status)}>
+                        {f.rotulo}
+                        <span className="sd-filtro-qtd">{EXAMES.filter((e) => !f.status || e.status === f.status).length}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {FILTROS.slice(3).map((f) => (
+                    <button key={f.rotulo} type="button" className="sd-filtro" aria-pressed={filtro === f.status} onClick={() => setFiltro(f.status)}>
+                      {f.rotulo}
+                      <span className="sd-filtro-qtd">{EXAMES.filter((e) => !f.status || e.status === f.status).length}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="sd-so-mobile sd-filtro-icone"
+                    aria-expanded={buscaAberta}
+                    aria-label={buscaAberta ? "Fechar busca" : "Buscar paciente ou exame"}
+                    onClick={alternarBusca}
+                  >
+                    <Icone nome={buscaAberta ? "fechar" : "busca"} tam={16} />
+                  </button>
+                </div>
+                <Input
+                  ref={buscaRef}
+                  allowClear
+                  prefix={<Icone nome="busca" tam={16} cor="var(--cor-sutil)" />}
+                  placeholder="Buscar paciente ou exame"
+                  style={{ width: 260 }}
+                  className={buscaAberta ? "sd-busca-aberta" : "sd-busca-recolhida"}
+                  onChange={(e) => setBusca(e.target.value)}
+                  aria-label="Buscar paciente ou exame"
+                />
+              </div>
+              <TabelaRolavel>
+                <div className="sd-tabela-rolo">
+                  <table className="sd-tabela">
                 <thead>
                   <tr>
                     <th style={{ paddingLeft: 16 }}>Paciente</th>
@@ -87,8 +124,10 @@ export default function Exames() {
                   {lista.length === 0 && (
                     <tr><td colSpan={4} style={{ color: "var(--cor-suave)", paddingLeft: 16 }}>Nenhum exame encontrado.</td></tr>
                   )}
-                </tbody>
-              </table>
+                  </tbody>
+                  </table>
+                </div>
+              </TabelaRolavel>
             </Cartao>
 
             <Upload.Dragger
@@ -109,12 +148,12 @@ export default function Exames() {
                   <div style={{ fontSize: 15, fontWeight: 700 }}>Cadastrar exame</div>
                   <div style={{ fontSize: 13, color: "var(--cor-suave)" }}>Arraste a imagem/arquivo ou clique (PNG, JPG, DICOM, PDF)</div>
                 </div>
-                <span style={{ height: 40, padding: "0 16px", borderRadius: 12, display: "inline-flex", alignItems: "center", border: "1px solid var(--cor-borda)", background: "#fff", fontWeight: 600, fontSize: 14 }}>Escolher arquivo</span>
+                <span className="btn-escolher-arquivo" style={{ height: 40, padding: "0 16px", borderRadius: 12, display: "inline-flex", alignItems: "center", border: "1px solid var(--cor-borda)", background: "#fff", fontWeight: 600, fontSize: 14 }}>Escolher arquivo</span>
               </div>
             </Upload.Dragger>
           </div>
 
-          <div style={{ width: 400, maxWidth: "100%", flexShrink: 0 }}>
+          <div className="sd-col-resultado" style={{ width: 400, maxWidth: "100%", flexShrink: 0 }}>
             <Cartao gap={16} titulo="Resultado do exame" acao={<Etiqueta texto={sel.status} />}>
               <div style={{ height: 220, borderRadius: 12, background: "linear-gradient(160deg,#0b1b33 0%,#1b3557 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: "#9fb7d6" }}>
                 <Icone nome="dente" tam={40} cor="#5f7fa8" esp={1.4} />

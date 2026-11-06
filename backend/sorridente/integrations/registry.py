@@ -14,6 +14,7 @@ from typing import Any, Generic, Iterator, Optional, TypeVar
 from ..core.exceptions import NotFoundError, ValidationError
 from ..core.interfaces import ICredentialStore
 from .base import IIntegration, IntegrationKind
+from .calendar import BaseCalendarIntegration
 from .inference import BaseInferenceIntegration, InferenceResolver
 from .messaging import BaseChannelIntegration
 
@@ -131,10 +132,12 @@ class IntegrationRegistry:
         self._credentials = credentials
         self.inference = InferenceRegistry()
         self.messaging = MessagingRegistry()
+        self.calendar = BaseIntegrationRegistry[BaseCalendarIntegration]()
+        self.calendar.kind = IntegrationKind.CALENDAR
 
     @property
     def registries(self) -> tuple[BaseIntegrationRegistry[Any], ...]:
-        return (self.inference, self.messaging)
+        return (self.inference, self.messaging, self.calendar)
 
     def register(self, integration: IIntegration, *, activate: bool = False) -> "IntegrationRegistry":
         """Encaminha a integração para o registro da família correspondente."""
@@ -142,6 +145,8 @@ class IntegrationRegistry:
             self.inference.register(integration, activate=activate)
         elif isinstance(integration, BaseChannelIntegration):
             self.messaging.register(integration)
+        elif isinstance(integration, BaseCalendarIntegration):
+            self.calendar.register(integration)
         else:
             raise ValidationError(
                 f"Tipo de integração não suportado: {integration.kind.value}."

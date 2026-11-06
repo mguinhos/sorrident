@@ -37,7 +37,12 @@ class PatientAwareTool(BaseTool, ABC):
         return patient
 
     async def resolve_patient(
-        self, context: AgentContext, name: str = "", phone: str = ""
+        self,
+        context: AgentContext,
+        name: str = "",
+        phone: str = "",
+        age: str = "",
+        insurance: str = "",
     ) -> Patient:
         """Devolve o paciente da conversa, criando um cadastro mínimo se preciso."""
         patient = await self.current_patient(context)
@@ -50,6 +55,10 @@ class PatientAwareTool(BaseTool, ABC):
             updates["name"] = name
         if phone and patient.phone != phone:
             updates["phone"] = phone
+        if age and patient.age != age:
+            updates["age"] = age
+        if insurance and patient.insurance_provider != insurance:
+            updates["insurance_provider"] = insurance
         if updates:
             patient = await self._patients.update(patient.id, **updates)
         return await self.bind(context, patient)
@@ -59,13 +68,13 @@ class PatientAwareTool(BaseTool, ABC):
         """Resumo do cadastro com o que ainda falta preencher."""
         obrigatorios = {
             "nome_completo": patient.name,
-            "cpf": patient.document,
-            "telefone": patient.phone,
-            "data_nascimento": patient.birth_date,
+            "idade": patient.age,
+            "convenio": patient.insurance_provider,
         }
         return {
             "paciente_id": patient.id,
             "nome_completo": patient.name,
+            "idade": patient.age,
             "cpf": patient.document,
             "telefone": patient.phone,
             "email": patient.email,

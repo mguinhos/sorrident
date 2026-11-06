@@ -17,12 +17,38 @@ class RegisterRequest(BaseModel):
     password: str
     role: str = "cliente"
     display_name: str = ""
+    email: str = ""
+    phone: str = ""
+    document: str = ""
+
+
+class UserCreateRequest(BaseModel):
+    """Criação de usuário pelo gestor (painel do Administrador)."""
+
+    username: str
+    password: str
+    role: str = "cliente"
+    display_name: str = ""
+    linked_id: str = ""
+    active: bool = True
+
+
+class UserUpdateRequest(BaseModel):
+    """Edição de usuário pelo gestor; senha opcional (nova senha apenas se preenchida)."""
+
+    username: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    display_name: Optional[str] = None
+    linked_id: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class PatientRequest(BaseModel):
     name: str
     phone: str = ""
     email: str = ""
+    age: str = ""
     birth_date: str = ""
     document: str = ""
     insurance_provider: str = ""
@@ -38,6 +64,7 @@ class PatientUpdateRequest(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    age: Optional[str] = None
     birth_date: Optional[str] = None
     document: Optional[str] = None
     insurance_provider: Optional[str] = None
@@ -170,6 +197,9 @@ class SettingsRequest(BaseModel):
     emergency_slot_minutes: Optional[int] = None
     max_emergency_per_day: Optional[int] = None
     handoff_notice_cooldown_minutes: Optional[int] = None
+    handoff_eta_minutes: Optional[int] = None
+    handoff_timeout_minutes: Optional[int] = None
+    notify_whatsapp_phone: Optional[str] = None
     persona: Optional[str] = None
 
 
