@@ -6,6 +6,7 @@ from .base import (
     IntegrationKind,
     IntegrationStatus,
 )
+from .calendar import BaseCalendarIntegration, GoogleCalendarIntegration
 from .inference import (
     BaseInferenceIntegration,
     OpenCodeGoInferenceIntegration,
@@ -26,6 +27,8 @@ __all__ = [
     "CredentialField",
     "IntegrationKind",
     "IntegrationStatus",
+    "BaseCalendarIntegration",
+    "GoogleCalendarIntegration",
     "BaseInferenceIntegration",
     "OpenCodeGoInferenceIntegration",
     "InferenceResolver",

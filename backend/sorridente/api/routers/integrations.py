@@ -13,13 +13,13 @@ from fastapi.responses import PlainTextResponse
 from ...container import ApplicationContainer
 from ...core.exceptions import AuthenticationError
 from ...integrations import IntegrationKind
-from ..dependencies import get_container, require_manager
+from ..dependencies import get_container, require_staff
 from ..schemas.dto import IntegrationCredentialsRequest
 
 router = APIRouter(prefix="/integrations", tags=["integrações"])
 
 
-@router.get("", dependencies=[Depends(require_manager)])
+@router.get("", dependencies=[Depends(require_staff)])
 async def list_integrations(
     container: ApplicationContainer = Depends(get_container),
 ) -> dict[str, Any]:
@@ -30,7 +30,7 @@ async def list_integrations(
     }
 
 
-@router.get("/{key}", dependencies=[Depends(require_manager)])
+@router.get("/{key}", dependencies=[Depends(require_staff)])
 async def get_integration(
     key: str, container: ApplicationContainer = Depends(get_container)
 ) -> dict[str, Any]:
@@ -42,7 +42,7 @@ async def get_integration(
     }
 
 
-@router.put("/{key}", dependencies=[Depends(require_manager)])
+@router.put("/{key}", dependencies=[Depends(require_staff)])
 async def save_integration(
     key: str,
     payload: IntegrationCredentialsRequest,
@@ -58,28 +58,28 @@ async def save_integration(
     return integration.status().to_dict()
 
 
-@router.post("/{key}/enable", dependencies=[Depends(require_manager)])
+@router.post("/{key}/enable", dependencies=[Depends(require_staff)])
 async def enable_integration(
     key: str, container: ApplicationContainer = Depends(get_container)
 ) -> dict[str, Any]:
     return (await container.integrations.enable(key)).status().to_dict()
 
 
-@router.post("/{key}/disable", dependencies=[Depends(require_manager)])
+@router.post("/{key}/disable", dependencies=[Depends(require_staff)])
 async def disable_integration(
     key: str, container: ApplicationContainer = Depends(get_container)
 ) -> dict[str, Any]:
     return (await container.integrations.disable(key)).status().to_dict()
 
 
-@router.post("/{key}/test", dependencies=[Depends(require_manager)])
+@router.post("/{key}/test", dependencies=[Depends(require_staff)])
 async def test_integration(
     key: str, container: ApplicationContainer = Depends(get_container)
 ) -> dict[str, Any]:
     return await container.integrations.get(key).test()
 
 
-@router.post("/{key}/activate-inference", dependencies=[Depends(require_manager)])
+@router.post("/{key}/activate-inference", dependencies=[Depends(require_staff)])
 async def activate_inference(
     key: str, container: ApplicationContainer = Depends(get_container)
 ) -> dict[str, Any]:

@@ -152,6 +152,11 @@ class IAppointmentService(IService):
     @abstractmethod
     async def mark_reminder_sent(self, appointment_id: str) -> Appointment: ...
 
+    @abstractmethod
+    async def mark_confirmation_sent(self, appointment_id: str) -> Appointment:
+        """Registra que o e-mail de confirmação já foi enviado ao paciente."""
+        ...
+
 
 class IConversationService(IService):
     @abstractmethod
@@ -243,13 +248,31 @@ class IAuthService(IService):
     async def authenticate(self, username: str, password: str) -> tuple[User, str]: ...
 
     @abstractmethod
-    async def register(self, username: str, password: str, role: str, display_name: str = "") -> User: ...
+    async def register(
+        self,
+        username: str,
+        password: str,
+        role: str,
+        display_name: str = "",
+        email: str = "",
+        phone: str = "",
+        document: str = "",
+    ) -> User: ...
 
     @abstractmethod
     async def resolve_token(self, token: str) -> User: ...
 
     @abstractmethod
     async def list_users(self) -> list[User]: ...
+
+    @abstractmethod
+    async def get_user(self, user_id: str) -> User: ...
+
+    @abstractmethod
+    async def update_user(self, user_id: str, **data: Any) -> User: ...
+
+    @abstractmethod
+    async def delete_user(self, user_id: str) -> bool: ...
 
 
 class IAnalyticsService(IService):

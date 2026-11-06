@@ -19,6 +19,14 @@ from ..schemas.dto import (
 router = APIRouter(prefix="/appointments", tags=["agendamentos"], dependencies=[Depends(require_staff)])
 
 
+async def _to_dict(a: Any, container: ApplicationContainer) -> dict[str, Any]:
+    """Serializa o agendamento marcando se o paciente tem cadastro completo (CPF)."""
+    data = a.to_dict()
+    patient = await container.patient_repository.get(a.patient_id) if a.patient_id else None
+    data["cadastrado"] = bool(patient and patient.document)
+    return data
+
+
 @router.get("")
 async def list_appointments(
     status: str = Query(default=""),
@@ -29,7 +37,7 @@ async def list_appointments(
     items = await container.appointment_service.list_all(
         status=status, patient_id=patient_id, dentist_id=dentist_id
     )
-    return [a.to_dict() for a in items]
+    return [await _to_dict(a, container) for a in items]
 
 
 @router.get("/agenda")
@@ -39,7 +47,7 @@ async def agenda(
     container: ApplicationContainer = Depends(get_container),
 ) -> list[dict[str, Any]]:
     items = await container.appointment_service.agenda(start, start + timedelta(days=days - 1))
-    return [a.to_dict() for a in items]
+    return [await _to_dict(a, container) for a in items]
 
 
 @router.get("/slots")

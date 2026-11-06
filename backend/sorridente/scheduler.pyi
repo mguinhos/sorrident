@@ -55,6 +55,17 @@ class ConversationTimeoutJob(IBackgroundJob):
     def interval_seconds(self) -> int: ...
     async def run_once(self) -> None: ...
 
+class HandoffAutoReleaseJob(IBackgroundJob):
+    RETOMADA: str
+    _conversations: Incomplete
+    _channels: Incomplete
+    _settings: Incomplete
+    _interval: Incomplete
+    def __init__(self, conversations: IConversationService, channels: IChannelManager, settings: ISettingsService, interval_seconds: int = 60) -> None: ...
+    @property
+    def interval_seconds(self) -> int: ...
+    async def run_once(self) -> None: ...
+
 class KnowledgeReindexJob(IBackgroundJob):
     _knowledge: Incomplete
     _interval: Incomplete

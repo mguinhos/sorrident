@@ -69,6 +69,19 @@ class AppConfig:
     inactivity_check_seconds: int = field(default_factory=lambda: _env_int("SORRIDENTE_INACTIVITY_CHECK", 120))
     reindex_seconds: int = field(default_factory=lambda: _env_int("SORRIDENTE_REINDEX_INTERVAL", 1800))
     autostart_telegram: bool = field(default_factory=lambda: _env("SORRIDENTE_AUTOSTART_TELEGRAM", "1") == "1")
+    # SMTP para e-mails transacionais (confirmação de agendamento, etc.).
+    smtp_host: str = field(default_factory=lambda: _env("SORRIDENTE_SMTP_HOST", ""))
+    smtp_port: int = field(default_factory=lambda: _env_int("SORRIDENTE_SMTP_PORT", 587))
+    smtp_user: str = field(default_factory=lambda: _env("SORRIDENTE_SMTP_USER", ""))
+    smtp_password: str = field(default_factory=lambda: _env("SORRIDENTE_SMTP_PASSWORD", ""))
+    smtp_from: str = field(default_factory=lambda: _env("SORRIDENTE_SMTP_FROM", ""))
+    smtp_starttls: bool = field(default_factory=lambda: _env("SORRIDENTE_SMTP_STARTTLS", "1") == "1")
+    smtp_use_ssl: bool = field(default_factory=lambda: _env("SORRIDENTE_SMTP_SSL", "0") == "1")
+    # Google Calendar (bootstrap opcional via ambiente; o painel também configura).
+    google_calendar_id: str = field(default_factory=lambda: _env("GOOGLE_CALENDAR_ID", ""))
+    google_service_account_json: str = field(
+        default_factory=lambda: _env("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    )
 
     @classmethod
     def from_env(cls) -> "AppConfig":
