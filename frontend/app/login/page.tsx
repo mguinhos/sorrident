@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, Button, Form, Input, Segmented } from "antd";
+import { Icone } from "@/components/ui";
 import { HOME_BY_ROLE, useAuth } from "@/app/providers";
 import type { Role } from "@/lib/types";
 
 const PERFIS: { label: string; value: Role; hint: string; demo: [string, string] }[] = [
-  { label: "Cliente", value: "cliente", hint: "Converse com o SorriDente e agende sua consulta.", demo: ["cliente", "cliente123"] },
-  { label: "Médico", value: "medico", hint: "Sua agenda do dia e o prontuário dos pacientes.", demo: ["medico", "medico123"] },
-  { label: "Gestor", value: "gestor", hint: "Para o Administrador gerir as configurações", demo: ["gestor", "gestor123"] },
+  { label: "Cliente", value: "cliente", hint: "Converse com o SorriDente e veja seus Agendamentos.", demo: ["cliente", "cliente123"] },
+  { label: "Dentista", value: "medico", hint: "Sua agenda do dia e o prontuário dos pacientes.", demo: ["medico", "medico123"] },
 ];
 
 export default function LoginPage() {
@@ -31,6 +32,9 @@ export default function LoginPage() {
     form.setFieldsValue({ username: perfilAtual.demo[0], password: perfilAtual.demo[1] });
   }, [perfil, form, perfilAtual]);
 
+  // já autenticado: não pisca o formulário antes do redirect
+  if (user) return null;
+
   async function onFinish(values: { username: string; password: string }) {
     setCarregando(true);
     setErro("");
@@ -46,6 +50,9 @@ export default function LoginPage() {
 
   return (
     <main className="sd-login">
+      <Link href="/" className="sd-login-voltar" aria-label="Voltar à página de apresentação">
+        <Icone nome="esq" tam={16} />
+      </Link>
       <div className="sd-login-padrao" aria-hidden />
       <div className="sd-login-brilho" aria-hidden style={{ left: -140, top: -120, width: 520, height: 520, background: "radial-gradient(circle,rgba(255,255,255,.30),transparent 62%)" }} />
       <div className="sd-login-brilho" aria-hidden style={{ right: -160, bottom: -180, width: 620, height: 620, background: "radial-gradient(circle,rgba(255,255,255,.20),transparent 62%)" }} />
@@ -81,6 +88,9 @@ export default function LoginPage() {
           <Button type="primary" htmlType="submit" size="large" block loading={carregando} style={{ fontWeight: 700 }}>
             Entrar como {perfilAtual.label.toLowerCase()}
           </Button>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--cor-suave)", textAlign: "center" }}>
+            Ainda não tem conta? <Link href="/cadastro" className="sd-link">Criar conta</Link>
+          </p>
         </Form>
       </section>
     </main>

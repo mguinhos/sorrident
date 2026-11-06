@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -16,10 +16,12 @@ import {
   Typography,
   message as antdMessage,
 } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { CloseOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import type { InputRef } from "antd";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Patient } from "@/lib/types";
+import TabelaRolavel from "@/components/ui/TabelaRolavel";
 
 /** CRUD de pacientes com ficha e histórico de consultas. */
 export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: string } = {}) {
@@ -30,7 +32,13 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
   const [editing, setEditing] = useState<Patient | null>(null);
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Patient | null>(null);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const buscaRef = useRef<InputRef>(null);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (buscaAberta) buscaRef.current?.focus();
+  }, [buscaAberta]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,15 +74,31 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
       extra={
         <Space>
           <Input
+            ref={buscaRef}
             allowClear
             prefix={<SearchOutlined />}
             placeholder="Buscar por nome, telefone ou CPF"
             style={{ width: 280 }}
+            className={buscaAberta ? undefined : "sd-busca-recolhida"}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {buscaAberta ? (
+            <Button
+              className="sd-so-mobile"
+              icon={<CloseOutlined />}
+              aria-label="Fechar busca"
+              onClick={() => {
+                setBuscaAberta(false);
+                setSearch("");
+              }}
+            />
+          ) : (
+            <Button className="sd-so-mobile" icon={<SearchOutlined />} aria-label="Buscar" onClick={() => setBuscaAberta(true)} />
+          )}
           <Button
             type="primary"
             icon={<PlusOutlined />}
+            className="sd-btn-so-icone"
             onClick={() => {
               setEditing(null);
               form.resetFields();
@@ -86,7 +110,8 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
         </Space>
       }
     >
-      <Table
+      <TabelaRolavel>
+        <Table
         rowKey="id"
         loading={loading}
         dataSource={items}
@@ -148,6 +173,7 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
           },
         ]}
       />
+      </TabelaRolavel>
 
       <Modal
         title={editing ? "Editar paciente" : "Novo paciente"}

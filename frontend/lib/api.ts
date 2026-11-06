@@ -15,6 +15,7 @@ import type {
   Notification,
   Patient,
   Procedure,
+  Role,
   Slot,
   User,
 } from "./types";
@@ -117,6 +118,38 @@ export class ApiClient {
 
   me(): Promise<User> {
     return this.get<User>("/auth/me");
+  }
+
+  register(data: {
+    username: string;
+    password: string;
+    display_name: string;
+    email?: string;
+    phone?: string;
+    document?: string;
+  }): Promise<User> {
+    return this.send<User>("POST", "/auth/register", data);
+  }
+
+  // Gestão de usuários (Administrador)
+  listUsers(): Promise<User[]> {
+    return this.get<User[]>("/auth/users");
+  }
+  createUser(data: {
+    username: string;
+    password: string;
+    role: Role;
+    display_name?: string;
+    linked_id?: string;
+    active?: boolean;
+  }): Promise<User> {
+    return this.send<User>("POST", "/auth/users", data);
+  }
+  updateUser(id: string, data: Partial<User> & { password?: string }): Promise<User> {
+    return this.send<User>("PUT", `/auth/users/${id}`, data);
+  }
+  deleteUser(id: string): Promise<{ deleted: boolean }> {
+    return this.send<{ deleted: boolean }>("DELETE", `/auth/users/${id}`);
   }
 
   // Pacientes
@@ -273,6 +306,10 @@ export class ApiClient {
   }
   myAppointments(): Promise<Appointment[]> {
     return this.get<Appointment[]>("/chat/my-appointments");
+  }
+  /** Dispara o e-mail de confirmação das consultas do paciente (sem reenviar duplicados). */
+  enviarConfirmacaoEmail(): Promise<{ enviados: number }> {
+    return this.send("POST", "/chat/enviar-confirmacao-email");
   }
 
   // Painel e integrações

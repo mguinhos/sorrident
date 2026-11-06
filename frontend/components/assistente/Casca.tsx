@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { Button } from "antd";
-import { Icone, Passos, Pontos } from "@/components/ui";
+import { Icone, Passos } from "@/components/ui";
 
 interface Props {
   fluxo: string;
@@ -33,14 +33,14 @@ export default function Casca({
   return (
     <div className="sd-assistente">
       <header className="sd-assistente-topo">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
           <Image src="/logo.svg" alt="" width={36} height={36} priority />
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{fluxo}</div>
-            <div style={{ fontSize: 12.5, color: "var(--cor-suave)" }}>{sub}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fluxo}</div>
+            <div className="sd-assistente-sub" style={{ fontSize: 12.5, color: "var(--cor-suave)" }}>{sub}</div>
           </div>
         </div>
-        <Button size="large" onClick={aoSair} style={{ height: 44, display: "inline-flex", alignItems: "center", gap: 8, color: "var(--cor-texto)" }}>
+        <Button size="large" onClick={aoSair} className="sd-assistente-sair" style={{ height: 44, display: "inline-flex", alignItems: "center", gap: 8, color: "var(--cor-texto)" }}>
           <Icone nome="fechar" tam={16} />
           Salvar e sair
         </Button>
@@ -52,9 +52,6 @@ export default function Casca({
           <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
             <div className="sd-assistente-esq">
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--cor-primaria)", letterSpacing: ".08em", textTransform: "uppercase" }}>
-                  Passo {atual} de {total}
-                </div>
                 <h1 id="titulo-passo" style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{titulo}</h1>
                 <p style={{ margin: 0, fontSize: 15, color: "var(--cor-suave)", lineHeight: 1.5, maxWidth: 520 }}>{descricao}</p>
               </div>
@@ -70,18 +67,14 @@ export default function Casca({
           </div>
           <footer className="sd-assistente-rodape">
             {aoVoltar ? (
-              <Button size="large" onClick={aoVoltar} style={{ minWidth: 120, height: 48, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Button size="large" onClick={aoVoltar} className="sd-rodape-voltar" style={{ height: 48, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <Icone nome="esq" tam={18} />
                 Voltar
               </Button>
             ) : (
-              extraRodape ?? <span style={{ minWidth: 120 }} />
+              extraRodape ?? <span className="sd-rodape-vazio" />
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Pontos total={total} atual={atual} />
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--cor-suave)" }}>Passo {atual} de {total}</div>
-            </div>
-            <Button type="primary" size="large" loading={carregando} onClick={aoProximo} style={{ minWidth: 148, height: 48, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <Button type="primary" size="large" loading={carregando} onClick={aoProximo} className="sd-rodape-proximo" style={{ height: 48, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
               {textoProximo ?? (ultimo ? "Concluir" : "Próximo")}
               <Icone nome={ultimo ? "check" : "seta"} tam={18} esp={2.2} />
             </Button>

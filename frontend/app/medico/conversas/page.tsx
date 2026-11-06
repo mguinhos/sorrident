@@ -6,7 +6,7 @@ import ConversationsTab from "@/components/tabs/ConversationsTab";
 export default function Conversas() {
   return (
     <>
-      <Topo titulo="Conversas" sub="Chat do site, WhatsApp e Telegram em um só lugar" />
+      <Topo titulo="Conversas" sub="Todos os Chats" />
       <Conteudo><ConversationsTab /></Conteudo>
     </>
   );

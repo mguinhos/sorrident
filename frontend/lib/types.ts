@@ -7,6 +7,8 @@ export interface User {
   display_name: string;
   linked_id: string;
   active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Patient {
@@ -14,6 +16,7 @@ export interface Patient {
   name: string;
   phone: string;
   email: string;
+  age?: string;
   birth_date: string;
   document: string;
   insurance_provider: string;
@@ -69,6 +72,7 @@ export interface Appointment {
   notes: string;
   origin: string;
   reminder_sent: boolean;
+  cadastrado?: boolean;
 }
 
 export interface Slot {
@@ -132,6 +136,9 @@ export interface ClinicSettings {
   working_days: number[];
   slot_minutes: number;
   inactivity_minutes: number;
+  handoff_notice_cooldown_minutes: number;
+  handoff_eta_minutes: number;
+  notify_whatsapp_phone: string;
   persona: string;
 }
 

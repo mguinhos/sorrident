@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "antd";
+import { Icone as IconeMs } from "@/components/ui";
 import {
   BellOutlined,
   CalendarOutlined,
@@ -87,7 +88,7 @@ export default function ComoFuncionaPage() {
           <strong>SorriDente</strong>
         </Link>
         <Link href="/" className="sd-como-voltar">
-          ← Voltar
+          <IconeMs nome="esq" tam={14} /> Voltar
         </Link>
       </header>
 
@@ -150,7 +151,7 @@ export default function ComoFuncionaPage() {
         <div className="sd-como-cta">
           <h2>Pronto para experimentar?</h2>
           <p>Entre no sistema e converse com a SorriDente pelo portal.</p>
-          <Link href="/login">
+          <Link href="/chat">
             <Button type="primary" size="large" className="sd-como-cta-botao">
               Experimente o App
             </Button>

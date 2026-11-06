@@ -131,7 +131,7 @@ export const CORES_QUIOSQUE: Record<ConfigQuiosque["cor"], [string, string, stri
 
 export const CONFIG_PADRAO: ConfigQuiosque = {
   clinica: "SorriDente",
-  mensagem: "Bem-vindo! Retire sua senha abaixo.",
+  mensagem: "Bem-vindo!",
   cor: "azul",
   retrato: true,
   mostrarLogo: true,

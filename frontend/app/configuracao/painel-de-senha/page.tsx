@@ -8,7 +8,6 @@ import { MiniPainel } from "@/components/assistente/Miniaturas";
 import { SeloFlutuante, TV3D } from "@/components/assistente/Modelos3D";
 import { Aviso, Botao, Campo, Escolha, GrupoEscolha, Icone, Opcao } from "@/components/ui";
 import { PAINEL_PADRAO, chamarProxima, gravarConfigPainel, lerConfigPainel, type ConfigPainel } from "@/lib/senhas";
-import { falarSenha, tocarAviso } from "@/lib/som";
 
 const PASSOS = ["Tela e local", "O que mostrar", "Som da chamada", "Concluir"];
 
@@ -25,14 +24,10 @@ export default function ConfigPainelSenha() {
   }, []);
 
   const muda = (p: Partial<ConfigPainel>) => setCfg({ ...cfg, ...p });
-  const tela = <MiniPainel op={{ nome: cfg.mostrarNome, ultimas: cfg.mostrarUltimas, proximas: cfg.mostrarProximas, relogio: cfg.mostrarRelogio }} />;
-  const ouvir = () => {
-    tocarAviso(cfg.aviso, cfg.volume / 100);
-    if (cfg.voz) setTimeout(() => falarSenha("A12", "guichê 1", cfg.volume / 100), 900);
-  };
+  const tela = <MiniPainel op={{ nome: cfg.mostrarNome, ultimas: cfg.mostrarUltimas, proximas: cfg.mostrarProximas, relogio: cfg.mostrarRelogio }} retrato={cfg.formato === "retrato"} />;
 
   const comum = {
-    fluxo: "Configuração do painel de senha",
+    fluxo: "Chamada",
     sub: "A TV da sala de espera que chama os pacientes",
     passos: PASSOS,
     atual: passo,
@@ -51,7 +46,7 @@ export default function ConfigPainelSenha() {
 
   if (passo === 1) {
     return (
-      <Casca {...comum} titulo="Qual tela e onde ela fica" descricao="Diga como é a TV da sala de espera. O SorriDente ajusta o painel ao formato da tela." previa={<TV3D tela={tela} />} previaRotulo="TV da sala de espera">
+      <Casca {...comum} titulo="Qual tela e onde ela fica" descricao="Diga como é a TV da sala de espera. O SorriDente ajusta o painel ao formato da tela." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} />} previaRotulo="TV da sala de espera">
         <Campo rotulo="Nome deste painel" id="local" ajuda="Ajuda a reconhecer o painel se a clínica tiver mais de uma TV.">
           <Input id="local" size="large" autoFocus prefix={<Icone nome="tv" tam={18} cor="var(--cor-sutil)" />} value={cfg.nomeLocal} onChange={(e) => muda({ nomeLocal: e.target.value })} />
         </Campo>
@@ -69,7 +64,7 @@ export default function ConfigPainelSenha() {
 
   if (passo === 2) {
     return (
-      <Casca {...comum} titulo="O que aparece na TV" descricao="Ligue só o que ajuda o paciente. Menos informação = leitura mais rápida de longe." previa={<TV3D tela={tela} />} previaRotulo="Prévia ao vivo">
+      <Casca {...comum} titulo="O que aparece na TV" descricao="Ligue só o que ajuda o paciente. Menos informação = leitura mais rápida de longe." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} />} previaRotulo="Prévia ao vivo">
         <Opcao titulo="Nome do paciente" desc="Mostra só o primeiro nome e a inicial: “Mariana C.”" icone="pessoas" ligado={cfg.mostrarNome} onChange={(v) => muda({ mostrarNome: v })} />
         <Opcao titulo="Para onde ir" desc="Guichê ou consultório em destaque, com seta" icone="seta" ligado travado />
         <Opcao titulo="Últimas chamadas" desc="Lista ao lado para quem se distraiu" icone="lista" ligado={cfg.mostrarUltimas} onChange={(v) => muda({ mostrarUltimas: v })} />
@@ -82,7 +77,7 @@ export default function ConfigPainelSenha() {
 
   if (passo === 3) {
     return (
-      <Casca {...comum} titulo="Como a chamada soa" descricao="Um som curto chama a atenção sem assustar. A voz é opcional e ajuda na acessibilidade." previa={<TV3D tela={tela} selo={<SeloFlutuante texto="Chamando A12 · Guichê 1" icone="som" tom="info" />} />} previaRotulo="Chamada em andamento">
+      <Casca {...comum} titulo="Como a chamada soa" descricao="Um som curto chama a atenção sem assustar. A voz é opcional e ajuda na acessibilidade." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Chamando A12 · Guichê 1" icone="som" tom="info" />} />} previaRotulo="Chamada em andamento">
         <GrupoEscolha rotulo="Aviso sonoro">
           <Escolha titulo="Campainha suave" desc="Dois toques curtos, discretos" icone="sino" selo="Recomendado" altura={64} ativo={cfg.aviso === "campainha"} onClick={() => muda({ aviso: "campainha" })} />
           <Escolha titulo="Gongo" desc="Mais alto, para salas grandes ou barulhentas" icone="megafone" altura={64} ativo={cfg.aviso === "gongo"} onClick={() => muda({ aviso: "gongo" })} />
@@ -101,7 +96,6 @@ export default function ConfigPainelSenha() {
           icone="som"
           ligado={cfg.voz}
           onChange={(v) => muda({ voz: v })}
-          extra={<Botao tipo="secundario" icone="som" style={{ height: 44, marginRight: 8 }} onClick={ouvir}>Ouvir</Botao>}
         />
       </Casca>
     );
@@ -109,7 +103,7 @@ export default function ConfigPainelSenha() {
 
   const endereco = `${origem}/painel`;
   return (
-    <Casca {...comum} titulo="Ligue o painel na TV" descricao="Use o navegador da própria TV (ou de um computador ligado nela). Não precisa instalar nada." previa={<TV3D tela={tela} selo={<SeloFlutuante texto="Painel pronto" />} />} previaRotulo="Painel no ar">
+    <Casca {...comum} titulo="Ligue o painel na TV" descricao="Use o navegador da própria TV (ou de um computador ligado nela). Não precisa instalar nada." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Painel pronto" />} />} previaRotulo="Painel no ar">
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 20, borderRadius: 14, background: "var(--cor-primaria-suave)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
           <span style={{ width: 26, height: 26, borderRadius: 999, background: "var(--cor-primaria)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>1</span>

@@ -8,14 +8,14 @@
 export type EstadoDente = "N" | "T" | "R" | "A" | "X";
 
 export const ODONTOGRAMA = {
-  atualizado: "07/10/2026 · Dra. Helena Martins",
+  atualizado: "07/10/2026 · Dra. Mônica Cristiane",
   superior: "18N 17T 16R 15T 14T 13T 12A 11T 21T 22A 23T 24T 25T 26X 27R 28N".split(" "),
   inferior: "48N 47T 46R 45T 44T 43T 42A 41T 31T 32N 33T 34T 35T 36R 37T 38N".split(" "),
 };
 
 export const EVOLUCOES = [
-  { data: "10/09", autor: "H. Martins", texto: "Troca do arco superior, fio 0.016 e amarração em corrente. Paciente sem queixas de dor.", tipo: "Manutenção", tom: "info" as const },
-  { data: "13/08", autor: "H. Martins", texto: "Reativação e instalação de tubos nos primeiros molares. Orientada higiene com escova interdental.", tipo: "Ajuste", tom: "neutro" as const },
+  { data: "10/09", autor: "M. Cristiane", texto: "Troca do arco superior, fio 0.016 e amarração em corrente. Paciente sem queixas de dor.", tipo: "Manutenção", tom: "info" as const },
+  { data: "13/08", autor: "M. Cristiane", texto: "Reativação e instalação de tubos nos primeiros molares. Orientada higiene com escova interdental.", tipo: "Ajuste", tom: "neutro" as const },
   { data: "12/02", autor: "R. Nogueira", texto: "Instalação de aparelho fixo superior e inferior (prescrição Roth). Documentação e moldagens anexadas.", tipo: "Instalação", tom: "ok" as const },
 ];
 
@@ -48,11 +48,11 @@ export interface Exame {
 
 export const EXAMES: Exame[] = [
   { id: "e1", paciente: "Mariana Costa", exame: "Radiografia panorâmica", data: "22/09/2026", status: "pronto", profissional: "Dr. Rafael Nogueira", laudo: "Dentição permanente completa. Sem lesões periapicais visíveis. Terceiros molares em formação." },
-  { id: "e2", paciente: "João Pedro Almeida", exame: "Documentação ortodôntica", data: "22/09/2026", status: "em análise", profissional: "Dra. Helena Martins", laudo: "" },
-  { id: "e3", paciente: "Beatriz Souza", exame: "Tomografia (CBCT)", data: "21/09/2026", status: "pronto", profissional: "Dra. Helena Martins", laudo: "Sem alterações ósseas relevantes. Canal mandibular preservado." },
+  { id: "e2", paciente: "João Pedro Almeida", exame: "Documentação ortodôntica", data: "22/09/2026", status: "em análise", profissional: "Dra. Mônica Cristiane", laudo: "" },
+  { id: "e3", paciente: "Beatriz Souza", exame: "Tomografia (CBCT)", data: "21/09/2026", status: "pronto", profissional: "Dra. Mônica Cristiane", laudo: "Sem alterações ósseas relevantes. Canal mandibular preservado." },
   { id: "e4", paciente: "Lucas Ferreira", exame: "Modelo 3D intraoral", data: "20/09/2026", status: "solicitado", profissional: "Dr. Rafael Nogueira", laudo: "" },
   { id: "e5", paciente: "Ana Clara Ribeiro", exame: "Radiografia periapical", data: "19/09/2026", status: "pronto", profissional: "Dra. Carla Lima", laudo: "Lesão cariosa incipiente na face distal do 36." },
-  { id: "e6", paciente: "Pedro Henrique Santos", exame: "Telerradiografia", data: "18/09/2026", status: "pronto", profissional: "Dra. Helena Martins", laudo: "Padrão esquelético classe II leve." },
+  { id: "e6", paciente: "Pedro Henrique Santos", exame: "Telerradiografia", data: "18/09/2026", status: "pronto", profissional: "Dra. Mônica Cristiane", laudo: "Padrão esquelético classe II leve." },
 ];
 
 /* ---------------------------------------------------------------- pagamentos */
@@ -170,7 +170,7 @@ export interface ItemOrcamento {
 export const ORCAMENTO = {
   numero: "2026-0147",
   paciente: { nome: "Diego Martins", detalhe: "34 anos · CPF 123.456.789-00 · (82) 98811-2233" },
-  responsavel: "Dra. Helena Martins",
+  responsavel: "Dra. Mônica Cristiane",
   convenio: "Particular",
   itens: [
     { id: "i1", procedimento: "Instalação de aparelho fixo (superior e inferior)", dente: "-", qtd: 1, unitario: 1800 },
@@ -188,7 +188,7 @@ export const ORCAMENTO = {
   observacoes: "Valor inclui documentação, contenção e 2 retornos de urgência. Manutenções podem ser remarcadas uma vez por mês sem custo.",
   historico: [
     { titulo: "Enviado ao paciente", detalhe: "07/10/2026 · 08:12 · WhatsApp", cor: "var(--cor-primaria)" },
-    { titulo: "Orçamento criado", detalhe: "06/10/2026 · 17:40 · Dra. Helena Martins", cor: "var(--cor-acento)" },
+    { titulo: "Orçamento criado", detalhe: "06/10/2026 · 17:40 · Dra. Mônica Cristiane", cor: "var(--cor-acento)" },
     { titulo: "Avaliação inicial", detalhe: "06/10/2026 · 16:30 · Consulta de avaliação", cor: "var(--cor-cinza-300)" },
   ],
   aberturas: { vezes: 2, ultima: "07/10 às 09:31" },

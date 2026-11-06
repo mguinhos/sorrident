@@ -2,27 +2,36 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Alert, Input, Spin } from "antd";
 import { Icone } from "@/components/ui";
+import Markdown from "./Markdown";
+import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import { hora } from "@/lib/formato";
 import type { ChatMessage } from "@/lib/types";
 
-const SESSION_KEY = "sorridente.chat.session";
-
-function sessionId(): string {
+/** Visitantes anônimos não salvam conversa: cada carregamento gera uma sessão
+ *  nova, então o chat sempre começa do zero. Clientes logados usam o id do
+ *  usuário no backend, então o histórico deles continua sendo restaurado. */
+function gerarSessao(): string {
   if (typeof window === "undefined") return "ssr";
-  let id = window.localStorage.getItem(SESSION_KEY);
-  if (!id) {
-    id = Math.random().toString(36).slice(2, 12);
-    window.localStorage.setItem(SESSION_KEY, id);
-  }
-  return id;
+  return Math.random().toString(36).slice(2, 12);
+}
+
+function saudacao(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 const ATALHOS = [
+  { texto: "Marcar consulta", icone: "dente", mensagem: "Quero marcar uma consulta", destaque: true },
   { texto: "Ver horários", icone: "agenda", mensagem: "Quais horários estão disponíveis esta semana?", destaque: true },
   { texto: "Dúvidas frequentes", icone: "livro", mensagem: "Quais são as dúvidas mais frequentes?", destaque: true },
+  { texto: "Remarcar ou cancelar", icone: "relogio", mensagem: "Quero remarcar ou cancelar minha consulta", destaque: false },
+  { texto: "Urgência odontológica", icone: "alerta", mensagem: "Estou com uma urgência odontológica", destaque: false },
   { texto: "Falar com atendente", icone: "pessoas", mensagem: "Quero falar com um atendente.", destaque: false },
 ];
 
@@ -38,15 +47,33 @@ function DoBot({ children, avatar = true, equipe = false }: { children: ReactNod
   );
 }
 
-/** Chat do paciente com o assistente: cabeçalho com status, bolhas com direção, atalhos e envio. */
-export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: ReactNode; altura?: string | number }) {
+/** Chat do paciente com o assistente: cabeçalho com status, bolhas com direção, atalhos e envio.
+ *  `lado` é o painel lateral opcional (ex.: Meus agendamentos) exibido ao lado do chat. */
+export default function ChatPanel({
+  acaoTopo,
+  altura = "100%",
+  lado,
+}: {
+  acaoTopo?: ReactNode;
+  altura?: string | number;
+  lado?: ReactNode;
+}) {
   const [mensagens, setMensagens] = useState<ChatMessage[]>([]);
   const [rascunho, setRascunho] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [humano, setHumano] = useState(false);
   const [erro, setErro] = useState("");
+  const [avisoLogin, setAvisoLogin] = useState(false);
+  const [maisOpcoes, setMaisOpcoes] = useState(false);
+  // Visitante: o campo de texto só é aceito para responder um fluxo iniciado
+  // pelos botões pré-programados.
+  const [fluxoAtivo, setFluxoAtivo] = useState(false);
+  const [sessao] = useState(gerarSessao);
+  const { user } = useAuth();
   const rolagem = useRef<HTMLDivElement>(null);
+
+  const boasVindas = `${saudacao()}! Como posso lhe ajudar? Posso tirar dúvidas, marcar consultas e ver seus exames.`;
 
   const rolarAoFim = useCallback(() => {
     requestAnimationFrame(() => {
@@ -57,7 +84,7 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
 
   const carregar = useCallback(async () => {
     try {
-      const dados = await api.chatHistory(sessionId());
+      const dados = await api.chatHistory(sessao);
       setMensagens(dados.messages ?? []);
       setHumano(dados.handoff);
     } catch (e) {
@@ -66,10 +93,13 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
       setCarregando(false);
       rolarAoFim();
     }
-  }, [rolarAoFim]);
+  }, [sessao, rolarAoFim]);
 
   useEffect(() => {
     void carregar();
+    // Quando o chat carrega (a etiqueta "Hoje" aparece), garante que o e-mail
+    // de confirmação das consultas agendadas foi enviado — sem reenviar duplicados.
+    void api.enviarConfirmacaoEmail().catch(() => undefined);
   }, [carregar]);
 
   // Com atendimento humano, busca as respostas periodicamente.
@@ -79,11 +109,21 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
     return () => clearInterval(t);
   }, [humano, carregar]);
 
-  async function enviar(texto = rascunho) {
+  async function enviar(texto = rascunho, preProgramado = false) {
     const t = texto.trim();
     if (!t || enviando) return;
+    // Visitante digitando fora de um fluxo pré-programado: orienta a entrar
+    // para usar o chatbot completo.
+    if (!user && !preProgramado && !fluxoAtivo) {
+      setRascunho("");
+      setAvisoLogin(true);
+      return;
+    }
+    // Botão pré-programado no visitante abre o fluxo de perguntas/respostas.
+    if (!user && preProgramado) setFluxoAtivo(true);
     setRascunho("");
     setErro("");
+    setAvisoLogin(false);
     setMensagens((prev) => [
       ...prev,
       { id: `tmp-${Date.now()}`, conversation_id: "", author: "user", content: t, tool_name: "", tool_payload: {}, created_at: new Date().toISOString() },
@@ -91,7 +131,7 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
     rolarAoFim();
     setEnviando(true);
     try {
-      const r = await api.sendChat(sessionId(), t);
+      const r = await api.sendChat(sessao, t);
       setHumano(r.handoff);
       await carregar();
     } catch (e) {
@@ -104,15 +144,15 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
 
   const visiveis = mensagens.filter((m) => m.author === "user" || m.author === "assistant" || m.author === "human_agent");
 
-  return (
+  const chat = (
     <section className="sd-chat" style={{ height: altura }} aria-label="Conversa com o SorriDente">
       <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 14px", background: "#fff", borderBottom: "1px solid var(--cor-borda)" }}>
         <Image src="/logo.svg" alt="" width={40} height={40} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>SorriDente</div>
+          <div className="sd-chat-titulo" style={{ fontSize: 17, fontWeight: 700 }}>SorriDente</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--cor-suave)" }}>
             <span style={{ width: 8, height: 8, borderRadius: 999, background: "#16a34a" }} />
-            {humano ? "Atendimento com a equipe da clínica" : "Assistente virtual · online agora"}
+            {humano ? "Atendimento com a equipe da clínica" : user ? "Assistente virtual · online agora" : "Chat rápido"}
           </div>
         </div>
         {acaoTopo}
@@ -125,10 +165,18 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
         ) : (
           <>
             {visiveis.length === 0 && (
-              <>
-                <DoBot avatar={false}>Olá! Sou o SorriDente. Como posso ajudar hoje?</DoBot>
-                <DoBot>Posso agendar consultas, tirar dúvidas e chamar a recepção quando precisar.</DoBot>
-              </>
+              <DoBot>
+                {boasVindas}
+                {!user && (
+                  <>
+                    {" "}
+                    <Link href="/login" style={{ color: "var(--cor-primaria)", fontWeight: 700 }}>
+                      Faça o Login
+                    </Link>{" "}
+                    para desbloquear o Agente e tirar dúvidas personalizadas.
+                  </>
+                )}
+              </DoBot>
             )}
             {visiveis.map((m, i) =>
               m.author === "user" ? (
@@ -141,7 +189,7 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
                 </div>
               ) : (
                 <DoBot key={m.id} avatar={visiveis[i + 1]?.author === "user" || i === visiveis.length - 1} equipe={m.author === "human_agent"}>
-                  {m.content}
+                  <Markdown texto={m.content} />
                 </DoBot>
               ),
             )}
@@ -152,13 +200,29 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
 
       {erro && <Alert type="error" message={erro} banner />}
 
+      {avisoLogin && (
+        <Alert
+          type="warning"
+          banner
+          showIcon
+          closable
+          onClose={() => setAvisoLogin(false)}
+          message={
+            <span>
+              Essa pergunta foge das opções acima. <Link href="/login" style={{ fontWeight: 700 }}>Faça login</Link> para
+              acessar as funcionalidades completas do chatbot.
+            </span>
+          }
+        />
+      )}
+
       <footer style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px 20px", background: "#fff", borderTop: "1px solid var(--cor-borda)" }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {ATALHOS.map((a) => (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {ATALHOS.slice(0, 3).map((a) => (
             <button
               key={a.texto}
               type="button"
-              onClick={() => void enviar(a.mensagem)}
+              onClick={() => void enviar(a.mensagem, true)}
               disabled={enviando}
               style={{ font: "inherit", height: 36, padding: "0 14px", borderRadius: 999, border: "1px solid #b8d4f1", background: "#fff", color: a.destaque ? "var(--cor-primaria)" : "var(--cor-tinta)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
             >
@@ -166,7 +230,33 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
               {a.texto}
             </button>
           ))}
+          <button
+            type="button"
+            aria-expanded={maisOpcoes}
+            aria-label={maisOpcoes ? "Recolher opções" : "Mais opções"}
+            onClick={() => setMaisOpcoes((v) => !v)}
+            style={{ font: "inherit", height: 36, padding: user ? "0 14px" : "0 12px", borderRadius: 999, border: "1px dashed #b8d4f1", background: "#fff", color: "var(--cor-suave)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
+          >
+            <Icone nome={maisOpcoes ? "fechar" : "mais"} tam={15} />
+            {user && (maisOpcoes ? "Recolher" : "Mais opções")}
+          </button>
         </div>
+        {maisOpcoes && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: 10, borderRadius: 12, border: "1px solid var(--cor-borda)", background: "var(--cor-fundo)" }}>
+            {ATALHOS.slice(3).map((a) => (
+              <button
+                key={a.texto}
+                type="button"
+                onClick={() => void enviar(a.mensagem, true)}
+                disabled={enviando}
+                style={{ font: "inherit", height: 34, padding: "0 14px", borderRadius: 999, border: "1px solid #b8d4f1", background: "#fff", color: a.destaque ? "var(--cor-primaria)" : "var(--cor-tinta)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
+              >
+                <Icone nome={a.icone} tam={15} />
+                {a.texto}
+              </button>
+            ))}
+          </div>
+        )}
         <form
           style={{ display: "flex", gap: 8, alignItems: "center" }}
           onSubmit={(e) => {
@@ -177,20 +267,29 @@ export default function ChatPanel({ acaoTopo, altura = "100%" }: { acaoTopo?: Re
           <Input
             value={rascunho}
             onChange={(e) => setRascunho(e.target.value)}
-            placeholder="Escreva uma mensagem…"
+            placeholder={!user && !fluxoAtivo ? "Escolha uma opção acima para começar" : "Escreva uma mensagem…"}
             aria-label="Mensagem"
+            disabled={!user && !fluxoAtivo}
             style={{ flex: 1, height: 48, borderRadius: 999, background: "var(--cor-fundo)", paddingInline: 18, fontSize: 15 }}
           />
           <button
             type="submit"
             aria-label="Enviar"
-            disabled={enviando || !rascunho.trim()}
-            style={{ width: 48, height: 48, borderRadius: 999, border: 0, background: "var(--cor-primaria)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: enviando || !rascunho.trim() ? 0.6 : 1 }}
+            disabled={enviando || !rascunho.trim() || (!user && !fluxoAtivo)}
+            style={{ width: 48, height: 48, borderRadius: 999, border: 0, background: "var(--cor-primaria)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: enviando || !rascunho.trim() || (!user && !fluxoAtivo) ? 0.6 : 1 }}
           >
             <Icone nome="enviar" tam={20} cor="#fff" />
           </button>
         </form>
       </footer>
     </section>
+  );
+
+  if (!lado) return chat;
+  return (
+    <div className="sd-chat-com-lado" style={{ height: altura }}>
+      {chat}
+      <div className="sd-chat-lado">{lado}</div>
+    </div>
   );
 }

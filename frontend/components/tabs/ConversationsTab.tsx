@@ -19,6 +19,7 @@ import {
   message as antdMessage,
 } from "antd";
 import { RobotOutlined, SendOutlined, UserOutlined } from "@ant-design/icons";
+import Markdown from "../Markdown";
 import { api } from "@/lib/api";
 import type { ChatMessage, Conversation } from "@/lib/types";
 
@@ -207,7 +208,7 @@ export default function ConversationsTab() {
                         : "SorriDente"}{" "}
                     · {new Date(m.created_at).toLocaleTimeString("pt-BR")}
                   </Typography.Text>
-                  {m.content}
+                  {m.author === "user" ? m.content : <Markdown texto={m.content} />}
                 </div>
               ))
             )}

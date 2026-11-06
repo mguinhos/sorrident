@@ -37,6 +37,7 @@ const MENUS: Record<"gestor" | "medico", { grupo: string; itens: Item[] }[]> = {
     { grupo: "Sistema", itens: [
       { rotulo: "Agente", icone: "robo", href: "/gestor/agente" },
       { rotulo: "Integrações", icone: "plugue", href: "/gestor/integracoes" },
+      { rotulo: "Usuários", icone: "cracha", href: "/gestor/usuarios" },
       { rotulo: "Configurações", icone: "ajustes", href: "/gestor/configuracoes" },
     ] },
   ],
@@ -47,13 +48,16 @@ const MENUS: Record<"gestor" | "medico", { grupo: string; itens: Item[] }[]> = {
       { rotulo: "Exames", icone: "imagem", href: "/medico/exames" },
       { rotulo: "Conversas", icone: "chat", href: "/medico/conversas" },
     ] },
+    { grupo: "Gestor", itens: [
+      { rotulo: "Administrador", icone: "ajustes", href: "/medico/configuracoes" },
+    ] },
   ],
 };
 
-const PAPEL: Record<Role, string> = { gestor: "Gestor", medico: "Médico(a)", cliente: "Paciente" };
+const PAPEL: Record<Role, string> = { gestor: "Gestor", medico: "Dentista", cliente: "Paciente" };
 
 /** Menu lateral único por perfil (gestor ou médico). */
-export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gestor" | "medico"; contadores?: Record<string, number> }) {
+export default function MenuLateral({ perfil, contadores = {}, aberto = false, aoFechar }: { perfil: "gestor" | "medico"; contadores?: Record<string, number>; aberto?: boolean; aoFechar?: () => void }) {
   const caminho = usePathname();
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -71,7 +75,7 @@ export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gest
     });
 
   return (
-    <nav className="sd-lateral" aria-label="Menu principal">
+    <nav className={`sd-lateral${aberto ? " sd-lateral-aberta" : ""}`} aria-label="Menu principal">
       <div className="sd-lateral-marca">
         <Image src="/logo.svg" alt="" width={36} height={36} priority />
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -95,7 +99,7 @@ export default function MenuLateral({ perfil, contadores = {} }: { perfil: "gest
               </button>
               {aberto &&
                 g.itens.map((it) => (
-                  <Link key={it.href} href={it.href} className="sd-item-menu" aria-current={ativo(it.href) ? "page" : undefined}>
+                  <Link key={it.href} href={it.href} className="sd-item-menu" aria-current={ativo(it.href) ? "page" : undefined} onClick={aoFechar}>
                     <Icone nome={it.icone} tam={18} />
                     {it.rotulo}
                     {contadores[it.rotulo] ? <span className="sd-contador">{contadores[it.rotulo]}</span> : null}
