@@ -29,7 +29,7 @@ const PILARES = [
 ];
 
 export default function ApresentacaoPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [abrindo, setAbrindo] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
@@ -82,7 +82,11 @@ export default function ApresentacaoPage() {
           <Link href="/como-funciona" className="sd-apresentacao-secundario" onClick={() => setMenuAberto(false)}>
             Como funciona
           </Link>
-          {!user && (
+          {user ? (
+            <button type="button" className="sd-apresentacao-secundario" style={{ background: "transparent", font: "inherit", fontWeight: 600, cursor: "pointer", padding: 0, paddingBottom: 2 }} onClick={() => { logout(); setMenuAberto(false); router.push("/"); }}>
+              Sair
+            </button>
+          ) : (
             <Link href="/login" className="sd-apresentacao-secundario" onClick={() => setMenuAberto(false)}>
               Logar
             </Link>

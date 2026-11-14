@@ -84,7 +84,7 @@ def _appointment(start: str) -> Appointment:
 
 
 async def test_integracao_aparece_no_registro_e_desligada_nao_sincroniza() -> None:
-    config = AppConfig(database_path="/tmp/sd-cal-test.json", credentials_path="/tmp/sd-cal-creds.json", autostart_telegram=False)
+    config = AppConfig(database_path="/tmp/sd-cal-test.json", credentials_path="/tmp/sd-cal-creds.json", openrouter_api_key="", gemini_api_key="", autostart_telegram=False)
     container = ApplicationContainer(config)
     assert "google_calendar" in container.integrations.calendar
     integration = container.google_calendar

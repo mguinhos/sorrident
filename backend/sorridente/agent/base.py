@@ -50,6 +50,8 @@ class BaseTool(ITool, ABC):
             "%Y-%m-%d %H:%M",
             "%d/%m/%Y %H:%M",
             "%d/%m/%Y",
+            "%d-%m-%Y %H:%M",
+            "%d-%m-%Y",
             "%Y-%m-%d",
         )
         for fmt in formats:

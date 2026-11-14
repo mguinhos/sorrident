@@ -66,7 +66,6 @@ export default function AgendaTab({ dentistId = "" }: Props) {
               <Select
                 allowClear
                 style={{ width: 220 }}
-                placeholder="Todos os profissionais"
                 value={filter || undefined}
                 onChange={(v) => setFilter(v ?? "")}
                 options={dentists.map((d) => ({ label: d.name, value: d.id }))}

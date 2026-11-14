@@ -32,6 +32,7 @@ const CHANNEL_COLOR: Record<string, string> = {
 /** Histórico de conversas de todos os canais, com resposta humana. */
 export default function ConversationsTab() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [erroLista, setErroLista] = useState("");
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -39,7 +40,12 @@ export default function ConversationsTab() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadList = useCallback(async () => {
-    setConversations(await api.listConversations());
+    try {
+      setConversations(await api.listConversations());
+      setErroLista("");
+    } catch (e) {
+      setErroLista(e instanceof Error ? e.message : "Falha ao carregar conversas.");
+    }
   }, []);
 
   const openConversation = useCallback(async (conversation: Conversation) => {
@@ -73,10 +79,13 @@ export default function ConversationsTab() {
       });
     });
     source.onerror = () => source.close();
-    const timer = setInterval(() => void loadList(), 20000);
+    const timer = setInterval(() => void loadList(), 5000);
+    const onFocus = () => void loadList();
+    window.addEventListener("focus", onFocus);
     return () => {
       source.close();
       clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
     };
   }, [loadList]);
 
@@ -107,7 +116,8 @@ export default function ConversationsTab() {
   return (
     <Row gutter={16}>
       <Col xs={24} md={8}>
-        <Card title="Conversas" styles={{ body: { padding: 0, maxHeight: "72vh", overflowY: "auto" } }}>
+        <Card title="Conversas" extra={<Button size="small" onClick={() => void loadList()}>Atualizar</Button>} styles={{ body: { padding: 0, maxHeight: "72vh", overflowY: "auto" } }}>
+          {erroLista && <div style={{ padding: 12, color: "red" }}>{erroLista}</div>}
           <List
             dataSource={conversations}
             locale={{ emptyText: <Empty description="Nenhuma conversa ainda" /> }}
@@ -131,7 +141,7 @@ export default function ConversationsTab() {
                   title={
                     <Space size={6}>
                       <Typography.Text strong>{item.display_name}</Typography.Text>
-                      <Tag color={CHANNEL_COLOR[item.channel]}>{item.channel}</Tag>
+                      {item.channel !== "web" && <Tag color={CHANNEL_COLOR[item.channel]}>{item.channel}</Tag>}
                       {item.handoff && <Tag color="green">humano</Tag>}
                     </Space>
                   }
@@ -153,7 +163,7 @@ export default function ConversationsTab() {
             selected ? (
               <Space>
                 <Typography.Text strong>{selected.display_name}</Typography.Text>
-                <Tag color={CHANNEL_COLOR[selected.channel]}>{selected.channel}</Tag>
+                {selected.channel !== "web" && <Tag color={CHANNEL_COLOR[selected.channel]}>{selected.channel}</Tag>}
               </Space>
             ) : (
               "Selecione uma conversa"
@@ -219,11 +229,6 @@ export default function ConversationsTab() {
                 <Input
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder={
-                    selected.handoff
-                      ? "Responder como equipe da clínica…"
-                      : "Ligue o atendimento humano para assumir a conversa"
-                  }
                   onPressEnter={() => void reply()}
                 />
                 <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => void reply()}>

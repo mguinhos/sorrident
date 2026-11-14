@@ -42,14 +42,20 @@ export default function Markdown({ texto }: { texto: string }) {
       while (i < linhas.length) {
         const m = linhas[i].trim().match(/^[-*•·]\s+(.*)$/);
         if (!m) break;
-        itens.push(<li key={i}>{renderInline(m[1])}</li>);
+        const conteudo = m[1].trim().replace(/\.$/, "");
+        // Ignora itens que são só uma data (ex.: "19/11/2026") — ruído do agendamento.
+        if (!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(conteudo)) {
+          itens.push(<li key={i}>{renderInline(m[1])}</li>);
+        }
         i += 1;
       }
-      blocos.push(
-        <ul key={`u-${i}`} className="sd-markdown-lista">
-          {itens}
-        </ul>,
-      );
+      if (itens.length > 0) {
+        blocos.push(
+          <ul key={`u-${i}`} className="sd-markdown-lista">
+            {itens}
+          </ul>,
+        );
+      }
       continue;
     }
 
@@ -60,14 +66,19 @@ export default function Markdown({ texto }: { texto: string }) {
       while (i < linhas.length) {
         const m = linhas[i].trim().match(/^\d+[.)]\s+(.*)$/);
         if (!m) break;
-        itens.push(<li key={i}>{renderInline(m[1])}</li>);
+        const conteudo = m[1].trim().replace(/\.$/, "");
+        if (!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(conteudo)) {
+          itens.push(<li key={i}>{renderInline(m[1])}</li>);
+        }
         i += 1;
       }
-      blocos.push(
-        <ol key={`o-${i}`} className="sd-markdown-lista">
-          {itens}
-        </ol>,
-      );
+      if (itens.length > 0) {
+        blocos.push(
+          <ol key={`o-${i}`} className="sd-markdown-lista">
+            {itens}
+          </ol>,
+        );
+      }
       continue;
     }
 
@@ -85,6 +96,12 @@ export default function Markdown({ texto }: { texto: string }) {
           <h5 key={i} className="sd-markdown-titulo">{conteudo}</h5>
         ),
       );
+      i += 1;
+      continue;
+    }
+
+    // Parágrafo — ignora linhas que são só uma data (ruído do agendamento).
+    if (/^\d{1,2}\/\d{1,2}\/\d{2,4}\.?$/.test(item)) {
       i += 1;
       continue;
     }

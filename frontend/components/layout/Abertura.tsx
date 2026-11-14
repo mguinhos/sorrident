@@ -21,7 +21,7 @@ export default function Abertura({ mensagem = "Carregando agenda e conversas…"
         <div className="sd-abertura-trilho"><span /></div>
         <div style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{mensagem}</div>
       </div>
-      <div className="sd-abertura-rodape">versão 2.0 · conexão segura</div>
+      <div className="sd-abertura-rodape">versão 3.0</div>
     </div>
   );
 }

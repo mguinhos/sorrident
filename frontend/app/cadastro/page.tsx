@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, Button, Col, Form, Input, Row } from "antd";
-import { Icone } from "@/components/ui";
+import { Icone, InputMascarado } from "@/components/ui";
 import { HOME_BY_ROLE, useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 
@@ -23,7 +23,7 @@ export default function CadastroPage() {
 
   if (user) return null;
 
-  async function onFinish(values: { nome: string; usuario: string; email: string; telefone?: string; documento?: string; senha: string }) {
+  async function onFinish(values: { nome: string; usuario: string; email: string; telefone?: string; documento?: string; convenio?: string; senha: string }) {
     setCarregando(true);
     setErro("");
     try {
@@ -34,6 +34,7 @@ export default function CadastroPage() {
         email: values.email.trim(),
         phone: (values.telefone ?? "").trim(),
         document: (values.documento ?? "").trim(),
+        insurance_provider: (values.convenio ?? "").trim(),
       });
       const logged = await login(values.usuario.trim(), values.senha);
       router.replace(HOME_BY_ROLE[logged.role]);
@@ -53,8 +54,12 @@ export default function CadastroPage() {
       <div className="sd-login-brilho" aria-hidden style={{ left: -140, top: -120, width: 520, height: 520, background: "radial-gradient(circle,rgba(255,255,255,.30),transparent 62%)" }} />
       <div className="sd-login-brilho" aria-hidden style={{ right: -160, bottom: -180, width: 620, height: 620, background: "radial-gradient(circle,rgba(255,255,255,.20),transparent 62%)" }} />
 
-      <section className="sd-login-cartao" aria-labelledby="titulo-cadastro">
+      <section className="sd-login-cartao" aria-labelledby="titulo-cadastro" style={{ position: "relative" }}>
+        <Link href="/" className="sd-login-voltar-mobile" aria-label="Voltar à página de apresentação" style={{ position: "absolute", top: 14, left: 14, background: "transparent", border: 0, boxShadow: "none", padding: 4, display: "none" }}>
+          <Icone nome="esq" tam={16} />
+        </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+
           <Image src="/logo.svg" alt="" width={54} height={54} priority />
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <h1 id="titulo-cadastro" style={{ margin: 0, fontSize: 23, fontWeight: 800, letterSpacing: "-0.3px" }}>Criar conta</h1>
@@ -93,24 +98,31 @@ export default function CadastroPage() {
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item name="documento" label={<b>CPF</b>} style={{ margin: 0 }}>
-                <Input placeholder="000.000.000-00" style={{ height: 44 }} />
+                <InputMascarado tipo="cpf" placeholder="000.000.000-00" style={{ height: 44 }} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={[{ xs: 0, sm: 12 }, { xs: 18, sm: 12 }]}>
             <Col xs={24} sm={12}>
-              <Form.Item name="telefone" label={<b>Telefone</b>} style={{ margin: 0 }}>
-                <Input placeholder="(11) 99999-9999" style={{ height: 44 }} autoComplete="tel" />
+              <Form.Item name="convenio" label={<b>Convênio</b>} style={{ margin: 0 }}>
+                <Input placeholder="Insira seu plano" style={{ height: 44 }} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
+              <Form.Item name="telefone" label={<b>Telefone</b>} style={{ margin: 0 }}>
+                <InputMascarado tipo="telefone" placeholder="(11) 99999-9999" style={{ height: 44 }} autoComplete="tel" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={[{ xs: 0, sm: 12 }, { xs: 18, sm: 12 }]}>
+            <Col xs={24} sm={24}>
               <Form.Item
                 name="senha"
                 label={<b>Senha</b>}
                 style={{ margin: 0 }}
                 rules={[{ required: true, message: "Crie uma senha" }, { min: 6, message: "Use ao menos 6 caracteres" }]}
               >
-                <Input.Password placeholder="senha com 6+ caracteres" style={{ height: 44 }} autoComplete="new-password" />
+                <Input.Password placeholder="senha com 6+ caracteres" style={{ height: 46 }} autoComplete="new-password" />
               </Form.Item>
             </Col>
           </Row>

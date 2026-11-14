@@ -55,11 +55,20 @@ class MessageDispatcher(IMessageDispatcher):
         conversations: IConversationService,
         patients: IPatientService,
         settings: ISettingsService,
+        scheduling: Optional[ISchedulingService] = None,
+        procedures: Optional[IProcedureService] = None,
+        dentists: Optional[IDentistService] = None,
+        appointments: Optional[IAppointmentService] = None,
     ) -> None:
         self._agent = agent
         self._conversations = conversations
         self._patients = patients
         self._settings = settings
+        self._scheduling = scheduling
+        self._procedures = procedures
+        self._dentists = dentists
+        self._appointments = appointments
+        self._visitor_state: dict[str, dict] = {}
 
     def _waiting_notice(self, settings: Any) -> str:
         """Aviso de espera com o prazo prometido ao paciente."""
@@ -106,6 +115,161 @@ class MessageDispatcher(IMessageDispatcher):
         pendencia = f"falta: {', '.join(faltando)}" if faltando else "completo"
         return f"{patient.name or 'sem nome'} — cadastro {pendencia}"
 
+    async def _fallback_reply(self, inbound: InboundMessage, conversation: Any) -> str:
+        """Fluxo guiado de agendamento para o modo visitante (sem IA)."""
+        state = self._visitor_state.get(conversation.id, {})
+        text = (inbound.text or "").strip()
+        t = text.lower()
+
+        try:
+            settings = await self._settings.get()
+        except Exception:  # noqa: BLE001
+            settings = None
+        clinica = getattr(settings, "clinic_name", None) or "SorriDente"
+        telefone = getattr(settings, "phone", None) or ""
+        abertura = getattr(settings, "opening_hour", None) or "08:00"
+        fechamento = getattr(settings, "closing_hour", None) or "18:00"
+
+        # Usuário logado: não pede nome/telefone; usa os dados da conta.
+        if inbound.metadata.get("logado"):
+            if not state and any(k in t for k in ("agendar", "consulta", "marcar")):
+                state = {"step": "date", "name": inbound.display_name or "Paciente"}
+                self._visitor_state[conversation.id] = state
+                sugestoes = []
+                if self._scheduling is not None:
+                    from datetime import date as _date, timedelta as _td
+                    hoje = _date.today()
+                    for i in range(7):
+                        dia = hoje + _td(days=i)
+                        try:
+                            slots = await self._scheduling.available_slots(dia)
+                        except Exception:  # noqa: BLE001
+                            slots = []
+                        if slots:
+                            sugestoes.append(dia.strftime("%d/%m/%Y"))
+                if sugestoes:
+                    return (
+                        f"Vou ajudar a agendar para {state['name']}. "
+                        "Para qual data você prefere? Datas com horários livres esta semana:\n- "
+                        + "\n- ".join(sugestoes[:5])
+                        + "."
+                    )
+                return f"Vou ajudar a agendar para {state['name']}. Para qual data você prefere?"
+
+        # Início do fluxo de agendamento (visitante)
+        if not state and any(k in t for k in ("agendar", "consulta", "marcar")):
+            self._visitor_state[conversation.id] = {"step": "name"}
+            return (
+                f"Vou ajudar a agendar na {clinica}. Qual é o seu nome completo?"
+            )
+
+        if state.get("step") == "name":
+            state["name"] = text
+            state["step"] = "phone"
+            self._visitor_state[conversation.id] = state
+            return "Qual é o seu telefone (com DDD)?"
+
+        if state.get("step") == "phone":
+            state["phone"] = text
+            state["step"] = "date"
+            self._visitor_state[conversation.id] = state
+            sugestoes = []
+            if self._scheduling is not None:
+                from datetime import date as _date, timedelta as _td
+                hoje = _date.today()
+                for i in range(7):
+                    dia = hoje + _td(days=i)
+                    try:
+                        slots = await self._scheduling.available_slots(dia)
+                    except Exception:  # noqa: BLE001
+                        slots = []
+                    if slots:
+                        sugestoes.append(dia.strftime("%d/%m/%Y"))
+            if sugestoes:
+                return (
+                    "Para qual data você prefere? Datas com horários livres esta semana:\n- "
+                    + "\n- ".join(sugestoes[:5])
+                    + "."
+                )
+            return "Para qual data você prefere?"
+
+        if state.get("step") == "date":
+            try:
+                from datetime import datetime as _datetime
+                for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
+                    try:
+                        day = _datetime.strptime(text, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    raise ValueError
+            except ValueError:
+                return "Data inválida. Use o formato DD/MM/AAAA (ex.: 20/12/2025)."
+            if self._scheduling is None:
+                self._visitor_state.pop(conversation.id, None)
+                return "Agendamento indisponível no momento. Um atendente assume em instantes."
+            slots = await self._scheduling.available_slots(day)
+            if not slots:
+                return "Não há horários livres nessa data. Tente outra data (DD-MM-AAAA)."
+            state["date"] = text
+            state["slots"] = slots
+            state["step"] = "slot"
+            self._visitor_state[conversation.id] = state
+            linhas = [f"{i+1}. {str(s.get('start', ''))[11:16]}" for i, s in enumerate(slots[:8])]
+            return "Horários disponíveis:\n" + "\n".join(linhas) + "\nDigite o número do horário desejado."
+
+        if state.get("step") == "slot":
+            slots = state.get("slots") or []
+            slot = None
+            texto = (text or "").strip()
+            # aceita número da lista ou o próprio horário (HH:MM)
+            try:
+                idx = int(texto) - 1
+                if 0 <= idx < len(slots):
+                    slot = slots[idx]
+            except ValueError:
+                for s in slots:
+                    start = str(s.get("start", ""))
+                    hora = start[11:16] if len(start) >= 16 else start
+                    if texto == hora:
+                        slot = s
+                        break
+            if slot is None:
+                return "Opção inválida. Clique em um horário ou digite o número/opção."
+            if self._appointments is None or self._patients is None:
+                self._visitor_state.pop(conversation.id, None)
+                return "Agendamento indisponível no momento. Um atendente assume em instantes."
+            patient = await self._patients.get_or_create_by_channel(
+                inbound.channel, inbound.external_id, state.get("name", "Visitante")
+            )
+            try:
+                await self._patients.update(patient.id, phone=state.get("phone", ""))
+            except Exception:  # noqa: BLE001
+                pass
+            from datetime import datetime as _dt
+            start = _dt.fromisoformat(slot["start"]) if isinstance(slot.get("start"), str) else slot["start"]
+            await self._appointments.schedule(
+                patient_id=patient.id,
+                start=start,
+                dentist_id=slot.get("dentist_id", "") or "",
+                origin="web",
+            )
+            self._visitor_state.pop(conversation.id, None)
+            return f"Agendamento confirmado para {state.get('name')} em {slot.get('start')}. Obrigado!"
+
+        # Informações gerais
+        if any(k in t for k in ("telefone", "contato", "whatsapp", "fone")):
+            if telefone:
+                return f"O contato da {clinica} é {telefone}. Atendimento de {abertura} às {fechamento}."
+            return f"Atendimento da {clinica}: de {abertura} às {fechamento}."
+        if any(k in t for k in ("horário", "horario", "funciona", "abre", "fecha")):
+            return f"A {clinica} atende de {abertura} às {fechamento}."
+        return (
+            "Posso ajudar com agendamentos, horários e contato da clínica. "
+            "Digite 'agendar' para marcar uma consulta."
+        )
+
     async def handle(self, inbound: InboundMessage) -> Optional[str]:
         conversation = await self._conversations.get_or_create(
             inbound.channel, inbound.external_id, inbound.display_name
@@ -128,22 +292,41 @@ class MessageDispatcher(IMessageDispatcher):
             await self._conversations.mark_handoff_notice(conversation.id)
             return notice
 
+        cadastro = await self._registration_summary(conversation.patient_id)
+        if inbound.metadata.get("logado"):
+            nome = (conversation.display_name or inbound.display_name or "").strip() or "Paciente"
+            cadastro = (
+                f"{nome} — identificado pela conta do portal. NÃO pergunte nome, idade, "
+                "convênio, CPF, telefone nem e-mail; use os dados da conta e responda à "
+                "pergunta do paciente."
+            )
         context = AgentContext(
             conversation_id=conversation.id,
             channel=inbound.channel,
             external_id=inbound.external_id,
             patient_id=conversation.patient_id,
             display_name=conversation.display_name,
-            metadata={**inbound.metadata, "cadastro": await self._registration_summary(conversation.patient_id)},
+            metadata={**inbound.metadata, "cadastro": cadastro},
         )
-        try:
-            answer = await self._agent.reply(context, inbound.text)
-        except Exception as exc:  # noqa: BLE001 - nunca derruba o canal
-            logger.exception("Falha do agente na conversa %s", conversation.id)
-            answer = (
-                "Tive um problema técnico agora. Pode tentar de novo em instantes? "
-                "Se preferir, digito o contato da clínica para você."
-            )
+
+        t_lower = (inbound.text or "").lower()
+        # Usuário logado agendando: usa o fluxo guiado (sem pedir cadastro),
+        # pois modelos pequenos podem ignorar a instrução e pedir dados já existentes.
+        agendando_logado = bool(inbound.metadata.get("logado")) and (
+            "agendar" in t_lower
+            or "marcar consulta" in t_lower
+            or "marcar uma consulta" in t_lower
+            or t_lower.strip() in {"marcar", "agendar"}
+        ) and "remarcar" not in t_lower and "cancelar" not in t_lower
+
+        if agendando_logado:
+            answer = await self._fallback_reply(inbound, conversation)
+        else:
+            try:
+                answer = await self._agent.reply(context, inbound.text)
+            except Exception as exc:  # noqa: BLE001 - nunca derruba o canal
+                logger.exception("Falha do agente na conversa %s", conversation.id)
+                answer = await self._fallback_reply(inbound, conversation)
         await self._conversations.append(
             conversation.id, MessageAuthor.ASSISTANT.value, answer
         )

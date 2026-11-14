@@ -128,7 +128,6 @@ export default function KnowledgeTab() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ex.: posso comer castanha com aparelho?"
             onPressEnter={() => void search()}
           />
           <Button type="primary" icon={<SearchOutlined />} loading={searching} onClick={() => void search()}>
@@ -253,7 +252,7 @@ export default function KnowledgeTab() {
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item name="title" label="Título" rules={[{ required: true }]}>
-            <Input placeholder="Ex.: Orientações após a instalação do aparelho" />
+            <Input />
           </Form.Item>
           <Form.Item
             name="content"
@@ -264,7 +263,7 @@ export default function KnowledgeTab() {
             <Input.TextArea rows={10} />
           </Form.Item>
           <Form.Item name="tags" label="Tags">
-            <Select mode="tags" tokenSeparators={[","]} placeholder="cuidados, higiene, pós-consulta" />
+            <Select mode="tags" tokenSeparators={[","]} />
           </Form.Item>
         </Form>
       </Modal>

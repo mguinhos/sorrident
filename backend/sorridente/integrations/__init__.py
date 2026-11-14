@@ -9,7 +9,8 @@ from .base import (
 from .calendar import BaseCalendarIntegration, GoogleCalendarIntegration
 from .inference import (
     BaseInferenceIntegration,
-    OpenCodeGoInferenceIntegration,
+    GeminiInferenceIntegration,
+    OpenRouterInferenceIntegration,
     InferenceResolver,
     RoutingLLMProvider,
 )
@@ -30,7 +31,8 @@ __all__ = [
     "BaseCalendarIntegration",
     "GoogleCalendarIntegration",
     "BaseInferenceIntegration",
-    "OpenCodeGoInferenceIntegration",
+    "GeminiInferenceIntegration",
+    "OpenRouterInferenceIntegration",
     "InferenceResolver",
     "RoutingLLMProvider",
     "BaseChannelIntegration",

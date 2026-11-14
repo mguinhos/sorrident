@@ -1,4 +1,4 @@
-"""Provedor de LLM baseado no OpenCode Go (API Zen, compatível com OpenAI)."""
+"""Provedor de LLM baseado no OpenRouter (API compatível com OpenAI)."""
 from __future__ import annotations
 
 import os
@@ -10,14 +10,13 @@ from openai import AsyncOpenAI
 from ...core.exceptions import LLMError
 from ...core.interfaces import ILLMProvider
 
-# Endpoint do OpenCode Go (modelos gratuitos da assinatura), NÃO o Zen
-# pay-as-you-go (/zen/v1), que cobra créditos e retorna 402 sem saldo.
-BASE_URL = os.environ.get("OPENCODE_GO_BASE_URL", "https://opencode.ai/zen/go/v1")
+# Endpoint do OpenRouter (compatível com OpenAI).
+BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
-# O endpoint Go exige um identificador de sessão para roteamento/cache.
-_SESSION_ID = os.environ.get("OPENCODE_GO_SESSION_ID", str(uuid.uuid4()))
-DEFAULT_MODEL = os.environ.get("OPENCODE_GO_MODEL", "kimi-k2.5")
-DEFAULT_REASONING_EFFORT = os.environ.get("OPENCODE_GO_REASONING_EFFORT", "low")
+# Identificador de sessão para roteamento/cache (quando suportado).
+_SESSION_ID = os.environ.get("OPENROUTER_SESSION_ID", str(uuid.uuid4()))
+DEFAULT_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+DEFAULT_REASONING_EFFORT = os.environ.get("OPENROUTER_REASONING_EFFORT", "low")
 
 # Valores que significam "não enviar reasoning_effort" (raciocínio desligado).
 _REASONING_DISABLED = {"", "off", "none", "disabled", "desligado"}
@@ -31,8 +30,8 @@ def _normalize_reasoning_effort(value: Optional[str]) -> Optional[str]:
     return None if normalized in _REASONING_DISABLED else normalized
 
 
-class OpenCodeGoLLMProvider(ILLMProvider):
-    """Implementação de ILLMProvider usando `openai.AsyncOpenAI` contra o Zen."""
+class OpenRouterLLMProvider(ILLMProvider):
+    """Implementação de ILLMProvider usando `openai.AsyncOpenAI` contra o OpenRouter."""
 
     def __init__(
         self,
@@ -40,11 +39,16 @@ class OpenCodeGoLLMProvider(ILLMProvider):
         model: str = DEFAULT_MODEL,
         timeout: float = 60.0,
         reasoning_effort: Optional[str] = DEFAULT_REASONING_EFFORT,
+        base_url: Optional[str] = None,
+        api_key_env: str = "OPENROUTER_API_KEY",
     ) -> None:
-        self._api_key = api_key or os.environ.get("OPENCODE_GO_API_KEY", "")
+        if api_key is None:
+            api_key = os.environ.get(api_key_env, "")
+        self._api_key = api_key or ""
         self._model = model
         self._timeout = timeout
         self._reasoning_effort = _normalize_reasoning_effort(reasoning_effort)
+        self._base_url = base_url or BASE_URL
         self._client: Optional[AsyncOpenAI] = None
 
     @property
@@ -65,6 +69,7 @@ class OpenCodeGoLLMProvider(ILLMProvider):
         api_key: str,
         model: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
+        base_url: Optional[str] = None,
     ) -> None:
         """Reconfigura o provedor em tempo de execução (via interface web)."""
         if api_key and api_key != self._api_key:
@@ -74,6 +79,9 @@ class OpenCodeGoLLMProvider(ILLMProvider):
             self._model = model
         if reasoning_effort is not None:
             self._reasoning_effort = _normalize_reasoning_effort(reasoning_effort)
+        if base_url:
+            self._base_url = base_url
+            self._client = None
 
     def _reasoning_kwargs(self) -> dict[str, Any]:
         """Parâmetro opcional de raciocínio para a API compatível com OpenAI."""
@@ -85,15 +93,18 @@ class OpenCodeGoLLMProvider(ILLMProvider):
     def client(self) -> AsyncOpenAI:
         if not self._api_key:
             raise LLMError(
-                "OPENCODE_GO_API_KEY não configurada. Defina a variável de ambiente "
+                "OPENROUTER_API_KEY não configurada. Defina a variável de ambiente "
                 "ou salve a credencial pela interface web."
             )
         if self._client is None:
             self._client = AsyncOpenAI(
                 api_key=self._api_key,
-                base_url=BASE_URL,
+                base_url=self._base_url,
                 timeout=self._timeout,
-                default_headers={"x-opencode-session": _SESSION_ID},
+                default_headers={
+                    "HTTP-Referer": os.environ.get("OPENROUTER_HTTP_REFERER", "https://sorridente.local"),
+                    "X-Title": os.environ.get("OPENROUTER_APP_TITLE", "SorriDente"),
+                },
             )
         return self._client
 
@@ -102,7 +113,7 @@ class OpenCodeGoLLMProvider(ILLMProvider):
         messages: Sequence[dict[str, Any]],
         tools: Optional[Sequence[dict[str, Any]]] = None,
         temperature: float = 0.3,
-        max_tokens: int = 1024,
+        max_tokens: int = 512,
     ) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -117,30 +128,34 @@ class OpenCodeGoLLMProvider(ILLMProvider):
         try:
             response = await self.client.chat.completions.create(**kwargs)
         except Exception as exc:  # noqa: BLE001 - erro do SDK vira erro de domínio
-            raise LLMError(f"Falha ao consultar o OpenCode Go: {exc}") from exc
+            raise LLMError(f"Falha ao consultar o OpenRouter: {exc}") from exc
 
         message = response.choices[0].message
+        tool_calls = []
+        for call in (message.tool_calls or []):
+            entry = {
+                "id": call.id,
+                "type": "function",
+                "function": {
+                    "name": call.function.name,
+                    "arguments": call.function.arguments,
+                },
+            }
+            extra = getattr(call, "extra_content", None)
+            if extra:
+                entry["extra_content"] = extra
+            tool_calls.append(entry)
         return {
             "role": "assistant",
             "content": self._clean(message.content or ""),
-            "tool_calls": [
-                {
-                    "id": call.id,
-                    "type": "function",
-                    "function": {
-                        "name": call.function.name,
-                        "arguments": call.function.arguments,
-                    },
-                }
-                for call in (message.tool_calls or [])
-            ],
+            "tool_calls": tool_calls,
         }
 
     async def stream(
         self,
         messages: Sequence[dict[str, Any]],
         temperature: float = 0.3,
-        max_tokens: int = 1024,
+        max_tokens: int = 512,
     ) -> AsyncIterator[str]:
         try:
             stream = await self.client.chat.completions.create(
@@ -158,7 +173,7 @@ class OpenCodeGoLLMProvider(ILLMProvider):
         except LLMError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise LLMError(f"Falha no streaming do OpenCode Go: {exc}") from exc
+            raise LLMError(f"Falha no streaming do OpenRouter: {exc}") from exc
 
     @staticmethod
     def _clean(text: str) -> str:

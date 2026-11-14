@@ -175,7 +175,7 @@ export default function Orcamento() {
         <Form form={form} layout="vertical" requiredMark={false} initialValues={{ qtd: 1 }} preserve={false}>
           <Form.Item name="procedimento" label="Procedimento" rules={[{ required: true, message: "Informe o procedimento" }]}><Input /></Form.Item>
           <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item name="dente" label="Dente" style={{ flex: 1 }}><Input placeholder="-" /></Form.Item>
+            <Form.Item name="dente" label="Dente" style={{ flex: 1 }}><Input /></Form.Item>
             <Form.Item name="qtd" label="Quantidade" style={{ flex: 1 }} rules={[{ required: true }]}><InputNumber min={1} style={{ width: "100%" }} /></Form.Item>
             <Form.Item name="unitario" label="Valor unitário (R$)" style={{ flex: 1.4 }} rules={[{ required: true, message: "Informe o valor" }]}><InputNumber min={0} step={10} style={{ width: "100%" }} /></Form.Item>
           </div>

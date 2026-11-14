@@ -33,7 +33,7 @@ FAQS: list[dict[str, object]] = [
     {"question": "Quais convênios são aceitos?", "answer": "Atendemos Amil Dental, Bradesco Dental, SulAmérica Odonto e Odontoprev. Também trabalhamos com particular parcelado em até 12x no cartão.", "tags": ["convênio", "plano", "pagamento"]},
     {"question": "De quanto em quanto tempo é a manutenção?", "answer": "A manutenção do aparelho fixo é mensal, a cada 30 dias, e dura em média 30 minutos.", "tags": ["manutenção", "aparelho", "retorno"]},
     {"question": "Quanto tempo dura o tratamento ortodôntico?", "answer": "Depende do caso: em média de 18 a 24 meses com aparelho fixo, e de 8 a 18 meses com alinhadores. O prazo exato é definido na avaliação.", "tags": ["tempo", "duração", "tratamento"]},
-    {"question": "Meu braquete descolou, o que faço?", "answer": "Não tente recolar em casa. Se o fio estiver machucando, proteja com cera ortodôntica e agende uma urgência ortodôntica — atendemos no mesmo dia sempre que possível.", "tags": ["urgência", "braquete", "quebrou", "soltou"]},
+    {"question": "Meu braquete descolou, o que faço?", "answer": "Não tente recolar em casa. Se o fio estiver machucando, proteja com cera ortodôntica e agende uma urgência ortodôntica, atendemos no mesmo dia sempre que possível.", "tags": ["urgência", "braquete", "quebrou", "soltou"]},
     {"question": "Posso remarcar minha consulta?", "answer": "Sim! Remarcamos sem custo com pelo menos 24 horas de antecedência. É só me dizer a nova data que eu verifico os horários livres.", "tags": ["remarcar", "cancelar", "desmarcar"]},
     {"question": "Quais são as formas de pagamento?", "answer": "Aceitamos PIX, dinheiro, cartão de débito e crédito em até 12x, além de boleto mensal para as manutenções.", "tags": ["pagamento", "parcelamento", "pix"]},
     {"question": "Atendem crianças?", "answer": "Sim. Fazemos ortodontia preventiva e interceptativa a partir dos 6 anos, além do acompanhamento do crescimento.", "tags": ["criança", "infantil", "idade"]},
@@ -157,7 +157,7 @@ class DataSeeder(ISeeder):
     async def run(self) -> None:
         settings = await self._settings.current()
         if not settings.address:
-            settings.address = "Av. das Orquídeas, 1200 — Sala 304, Centro"
+            settings.address = "R. Ernesto de Paula Santos, 960 - Boa Viagem"
             settings.phone = "(11) 4002-8922"
             settings.email = "contato@sorridente.com.br"
             await self._settings.update(settings)

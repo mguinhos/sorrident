@@ -1,6 +1,7 @@
 """Ferramentas de agenda: consulta de horários, marcação e alterações."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from ...core.interfaces import AgentContext
@@ -28,7 +29,7 @@ class ListProceduresTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Lista os procedimentos ortodônticos oferecidos, com duração e preço."
+        return "Lista procedimentos (duração e preço)."
 
     async def run(self, context: AgentContext, **kwargs: Any) -> Any:
         return [
@@ -55,7 +56,7 @@ class ListDentistsTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Lista os ortodontistas disponíveis na clínica."
+        return "Lista ortodontistas disponíveis."
 
     async def run(self, context: AgentContext, **kwargs: Any) -> Any:
         return [
@@ -77,23 +78,20 @@ class AvailableSlotsTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Consulta os horários realmente livres para uma data. Use sempre antes de "
-            "marcar, para oferecer apenas opções válidas ao paciente."
-        )
+        return "Consulta horários livres em uma data. Use antes de marcar."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "data": {"type": "string", "description": "Data no formato AAAA-MM-DD."},
+                "data": {"type": "string", "description": "Data AAAA-MM-DD."},
                 "profissional_id": {"type": "string", "description": "Opcional: id do ortodontista."},
-                "procedimento_id": {"type": "string", "description": "Opcional: id do procedimento desejado."},
+                "procedimento_id": {"type": "string", "description": "Opcional: id do procedimento."},
                 "periodo": {
                     "type": "string",
                     "enum": ["manha", "tarde", "qualquer"],
-                    "description": "Preferência de período do paciente.",
+                    "description": "Período preferido.",
                 },
             },
             "required": ["data"],
@@ -128,7 +126,7 @@ class AvailableSlotsTool(BaseTool):
                 "horarios": [],
                 "aviso": "Não há horários livres nesta data/período. Ofereça outra data ao paciente.",
             }
-        return {"data": day.isoformat(), "horarios": slots[:20]}
+        return {"data": day.isoformat(), "horarios": slots[:10]}
 
 
 class MarcarAgendamentoTool(PatientAwareTool):
@@ -151,27 +149,22 @@ class MarcarAgendamentoTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Marca a consulta em um horário confirmado como livre. Use o paciente já "
-            "vinculado à conversa quando existir (cadastro do site ou do chat); só chame "
-            "cadastrar_cliente antes se o cadastro estiver vazio. O paciente deve ter "
-            "confirmado o horário."
-        )
+        return "Marca consulta em horário livre. Use paciente já vinculado (logado: não peça dados); cadastre antes se vazio. Paciente deve confirmar."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "data_hora": {"type": "string", "description": "Início da consulta em AAAA-MM-DDTHH:MM."},
-                "procedimento_id": {"type": "string", "description": "Id do procedimento (listar_procedimentos)."},
-                "procedimento": {"type": "string", "description": "Alternativa ao id: nome do procedimento."},
-                "profissional_id": {"type": "string", "description": "Opcional: id do ortodontista escolhido."},
-                "nome_paciente": {"type": "string", "description": "Nome completo, se ainda não cadastrado."},
-                "idade": {"type": "string", "description": "Idade, se ainda não cadastrado."},
-                "convenio": {"type": "string", "description": "Convênio ou 'particular', se ainda não cadastrado."},
-                "telefone": {"type": "string", "description": "Telefone, se ainda não cadastrado."},
-                "observacoes": {"type": "string", "description": "Queixa ou observação para a equipe."},
+                "data_hora": {"type": "string", "description": "Início AAAA-MM-DDTHH:MM."},
+                "procedimento_id": {"type": "string", "description": "Id do procedimento."},
+                "procedimento": {"type": "string", "description": "Nome do procedimento."},
+                "profissional_id": {"type": "string", "description": "Opcional: id do ortodontista."},
+                "nome_paciente": {"type": "string", "description": "Nome, se não cadastrado."},
+                "idade": {"type": "string", "description": "Idade."},
+                "convenio": {"type": "string", "description": "Convênio odontológico, ou 'SUS' se não tiver."},
+                "telefone": {"type": "string", "description": "Telefone."},
+                "observacoes": {"type": "string", "description": "Queixa/observação."},
             },
             "required": ["data_hora"],
         }
@@ -250,7 +243,7 @@ class MyAppointmentsTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return "Lista as consultas do paciente que está conversando agora."
+        return "Lista consultas do paciente atual."
 
     async def run(self, context: AgentContext, **kwargs: Any) -> Any:
         patient = await self.current_patient(context)
@@ -281,7 +274,7 @@ class CancelAppointmentTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Cancela uma consulta. Obtenha o id com consultar_meus_agendamentos."
+        return "Cancela consulta (id via consultar_meus_agendamentos)."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -313,7 +306,7 @@ class RescheduleAppointmentTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Remarca uma consulta para um horário previamente confirmado como livre."
+        return "Remarca consulta para horário livre."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -347,10 +340,7 @@ class ConsultarEncaixeUrgenciaTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Descobre o próximo horário viável para atender uma urgência hoje, mesmo com a "
-            "agenda cheia. Use antes de oferecer o encaixe ao paciente."
-        )
+        return "Próximo horário para urgência hoje (mesmo agenda cheia). Use antes de oferecer."
 
     async def run(self, context: AgentContext, **kwargs: Any) -> Any:
         slot = await self._scheduling.next_emergency_slot()
@@ -385,24 +375,20 @@ class AgendarEncaixeUrgenciaTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Agenda um ENCAIXE DE URGÊNCIA para o paciente (dor forte, sangramento, aparelho "
-            "machucando, dente quebrado). Funciona mesmo com a agenda cheia. Sempre confirme "
-            "o horário com o paciente antes de chamar."
-        )
+        return "Agenda encaixe de urgência (funciona com agenda cheia). Confirme horário antes."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "motivo": {"type": "string", "description": "Descrição da urgência, nas palavras do paciente."},
+                "motivo": {"type": "string", "description": "Descrição da urgência."},
                 "data_hora": {
                     "type": "string",
-                    "description": "Opcional: AAAA-MM-DDTHH:MM. Sem isso, usa o horário sugerido por consultar_encaixe_urgencia.",
+                    "description": "Opcional: AAAA-MM-DDTHH:MM (senão usa sugerido).",
                 },
-                "nome_paciente": {"type": "string", "description": "Nome completo, se ainda não cadastrado."},
-                "telefone": {"type": "string", "description": "Telefone, se ainda não cadastrado."},
+                "nome_paciente": {"type": "string", "description": "Nome, se não cadastrado."},
+                "telefone": {"type": "string", "description": "Telefone."},
             },
             "required": ["motivo"],
         }
@@ -439,3 +425,62 @@ class AgendarEncaixeUrgenciaTool(PatientAwareTool):
                 "encaixe, pode haver uma pequena espera na recepção."
             ),
         }
+
+
+class ConfirmarPresencaTool(PatientAwareTool):
+    """Confirma a presença do paciente na próxima consulta agendada."""
+
+    def __init__(
+        self,
+        appointments: IAppointmentService,
+        patients: IPatientService,
+        conversations: IConversationService,
+    ) -> None:
+        super().__init__(patients, conversations)
+        self._appointments = appointments
+
+    @property
+    def name(self) -> str:
+        return "confirmar_presenca"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Confirma a presença do paciente na consulta quando ele responder CONFIRMAR "
+            "a um lembrete. Marca o agendamento como confirmado no sistema."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "agendamento_id": {
+                    "type": "string",
+                    "description": "Opcional: id da consulta (use consultar_meus_agendamentos).",
+                },
+            },
+            "required": [],
+        }
+
+    async def run(
+        self, context: AgentContext, agendamento_id: str = "", **kwargs: Any
+    ) -> Any:
+        patient = await self.current_patient(context)
+        if patient is None:
+            return {"erro": "Paciente não cadastrado."}
+
+        if agendamento_id:
+            appointment = await self._appointments.set_status(agendamento_id, "confirmado")
+            return {"status": appointment.status, "agendamento_id": appointment.id}
+
+        items = await self._appointments.list_all(patient_id=patient.id)
+        pendentes = [
+            a for a in items
+            if a.status in ("agendado",) and a.start_dt >= datetime.now()
+        ]
+        if not pendentes:
+            return {"aviso": "Não há consulta pendente para confirmar."}
+        pendentes.sort(key=lambda a: a.start)
+        appointment = await self._appointments.set_status(pendentes[0].id, "confirmado")
+        return {"status": appointment.status, "agendamento_id": appointment.id, "inicio": appointment.start}

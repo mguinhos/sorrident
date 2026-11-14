@@ -9,10 +9,10 @@ import pytest
 from openai import AsyncOpenAI
 
 from sorridente.config import AppConfig
-from sorridente.infrastructure.llm import OpenCodeGoLLMProvider
+from sorridente.infrastructure.llm import OpenRouterLLMProvider
 
 
-def _make_provider(reasoning_effort: str | None) -> tuple[OpenCodeGoLLMProvider, list[dict[str, Any]]]:
+def _make_provider(reasoning_effort: str | None) -> tuple[OpenRouterLLMProvider, list[dict[str, Any]]]:
     requests: list[dict[str, Any]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -34,7 +34,7 @@ def _make_provider(reasoning_effort: str | None) -> tuple[OpenCodeGoLLMProvider,
             },
         )
 
-    provider = OpenCodeGoLLMProvider(api_key="teste", reasoning_effort=reasoning_effort)
+    provider = OpenRouterLLMProvider(api_key="teste", reasoning_effort=reasoning_effort)
     provider._client = AsyncOpenAI(  # noqa: SLF001 - injeção de transporte para o teste
         api_key="teste",
         base_url="https://exemplo.invalid/v1",
@@ -74,8 +74,8 @@ async def test_configure_atualiza_reasoning_effort() -> None:
 
 
 def test_config_usa_env_para_reasoning_effort(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENCODE_GO_REASONING_EFFORT", "high")
-    assert AppConfig.from_env().opencode_go_reasoning_effort == "high"
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "high")
+    assert AppConfig.from_env().openrouter_reasoning_effort == "high"
 
-    monkeypatch.delenv("OPENCODE_GO_REASONING_EFFORT")
-    assert AppConfig.from_env().opencode_go_reasoning_effort == "low"
+    monkeypatch.delenv("OPENROUTER_REASONING_EFFORT")
+    assert AppConfig.from_env().openrouter_reasoning_effort == "low"

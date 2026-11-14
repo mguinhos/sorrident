@@ -23,7 +23,7 @@ export default function ConfiguracoesAdministrador() {
         />
         <div className="sd-linha sd-linha-quebra">
           <AtalhoAssistente icone="predio" titulo="Primeiro acesso e quiosque" desc="Dados da clínica, aparência do quiosque e tipos de atendimento." href="/configuracao/primeiro-acesso" />
-          <AtalhoAssistente icone="tv" titulo="Painel de senha" desc="TV da sala de espera: o que mostrar e como a chamada soa." href="/configuracao/painel-de-senha" />
+          <AtalhoAssistente icone="tv" titulo="Painel de senha" desc="O que mostrar e como vai chamar o paciente" href="/configuracao/painel-de-senha" />
           <AtalhoAssistente icone="robo" titulo="Agente" desc="Persona, modelo, regras e horário do assistente." href="/configuracao/agente" />
         </div>
         <SettingsTab />

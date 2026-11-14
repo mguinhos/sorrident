@@ -1,3 +1,3 @@
-from .opencode_go_provider import OpenCodeGoLLMProvider, DEFAULT_MODEL
+from .openrouter_provider import OpenRouterLLMProvider, DEFAULT_MODEL
 
-__all__ = ["OpenCodeGoLLMProvider", "DEFAULT_MODEL"]
+__all__ = ["OpenRouterLLMProvider", "DEFAULT_MODEL"]

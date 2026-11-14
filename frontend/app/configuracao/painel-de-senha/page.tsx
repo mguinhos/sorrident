@@ -64,20 +64,20 @@ export default function ConfigPainelSenha() {
 
   if (passo === 2) {
     return (
-      <Casca {...comum} titulo="O que aparece na TV" descricao="Ligue só o que ajuda o paciente. Menos informação = leitura mais rápida de longe." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} />} previaRotulo="Prévia ao vivo">
-        <Opcao titulo="Nome do paciente" desc="Mostra só o primeiro nome e a inicial: “Mariana C.”" icone="pessoas" ligado={cfg.mostrarNome} onChange={(v) => muda({ mostrarNome: v })} />
-        <Opcao titulo="Para onde ir" desc="Guichê ou consultório em destaque, com seta" icone="seta" ligado travado />
-        <Opcao titulo="Últimas chamadas" desc="Lista ao lado para quem se distraiu" icone="lista" ligado={cfg.mostrarUltimas} onChange={(v) => muda({ mostrarUltimas: v })} />
-        <Opcao titulo="Próximas senhas" desc="Faixa embaixo com as 3 próximas" icone="relogio" ligado={cfg.mostrarProximas} onChange={(v) => muda({ mostrarProximas: v })} />
+      <Casca {...comum} titulo="O que aparece na TV" descricao="" previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} />} previaRotulo="Prévia ao vivo">
+        <Opcao titulo="Nome do paciente" desc="Mostra só o primeiro nome do paciente" icone="pessoas" ligado={cfg.mostrarNome} onChange={(v) => muda({ mostrarNome: v })} />
+        <Opcao titulo="Para onde ir" desc="Guichê ou consultório em destaque" icone="seta" ligado travado />
+        <Opcao titulo="Últimas chamadas" desc="Lista as últimas chamadas" icone="lista" ligado={cfg.mostrarUltimas} onChange={(v) => muda({ mostrarUltimas: v })} />
+        <Opcao titulo="Próximas senhas" desc="Faixa com as 3 últimas senhas" icone="relogio" ligado={cfg.mostrarProximas} onChange={(v) => muda({ mostrarProximas: v })} />
         <Opcao titulo="Data e hora" desc="Relógio no canto superior" icone="agenda" ligado={cfg.mostrarRelogio} onChange={(v) => muda({ mostrarRelogio: v })} />
-        <Aviso icone="cadeado">Para proteger a privacidade, o painel nunca mostra sobrenome completo, telefone ou procedimento detalhado.</Aviso>
+        <Aviso icone="cadeado">Protegemos suas informações e sua privacidade</Aviso>
       </Casca>
     );
   }
 
   if (passo === 3) {
     return (
-      <Casca {...comum} titulo="Como a chamada soa" descricao="Um som curto chama a atenção sem assustar. A voz é opcional e ajuda na acessibilidade." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Chamando A12 · Guichê 1" icone="som" tom="info" />} />} previaRotulo="Chamada em andamento">
+      <Casca {...comum} titulo="Como a chamada soa" descricao="" previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Chamando A12 · Guichê 1" icone="som" tom="info" />} />} previaRotulo="Chamada em andamento">
         <GrupoEscolha rotulo="Aviso sonoro">
           <Escolha titulo="Campainha suave" desc="Dois toques curtos, discretos" icone="sino" selo="Recomendado" altura={64} ativo={cfg.aviso === "campainha"} onClick={() => muda({ aviso: "campainha" })} />
           <Escolha titulo="Gongo" desc="Mais alto, para salas grandes ou barulhentas" icone="megafone" altura={64} ativo={cfg.aviso === "gongo"} onClick={() => muda({ aviso: "gongo" })} />
@@ -92,7 +92,6 @@ export default function ConfigPainelSenha() {
         </Campo>
         <Opcao
           titulo="Voz lê a senha em voz alta"
-          desc="“Senha A 12, guichê 1.” Ajuda quem tem baixa visão"
           icone="som"
           ligado={cfg.voz}
           onChange={(v) => muda({ voz: v })}
@@ -103,7 +102,7 @@ export default function ConfigPainelSenha() {
 
   const endereco = `${origem}/painel`;
   return (
-    <Casca {...comum} titulo="Ligue o painel na TV" descricao="Use o navegador da própria TV (ou de um computador ligado nela). Não precisa instalar nada." previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Painel pronto" />} />} previaRotulo="Painel no ar">
+    <Casca {...comum} titulo="Ligue o painel na TV" descricao="" previa={<TV3D tela={tela} retrato={cfg.formato === "retrato"} selo={<SeloFlutuante texto="Painel pronto" />} />} previaRotulo="Painel no ar">
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 20, borderRadius: 14, background: "var(--cor-primaria-suave)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
           <span style={{ width: 26, height: 26, borderRadius: 999, background: "var(--cor-primaria)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>1</span>
@@ -118,7 +117,7 @@ export default function ConfigPainelSenha() {
           Deixe a TV em tela cheia (tecla F11)
         </div>
       </div>
-      <Aviso icone="alerta" tom="alerta">Enquanto a fila de senhas não tem endpoint na API, quiosque e TV precisam usar o mesmo navegador (por exemplo, um computador ligado à TV com o quiosque em outra janela).</Aviso>
+      <Aviso icone="alerta" tom="alerta">Quiosque e a TV precisam usar a mesma conexão</Aviso>
       <Botao
         tipo="secundario"
         tam="G"

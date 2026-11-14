@@ -7,6 +7,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { Avatar, Botao, Cartao, Etiqueta, Icone, Kpi, LinkSeta } from "@/components/ui";
 import type { Tom } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuth } from "@/app/providers";
 import { dataLonga, hora, mesmoDia, saudacao } from "@/lib/formato";
 import type { DashboardData } from "@/lib/types";
 
@@ -29,19 +30,22 @@ function Pendencia({ icone, tom, titulo, desc, acao }: { icone: string; tom: Tom
 export default function VisaoGeral() {
   const [dados, setDados] = useState<DashboardData | null>(null);
 
+  const { user } = useAuth();
   const carregar = useCallback(async () => {
+    if (!user) return;
     try {
       setDados(await api.dashboard());
     } catch {
       /* mantém o último resumo */
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
+    if (!user) return;
     void carregar();
     const t = setInterval(() => void carregar(), 30000);
     return () => clearInterval(t);
-  }, [carregar]);
+  }, [carregar, user]);
 
   const hoje = new Date();
   const proximas = (dados?.next_appointments ?? []).filter((a) => mesmoDia(new Date(a.start), hoje));
@@ -113,7 +117,7 @@ export default function VisaoGeral() {
                         <div>{a.procedure_name}</div>
                         <div style={{ fontSize: 13, color: "var(--cor-suave)" }}>{a.dentist_name}</div>
                       </td>
-                      <td><Etiqueta texto={a.status} /></td>
+                      <td><Etiqueta texto={a.status === "agendado" ? "a confirmar" : a.status} /></td>
                     </tr>
                   ))}
                 </tbody>

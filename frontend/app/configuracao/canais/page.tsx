@@ -207,7 +207,7 @@ export default function ConfigCanais() {
           <Instrucao n={3}>Copie o <b>token</b> que ele enviar e cole abaixo</Instrucao>
         </div>
         <Campo rotulo="Token do bot" id="bot" ajuda="O token fica guardado no cofre de segredos. Nunca compartilhe com ninguém.">
-          <Input.Password id="bot" size="large" autoFocus prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={botToken} onChange={(e) => setBotToken(e.target.value)} placeholder="1234567890:AA…" style={{ fontFamily: "var(--fonte-mono)" }} />
+          <Input.Password id="bot" size="large" autoFocus prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={botToken} onChange={(e) => setBotToken(e.target.value)} style={{ fontFamily: "var(--fonte-mono)" }} />
         </Campo>
       </Casca>
     );

@@ -14,16 +14,16 @@ from ...domain.services.interfaces import (
 from .base_tools import PatientAwareTool
 
 CAMPOS_CADASTRO: dict[str, Any] = {
-    "nome_completo": {"type": "string", "description": "Nome completo do paciente."},
-    "idade": {"type": "string", "description": "Idade do paciente em anos (ex.: 34)."},
-    "convenio": {"type": "string", "description": "Convênio odontológico, ou 'particular'."},
-    "cpf": {"type": "string", "description": "CPF, apenas números ou formatado."},
+    "nome_completo": {"type": "string", "description": "Nome completo."},
+    "idade": {"type": "string", "description": "Idade em anos."},
+    "convenio": {"type": "string", "description": "Convênio odontológico, ou 'SUS' se não tiver."},
+    "cpf": {"type": "string", "description": "CPF."},
     "telefone": {"type": "string", "description": "Telefone com DDD."},
-    "data_nascimento": {"type": "string", "description": "Data de nascimento (AAAA-MM-DD ou DD/MM/AAAA)."},
-    "email": {"type": "string", "description": "E-mail para contato."},
-    "carteirinha": {"type": "string", "description": "Número da carteirinha do convênio."},
-    "responsavel": {"type": "string", "description": "Nome do responsável, se o paciente for menor de idade."},
-    "observacoes": {"type": "string", "description": "Queixa principal ou observações relevantes."},
+    "data_nascimento": {"type": "string", "description": "Nascimento (AAAA-MM-DD)."},
+    "email": {"type": "string", "description": "E-mail."},
+    "carteirinha": {"type": "string", "description": "Carteirinha."},
+    "responsavel": {"type": "string", "description": "Responsável (menor)."},
+    "observacoes": {"type": "string", "description": "Queixa/observações."},
 }
 
 
@@ -65,11 +65,7 @@ class CadastrarClienteTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Cadastra o paciente na clínica com nome, idade, convênio e demais dados. "
-            "Para marcar consulta basta nome completo (idade e convênio também são pedidos). "
-            "Se o CPF for informado e já existir, o cadastro é reaproveitado e atualizado."
-        )
+        return "Cadastra paciente (nome, idade, convênio etc.). Para agendar basta nome. CPF existente reaproveita cadastro. Não use para paciente logado: a conta já o identifica."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -122,10 +118,7 @@ class AtualizarInformacoesClienteTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Atualiza dados do paciente já cadastrado: telefone, e-mail, convênio, "
-            "carteirinha, responsável ou observações clínicas."
-        )
+        return "Atualiza dados do paciente cadastrado (telefone, e-mail, convênio, carteirinha etc.). Não use para paciente logado, salvo se ele pedir para atualizar a conta."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -149,13 +142,27 @@ class ConsultarCadastroTool(PatientAwareTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Consulta o cadastro do paciente desta conversa e indica quais dados "
-            "ainda faltam. Use antes de pedir informações, para não repetir perguntas."
-        )
+        return "Consulta cadastro do paciente e o que falta. Use antes de pedir dados."
 
     async def run(self, context: AgentContext, **kwargs: Any) -> Any:
         patient = await self.current_patient(context)
+        if context.metadata.get("logado"):
+            # Paciente identificado pela conta do portal: não expor "campos faltando"
+            # nem incentivar perguntas de cadastro.
+            if patient is None:
+                return {
+                    "cadastrado": True,
+                    "identificado_por": "conta do portal",
+                    "nome": context.display_name,
+                    "instrucao": "Não pergunte nome, idade, convênio, CPF, telefone nem e-mail; use os dados da conta.",
+                }
+            return {
+                "cadastrado": True,
+                "identificado_por": "conta do portal",
+                "nome": patient.name,
+                "email": patient.email,
+                "instrucao": "Não pergunte nome, idade, convênio, CPF, telefone nem e-mail; use os dados da conta.",
+            }
         if patient is None:
             return {
                 "cadastrado": False,

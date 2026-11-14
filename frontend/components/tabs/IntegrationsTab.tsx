@@ -150,9 +150,9 @@ function IntegrationCard({ item, onChanged }: { item: IntegrationView; onChanged
               rules={field.required && !item.status.configured ? [{ required: true }] : []}
             >
               {field.secret ? (
-                <Input.Password placeholder={field.placeholder} autoComplete="off" />
+                <Input.Password autoComplete="off" />
               ) : (
-                <Input placeholder={field.placeholder} />
+                <Input />
               )}
             </Form.Item>
           ),

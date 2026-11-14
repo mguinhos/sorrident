@@ -44,10 +44,32 @@ export default function Exames() {
 
   return (
     <>
-      <Topo titulo="Exames" sub="Exames e resultados dos pacientes" acoes={<Botao icone="mais">Novo exame</Botao>} />
+      <Topo titulo="Exames" sub="Exames e resultados dos pacientes" />
       <Conteudo gap={16}>
         <div className="sd-linha sd-linha-quebra" style={{ alignItems: "flex-start" }}>
           <div className="sd-coluna" style={{ flex: 1 }}>
+            <Upload.Dragger
+              multiple
+              accept=".png,.jpg,.jpeg,.dcm,.pdf"
+              showUploadList={false}
+              beforeUpload={(f) => {
+                message.info(`${f.name} pronto para envio. O armazenamento de exames ainda não está disponível na API.`);
+                return false;
+              }}
+              style={{ border: "1.5px dashed #b8d4f1", borderRadius: 16, background: "#f8fbff" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 16px", textAlign: "left" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cor-primaria-suave)", color: "var(--cor-primaria)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icone nome="subir" tam={22} />
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>Cadastrar exame</div>
+                  <div style={{ fontSize: 13, color: "var(--cor-suave)" }}>Arraste a imagem/arquivo ou clique (PNG, JPG, DICOM, PDF)</div>
+                </div>
+                <span className="btn-escolher-arquivo" style={{ height: 40, padding: "0 16px", borderRadius: 12, display: "inline-flex", alignItems: "center", border: "1px solid var(--cor-borda)", background: "#fff", fontWeight: 600, fontSize: 14 }}>Escolher arquivo</span>
+              </div>
+            </Upload.Dragger>
+
             <Cartao pad={16} gap={0}>
               <div className="sd-filtros-linha" style={{ marginBottom: 14 }}>
                 <div className="sd-filtros-grupo" style={{ display: "flex", gap: 8, flexWrap: "wrap" }} role="group" aria-label="Filtrar por status">
@@ -77,9 +99,9 @@ export default function Exames() {
                 </div>
                 <Input
                   ref={buscaRef}
+                  placeholder="Buscar paciente"
                   allowClear
                   prefix={<Icone nome="busca" tam={16} cor="var(--cor-sutil)" />}
-                  placeholder="Buscar paciente ou exame"
                   style={{ width: 260 }}
                   className={buscaAberta ? "sd-busca-aberta" : "sd-busca-recolhida"}
                   onChange={(e) => setBusca(e.target.value)}
@@ -130,27 +152,6 @@ export default function Exames() {
               </TabelaRolavel>
             </Cartao>
 
-            <Upload.Dragger
-              multiple
-              accept=".png,.jpg,.jpeg,.dcm,.pdf"
-              showUploadList={false}
-              beforeUpload={(f) => {
-                message.info(`${f.name} pronto para envio. O armazenamento de exames ainda não está disponível na API.`);
-                return false;
-              }}
-              style={{ border: "1.5px dashed #b8d4f1", borderRadius: 16, background: "#f8fbff" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 16px", textAlign: "left" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cor-primaria-suave)", color: "var(--cor-primaria)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icone nome="subir" tam={22} />
-                </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>Cadastrar exame</div>
-                  <div style={{ fontSize: 13, color: "var(--cor-suave)" }}>Arraste a imagem/arquivo ou clique (PNG, JPG, DICOM, PDF)</div>
-                </div>
-                <span className="btn-escolher-arquivo" style={{ height: 40, padding: "0 16px", borderRadius: 12, display: "inline-flex", alignItems: "center", border: "1px solid var(--cor-borda)", background: "#fff", fontWeight: 600, fontSize: 14 }}>Escolher arquivo</span>
-              </div>
-            </Upload.Dragger>
           </div>
 
           <div className="sd-col-resultado" style={{ width: 400, maxWidth: "100%", flexShrink: 0 }}>

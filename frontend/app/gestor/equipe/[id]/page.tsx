@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ColorPicker, Form, Input, Select, message } from "antd";
 import Topo, { Conteudo } from "@/components/layout/Topo";
-import { Avatar, Aviso, Botao, Cartao, Etiqueta } from "@/components/ui";
+import { Avatar, Aviso, Botao, Cartao, Etiqueta, InputMascarado } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { Dentist } from "@/lib/types";
 
@@ -93,11 +93,11 @@ export default function CadastroOdontologista() {
               <Cartao pad={22} gap={4} titulo={<span style={{ fontSize: 15 }}>Dados pessoais</span>}>
                 <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: "0 14px", marginTop: 10 }}>
                   <Form.Item name="name" label={<b>Nome completo</b>} rules={[{ required: true, message: "Informe o nome" }]}><Input size="large" /></Form.Item>
-                  <Form.Item name="cpf" label={<b>CPF</b>}><Input size="large" placeholder="000.000.000-00" /></Form.Item>
+                  <Form.Item name="cpf" label={<b>CPF</b>}><InputMascarado tipo="cpf" size="large" /></Form.Item>
                 </div>
                 <div style={grade3}>
-                  <Form.Item name="nascimento" label={<b>Data de nascimento</b>}><Input size="large" placeholder="dd/mm/aaaa" /></Form.Item>
-                  <Form.Item name="phone" label={<b>Telefone</b>}><Input size="large" /></Form.Item>
+                  <Form.Item name="nascimento" label={<b>Data de nascimento</b>}><Input size="large" /></Form.Item>
+                  <Form.Item name="phone" label={<b>Telefone</b>}><InputMascarado tipo="telefone" size="large" /></Form.Item>
                   <Form.Item name="email" label={<b>E-mail</b>} rules={[{ type: "email", message: "E-mail inválido" }]}><Input size="large" /></Form.Item>
                 </div>
               </Cartao>
@@ -132,7 +132,7 @@ export default function CadastroOdontologista() {
 
               <Cartao pad={22} gap={4} titulo={<span style={{ fontSize: 15 }}>Acesso ao sistema</span>}>
                 <div style={{ ...grade3, marginTop: 10 }}>
-                  <Form.Item name="usuario" label={<b>Usuário</b>}><Input size="large" placeholder="nome.sobrenome" /></Form.Item>
+                  <Form.Item name="usuario" label={<b>Usuário</b>}><Input size="large" /></Form.Item>
                   <Form.Item name="perfil" label={<b>Perfil</b>}>
                     <Select size="large" options={[{ value: "medico", label: "Dentista" }, { value: "gestor", label: "Gestor" }]} />
                   </Form.Item>

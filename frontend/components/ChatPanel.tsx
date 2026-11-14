@@ -30,8 +30,8 @@ const ATALHOS = [
   { texto: "Marcar consulta", icone: "dente", mensagem: "Quero marcar uma consulta", destaque: true },
   { texto: "Ver horários", icone: "agenda", mensagem: "Quais horários estão disponíveis esta semana?", destaque: true },
   { texto: "Dúvidas frequentes", icone: "livro", mensagem: "Quais são as dúvidas mais frequentes?", destaque: true },
-  { texto: "Remarcar ou cancelar", icone: "relogio", mensagem: "Quero remarcar ou cancelar minha consulta", destaque: false },
-  { texto: "Urgência odontológica", icone: "alerta", mensagem: "Estou com uma urgência odontológica", destaque: false },
+  { texto: "Cancelar consulta", icone: "relogio", mensagem: "Quero cancelar minha consulta", destaque: false },
+
   { texto: "Falar com atendente", icone: "pessoas", mensagem: "Quero falar com um atendente.", destaque: false },
 ];
 
@@ -49,6 +49,80 @@ function DoBot({ children, avatar = true, equipe = false }: { children: ReactNod
 
 /** Chat do paciente com o assistente: cabeçalho com status, bolhas com direção, atalhos e envio.
  *  `lado` é o painel lateral opcional (ex.: Meus agendamentos) exibido ao lado do chat. */
+
+function ofertaDeHorarios(texto: string): boolean {
+  const t = texto.toLowerCase();
+  return /disponív|horário|agenda livre|livre|esta semana|qual dia|período|opções|escolha/.test(t);
+}
+
+function opcoesClicaveis(texto: string): string[] {
+  const set = new Set<string>();
+  // FAQ: cada pergunta da lista vira botão
+  if (/dúvidas mais frequentes|duvidas mais frequentes/i.test(texto)) {
+    for (const m of texto.matchAll(/^\s*[•\-*]\s*(.+)$/gm)) {
+      const q = m[1].trim();
+      if (q) set.add(q);
+    }
+  }
+  // Dias (dd/mm) em mensagens de disponibilidade de dias
+  if (/dias com horários livres/i.test(texto)) {
+    for (const m of texto.matchAll(/\b\d{2}\/\d{2}\b/g)) set.add(m[0]);
+  }
+  // Horários livres nos próximos dias: datas e horários clicáveis
+  if (/horários livres nos próximos dias|horarios livres nos proximos dias/i.test(texto)) {
+    for (const m of texto.matchAll(/\b\d{2}\/\d{2}\b/g)) set.add(m[0]);
+    const hs = [...texto.matchAll(/\d{2}:\d{2}/g)].map((m) => m[0]);
+    const hset = new Set(hs);
+    if (hset.size >= 1) for (const h of hset) set.add(h);
+  }
+  // Horários em mensagens de disponibilidade de horários
+  if (/horários livres em|horarios livres em/i.test(texto)) {
+    const hs = [...texto.matchAll(/\d{2}:\d{2}/g)].map((m) => m[0]);
+    const hset = new Set(hs);
+    if (hset.size >= 1) for (const h of hset) set.add(h);
+  }
+  // Datas completas, horários e profissionais (escolha real: >=2 do mesmo tipo)
+  const datas = new Set<string>();
+  const horarios = new Set<string>();
+  const profissionais = new Set<string>();
+  for (const m of texto.matchAll(/\b\d{2}\/\d{2}\/\d{4}\b/g)) datas.add(m[0]);
+  for (const m of texto.matchAll(/\d{2}:\d{2}/g)) horarios.add(m[0]);
+  for (const m of texto.matchAll(/Dra?\.?\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\wÀ-ÿ]*(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\wÀ-ÿ]*)?/g)) {
+    profissionais.add(m[0].trim());
+  }
+  if (datas.size >= 2) for (const d of datas) set.add(d);
+  if (horarios.size >= 2 && !/dias com horários livres|horários livres|horarios livres/i.test(texto)) for (const h of horarios) set.add(h);
+  // Marcador oculto de profissionais (fluxo pré-programado)
+  const mProf = texto.match(/\[\[profissionais:\s*(.+?)\]\]/);
+  if (mProf && !/marquei com|deseja confirmar/i.test(texto)) {
+    for (const nome of mProf[1].split(",")) {
+      const n = nome.trim();
+      if (n) set.add(n);
+    }
+  }
+  if (profissionais.size >= 2 && !/marquei com|deseja confirmar/i.test(texto)) for (const p of profissionais) set.add(p);
+  // Escolha de período: botões clicáveis
+  if (/qual período/i.test(texto) || /periodo você prefere/i.test(texto)) {
+    set.add("manhã");
+    set.add("tarde");
+  }
+  return [...set];
+}
+
+function textoSemListaOpcoes(texto: string): string {
+  const isDisp = /dias com horários livres|horários livres|horarios livres/i.test(texto);
+  return texto
+    .split("\n")
+    .filter((linha) => !/^\s*[-*•]?\s*\d{2}\/\d{2}\/\d{4}\s*$/.test(linha))
+    .filter((linha) => !/^\s*[-*•]?\s*\d{2}:\d{2}\s*$/.test(linha))
+    .filter((linha) => !(isDisp && /^\s*[•\-*]?\s*\d{2}\/\d{2}\b/.test(linha)))
+    .filter((linha) => !/^\s*Horários livres em/i.test(linha))
+    .filter((linha) => !/^\s*\[\[profissionais:/.test(linha))
+    .filter((linha) => !( /horários livres|horarios livres/i.test(texto) && /^\s*[•\-*]/.test(linha) ))
+    .filter((linha) => !( /^\s*[•\-*]\s*.+$/.test(linha) && /dúvidas mais frequentes|duvidas mais frequentes/i.test(texto) ))
+    .join("\n");
+}
+
 export default function ChatPanel({
   acaoTopo,
   altura = "100%",
@@ -83,6 +157,7 @@ export default function ChatPanel({
   }, []);
 
   const carregar = useCallback(async () => {
+    if (!user) return;
     try {
       const dados = await api.chatHistory(sessao);
       setMensagens(dados.messages ?? []);
@@ -93,14 +168,15 @@ export default function ChatPanel({
       setCarregando(false);
       rolarAoFim();
     }
-  }, [sessao, rolarAoFim]);
+  }, [sessao, rolarAoFim, user]);
 
   useEffect(() => {
+    if (!user) {
+      setCarregando(false);
+      return;
+    }
     void carregar();
-    // Quando o chat carrega (a etiqueta "Hoje" aparece), garante que o e-mail
-    // de confirmação das consultas agendadas foi enviado — sem reenviar duplicados.
-    void api.enviarConfirmacaoEmail().catch(() => undefined);
-  }, [carregar]);
+  }, [carregar, user]);
 
   // Com atendimento humano, busca as respostas periodicamente.
   useEffect(() => {
@@ -133,11 +209,21 @@ export default function ChatPanel({
     try {
       const r = await api.sendChat(sessao, t);
       setHumano(r.handoff);
-      await carregar();
+      if (user) {
+        await carregar();
+      } else {
+        if (r.reply) {
+          setMensagens((prev) => [
+            ...prev,
+            { id: `tmp-r-${Date.now()}`, conversation_id: "", author: "assistant", content: r.reply, tool_name: "", tool_payload: {}, created_at: new Date().toISOString() },
+          ]);
+        }
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao enviar a mensagem.");
     } finally {
       setEnviando(false);
+      if (!user) setFluxoAtivo(true);
       rolarAoFim();
     }
   }
@@ -159,7 +245,7 @@ export default function ChatPanel({
       </header>
 
       <div ref={rolagem} className="sd-chat-rolagem" aria-live="polite">
-        <div style={{ alignSelf: "center", fontSize: 12, fontWeight: 600, color: "var(--cor-suave)", background: "#e9eef5", padding: "4px 10px", borderRadius: 999 }}>Hoje</div>
+        <div style={{ alignSelf: "center", fontSize: 12, fontWeight: 600, color: "#fff", background: "var(--cor-primaria)", padding: "4px 10px", borderRadius: 999 }}>Hoje</div>
         {carregando ? (
           <Spin style={{ margin: "auto" }} />
         ) : (
@@ -189,7 +275,21 @@ export default function ChatPanel({
                 </div>
               ) : (
                 <DoBot key={m.id} avatar={visiveis[i + 1]?.author === "user" || i === visiveis.length - 1} equipe={m.author === "human_agent"}>
-                  <Markdown texto={m.content} />
+                  <Markdown texto={textoSemListaOpcoes(m.content)} />
+                  {opcoesClicaveis(m.content).length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, alignItems: "flex-start" }}>
+                      {opcoesClicaveis(m.content).map((op) => (
+                        <button
+                          key={op}
+                          type="button"
+                          onClick={() => setRascunho((prev) => (prev.trim() ? `${prev.trim()} ${op}` : op))}
+                          style={{ font: "inherit", height: 30, padding: "0 12px", borderRadius: 999, border: "1px solid #b8d4f1", background: "#f0f6ff", color: "var(--cor-primaria)", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                        >
+                          {op}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </DoBot>
               ),
             )}
@@ -238,7 +338,6 @@ export default function ChatPanel({
             style={{ font: "inherit", height: 36, padding: user ? "0 14px" : "0 12px", borderRadius: 999, border: "1px dashed #b8d4f1", background: "#fff", color: "var(--cor-suave)", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
           >
             <Icone nome={maisOpcoes ? "fechar" : "mais"} tam={15} />
-            {user && (maisOpcoes ? "Recolher" : "Mais opções")}
           </button>
         </div>
         {maisOpcoes && (
@@ -267,8 +366,8 @@ export default function ChatPanel({
           <Input
             value={rascunho}
             onChange={(e) => setRascunho(e.target.value)}
-            placeholder={!user && !fluxoAtivo ? "Escolha uma opção acima para começar" : "Escreva uma mensagem…"}
             aria-label="Mensagem"
+            placeholder={!user && !fluxoAtivo ? "Selecione um das opções acima para começar..." : "Escreva uma mensagem…"}
             disabled={!user && !fluxoAtivo}
             style={{ flex: 1, height: 48, borderRadius: 999, background: "var(--cor-fundo)", paddingInline: 18, fontSize: 15 }}
           />

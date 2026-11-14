@@ -23,24 +23,18 @@ class HumanHandoffTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Aciona a equipe da clínica quando o paciente pede atendimento humano, "
-            "relata urgência (dor forte, sangramento, trauma) ou faz um pedido fora do seu alcance."
-        )
+        return "Aciona equipe (pedido humano, urgência ou fora do alcance)."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "motivo": {"type": "string", "description": "Resumo objetivo do pedido do paciente."},
+                "motivo": {"type": "string", "description": "Resumo do pedido."},
                 "urgente": {"type": "boolean", "description": "Marque true em caso de urgência clínica."},
                 "assumir_conversa": {
                     "type": "boolean",
-                    "description": (
-                        "Marque true APENAS quando o paciente pedir explicitamente para falar "
-                        "com uma pessoa. Isso silencia você até a equipe responder."
-                    ),
+                    "description": "true só se pedir falar com pessoa (silencia até equipe responder).",
                 },
             },
             "required": ["motivo"],
@@ -95,18 +89,14 @@ class EncerrarAtendimentoTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Encerra o atendimento quando o paciente se despede ou o assunto termina "
-            "(consulta marcada, dúvida respondida e nada mais pendente). "
-            "Envie a mensagem de despedida antes de chamar."
-        )
+        return "Encerra atendimento (despedida ou assunto concluído). Envie despedida antes."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "resumo": {"type": "string", "description": "O que foi resolvido no atendimento."}
+                "resumo": {"type": "string", "description": "O que foi resolvido."}
             },
             "required": [],
         }
@@ -137,11 +127,7 @@ class ExportarConversaTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Gera uma cópia do histórico desta conversa e envia como arquivo no próprio chat. "
-            "Use quando o paciente pedir 'me manda uma cópia da conversa', 'exporta o chat' "
-            "ou algo equivalente."
-        )
+        return "Gera cópia do histórico e envia no chat."
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -151,7 +137,7 @@ class ExportarConversaTool(BaseTool):
                 "formato": {
                     "type": "string",
                     "enum": ["txt", "md", "html"],
-                    "description": "txt para leitura simples, html para imprimir ou salvar em PDF.",
+                    "description": "txt (padrão) ou html.",
                 }
             },
             "required": [],

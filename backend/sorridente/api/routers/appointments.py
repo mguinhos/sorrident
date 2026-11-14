@@ -131,3 +131,12 @@ async def cancel(
     container: ApplicationContainer = Depends(get_container),
 ) -> dict[str, Any]:
     return (await container.appointment_service.cancel(appointment_id, payload.reason)).to_dict()
+
+
+@router.delete("/{appointment_id}")
+async def delete_appointment(
+    appointment_id: str,
+    container: ApplicationContainer = Depends(get_container),
+) -> dict[str, Any]:
+    deleted = await container.appointment_service.delete(appointment_id)
+    return {"deleted": deleted}
