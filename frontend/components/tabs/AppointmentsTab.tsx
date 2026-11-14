@@ -97,7 +97,6 @@ export default function AppointmentsTab() {
         <Space>
           <Select
             allowClear
-            placeholder="Filtrar por status"
             style={{ width: 180 }}
             value={statusFilter || undefined}
             onChange={(v) => setStatusFilter(v ?? "")}
@@ -180,14 +179,12 @@ export default function AppointmentsTab() {
             <Select
               showSearch
               optionFilterProp="label"
-              placeholder="Selecione o paciente"
               options={patients.map((p) => ({ label: `${p.name} — ${p.phone}`, value: p.id }))}
             />
           </Form.Item>
           <Form.Item name="procedure_id" label="Procedimento">
             <Select
               allowClear
-              placeholder="Consulta padrão"
               options={procedures.map((p) => ({
                 label: `${p.name} (${p.duration_minutes} min)`,
                 value: p.id,
@@ -200,7 +197,6 @@ export default function AppointmentsTab() {
           <Form.Item name="dentist_id" label="Profissional">
             <Select
               allowClear
-              placeholder="Qualquer profissional disponível"
               options={dentists.map((d) => ({ label: d.name, value: d.id }))}
               onChange={() =>
                 void loadSlots(form.getFieldValue("day"), form.getFieldValue("dentist_id"), form.getFieldValue("procedure_id"))
@@ -223,7 +219,6 @@ export default function AppointmentsTab() {
             rules={[{ required: true, message: "Escolha um horário" }]}
           >
             <Select
-              placeholder={slots.length ? "Selecione" : "Escolha o dia para ver os horários"}
               options={slots.map((s) => ({
                 label: `${dayjs(s.start).format("HH:mm")} — ${s.dentist_name}`,
                 value: s.start,

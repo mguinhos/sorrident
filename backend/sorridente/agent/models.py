@@ -32,7 +32,7 @@ class Model:
     """Descrição de um modelo servido por um provedor de inferência."""
 
     id: str
-    provider: str = "opencode_go"
+    provider: str = "openrouter"
     supports: Supports = Supports.TEXT | Supports.TOOLS | Supports.STREAMING
     context_window: int = 32_768
     max_output_tokens: int = 4_096
@@ -74,7 +74,7 @@ class IModelCatalog(ABC):
     def register(self, model: Model) -> "IModelCatalog": ...
 
     @abstractmethod
-    def get(self, model_id: str, provider: str = "opencode_go") -> Model: ...
+    def get(self, model_id: str, provider: str = "openrouter") -> Model: ...
 
 
 class ModelCatalog(IModelCatalog):
@@ -88,17 +88,26 @@ class ModelCatalog(IModelCatalog):
     def _defaults() -> list[Model]:
         return [
             Model(
+                id="gemini-3.5-flash-lite",
+                provider="opencode-go",
+                supports=DEFAULT_SUPPORTS | Supports.REASONING,
+                context_window=128_000,
+                max_output_tokens=16_384,
+                display_name="gemini-3.5-flash-lite (Google)",
+                notes="Modelo padrão do agente SorriDente.",
+            ),
+            Model(
                 id="kimi-k2.5",
-                provider="opencode_go",
+                provider="openrouter",
                 supports=DEFAULT_SUPPORTS | Supports.REASONING,
                 context_window=262_144,
                 max_output_tokens=8_192,
                 display_name="Kimi K2.5",
-                notes="Modelo padrão do agente SorriDente.",
+                notes="Modelo disponível via OpenRouter.",
             ),
             Model(
                 id="glm-5",
-                provider="opencode_go",
+                provider="openrouter",
                 supports=DEFAULT_SUPPORTS | Supports.REASONING,
                 context_window=131_072,
                 max_output_tokens=8_192,
@@ -110,7 +119,7 @@ class ModelCatalog(IModelCatalog):
         self._models[model.id] = model
         return self
 
-    def get(self, model_id: str, provider: str = "opencode_go") -> Model:
+    def get(self, model_id: str, provider: str = "openrouter") -> Model:
         """Devolve o modelo conhecido ou um perfil conservador para modelos novos."""
         known = self._models.get(model_id)
         if known is not None:

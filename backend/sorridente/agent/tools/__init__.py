@@ -9,6 +9,7 @@ from .patient_tools import (
 from .scheduling_tools import (
     AgendarEncaixeUrgenciaTool,
     AvailableSlotsTool,
+    ConfirmarPresencaTool,
     CancelAppointmentTool,
     ConsultarEncaixeUrgenciaTool,
     ListDentistsTool,
@@ -36,6 +37,7 @@ __all__ = [
     "AgendarEncaixeUrgenciaTool",
     "MyAppointmentsTool",
     "CancelAppointmentTool",
+    "ConfirmarPresencaTool",
     "RescheduleAppointmentTool",
     "KnowledgeBaseTool",
     "ClinicInfoTool",

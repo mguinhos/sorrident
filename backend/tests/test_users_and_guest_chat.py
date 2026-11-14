@@ -19,7 +19,8 @@ async def client(tmp_path) -> AsyncIterator[httpx.AsyncClient]:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        opencode_go_api_key="",
+        openrouter_api_key="",
+        gemini_api_key="",
         autostart_telegram=False,
     )
     app = ApplicationFactory(config).create()

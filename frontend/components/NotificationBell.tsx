@@ -86,13 +86,19 @@ export default function NotificationBell() {
                   title={
                     <Space>
                       <Etiqueta texto={item.level} tom={TOM_NIVEL[item.level]} />
-                      <Typography.Text strong>{item.title}</Typography.Text>
+                      <Typography.Text strong style={{ fontSize: 15 }}>{item.title}</Typography.Text>
                     </Space>
                   }
                   description={
                     <Space direction="vertical" size={0}>
-                      <Typography.Text>{item.message}</Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      <Typography.Text style={{ fontSize: 16, fontWeight: 400 }}>
+                        {item.message.split(" (")[0].replace(/(\d{4})-(\d{2})-(\d{2})/g, (_, y, m, d) => `${d}/${m}/${y}`)}
+                      </Typography.Text>
+                      <Typography.Text style={{ fontSize: 16, fontWeight: 400, color: "#000" }}>
+                        {(item.meta?.urgente ? (item.message.includes(" (") ? item.message.slice(item.message.indexOf(" (")).replace(/^\s*\(web\)\s*:?\s*/i, "") : "") : (item.message.includes(" (") ? item.message.slice(item.message.indexOf(" (")) : ""))
+                          .replace(/(\d{4})-(\d{2})-(\d{2})/g, (_, y, m, d) => `${d}/${m}/${y}`)}
+                      </Typography.Text>
+                      <Typography.Text style={{ fontSize: 12, color: "#555" }}>
                         {new Date(item.created_at).toLocaleString("pt-BR")}
                       </Typography.Text>
                     </Space>

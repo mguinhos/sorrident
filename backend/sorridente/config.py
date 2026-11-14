@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -37,6 +38,11 @@ def _load_dotenv(path: Path | None = None) -> None:
 
 _load_dotenv()
 
+# Fuso horário padrão: Recife (America/Recife)
+if not os.environ.get("TZ"):
+    os.environ["TZ"] = "America/Recife"
+time.tzset()
+
 
 def _env(name: str, default: str) -> str:
     return os.environ.get(name, default)
@@ -55,17 +61,23 @@ class AppConfig:
 
     database_path: Path = field(default_factory=lambda: Path(_env("SORRIDENTE_DB", str(BASE_DIR / "data" / "sorridente.json"))))
     credentials_path: Path = field(default_factory=lambda: Path(_env("SORRIDENTE_CREDENTIALS", str(BASE_DIR / "credentials.json"))))
-    opencode_go_api_key: str = field(default_factory=lambda: _env("OPENCODE_GO_API_KEY", ""))
-    opencode_go_model: str = field(default_factory=lambda: _env("OPENCODE_GO_MODEL", "kimi-k2.5"))
-    opencode_go_reasoning_effort: str = field(
-        default_factory=lambda: _env("OPENCODE_GO_REASONING_EFFORT", "low")
+    openrouter_api_key: str = field(default_factory=lambda: _env("OPENROUTER_API_KEY", ""))
+    openrouter_model: str = field(default_factory=lambda: _env("OPENROUTER_MODEL", "openai/gpt-4o-mini"))
+    openrouter_reasoning_effort: str = field(
+        default_factory=lambda: _env("OPENROUTER_REASONING_EFFORT", "low")
     )
+    openrouter_base_url: str = field(default_factory=lambda: _env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"))
+    # Google Gemini (API compatível com OpenAI)
+    gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY", ""))
+    gemini_model: str = field(default_factory=lambda: _env("GEMINI_MODEL", "gemini-2.0-flash"))
+    gemini_reasoning_effort: str = field(default_factory=lambda: _env("GEMINI_REASONING_EFFORT", "off"))
+    gemini_base_url: str = field(default_factory=lambda: _env("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"))
     host: str = field(default_factory=lambda: _env("SORRIDENTE_HOST", "0.0.0.0"))
     port: int = field(default_factory=lambda: _env_int("SORRIDENTE_PORT", 8000))
     cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
     reminder_interval_seconds: int = field(default_factory=lambda: _env_int("SORRIDENTE_REMINDER_INTERVAL", 900))
     reminder_window_hours: int = field(default_factory=lambda: _env_int("SORRIDENTE_REMINDER_WINDOW", 24))
-    agent_max_iterations: int = field(default_factory=lambda: _env_int("SORRIDENTE_AGENT_MAX_ITERATIONS", 6))
+    agent_max_iterations: int = field(default_factory=lambda: _env_int("SORRIDENTE_AGENT_MAX_ITERATIONS", 5))
     inactivity_check_seconds: int = field(default_factory=lambda: _env_int("SORRIDENTE_INACTIVITY_CHECK", 120))
     reindex_seconds: int = field(default_factory=lambda: _env_int("SORRIDENTE_REINDEX_INTERVAL", 1800))
     autostart_telegram: bool = field(default_factory=lambda: _env("SORRIDENTE_AUTOSTART_TELEGRAM", "1") == "1")

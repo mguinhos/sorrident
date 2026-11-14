@@ -71,20 +71,19 @@ export default function NovoAgendamento({ aberto, aoFechar, aoCriar, diaInicial 
     <Modal title="Novo agendamento" open={aberto} onCancel={aoFechar} onOk={() => void salvar()} okText="Agendar" cancelText="Cancelar" confirmLoading={salvando} destroyOnClose>
       <Form form={form} layout="vertical" preserve={false} requiredMark={false}>
         <Form.Item name="patient_id" label="Paciente" rules={[{ required: true, message: "Escolha o paciente" }]}>
-          <Select showSearch optionFilterProp="label" placeholder="Busque pelo nome" options={pacientes.map((p) => ({ label: `${p.name} — ${p.phone}`, value: p.id }))} />
+          <Select showSearch optionFilterProp="label" options={pacientes.map((p) => ({ label: `${p.name} — ${p.phone}`, value: p.id }))} />
         </Form.Item>
         <Form.Item name="procedure_id" label="Procedimento">
-          <Select allowClear placeholder="Consulta padrão (40 min)" options={procedimentos.map((p) => ({ label: `${p.name} (${p.duration_minutes} min)`, value: p.id }))} onChange={() => void buscarHorarios()} />
+          <Select allowClear options={procedimentos.map((p) => ({ label: `${p.name} (${p.duration_minutes} min)`, value: p.id }))} onChange={() => void buscarHorarios()} />
         </Form.Item>
         <Form.Item name="dentist_id" label="Profissional">
-          <Select allowClear placeholder="Qualquer profissional disponível" options={dentistas.map((d) => ({ label: d.name, value: d.id }))} onChange={() => void buscarHorarios()} />
+          <Select allowClear options={dentistas.map((d) => ({ label: d.name, value: d.id }))} onChange={() => void buscarHorarios()} />
         </Form.Item>
         <Form.Item name="day" label="Dia" rules={[{ required: true, message: "Escolha o dia" }]}>
           <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" disabledDate={(d) => d.isBefore(dayjs().startOf("day"))} onChange={() => void buscarHorarios()} />
         </Form.Item>
         <Form.Item name="start" label="Horário livre" rules={[{ required: true, message: "Escolha um horário" }]}>
           <Select
-            placeholder={horarios.length ? "Selecione" : "Escolha o dia para ver os horários"}
             options={horarios.map((s) => ({ label: `${dayjs(s.start).format("HH:mm")} — ${s.dentist_name}`, value: s.start }))}
           />
         </Form.Item>

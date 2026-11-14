@@ -17,13 +17,35 @@ import {
   message as antdMessage,
 } from "antd";
 import { CloseOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Icone } from "@/components/ui";
 import type { InputRef } from "antd";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Patient } from "@/lib/types";
 import TabelaRolavel from "@/components/ui/TabelaRolavel";
+import InputMascarado from "@/components/ui/InputMascarado";
 
 /** CRUD de pacientes com ficha e histórico de consultas. */
+const COR_CONVENIO: Record<string, string> = {
+  amil: "#461bff",
+  "amil dental": "#461bff",
+  bradesco: "#d60719",
+  "bradesco dental": "#d60719",
+  sulamerica: "#002855",
+  "sulamérica": "#002855",
+  "sulamérica odonto": "#002855",
+  odontoprev: "#0366ff",
+  unimed: "#007e4c",
+  "unimed dental": "#007e4c",
+  hapvida: "#0039a0",
+  "hapvida odonto": "#0039a0",
+};
+
+function corConvenio(nome: string): string {
+  const key = (nome || "").trim().toLowerCase();
+  return COR_CONVENIO[key] || "#1677ff";
+}
+
 export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: string } = {}) {
   const router = useRouter();
   const [items, setItems] = useState<Patient[]>([]);
@@ -76,9 +98,8 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
           <Input
             ref={buscaRef}
             allowClear
-            prefix={<SearchOutlined />}
-            placeholder="Buscar por nome, telefone ou CPF"
-            style={{ width: 280 }}
+            prefix={<span style={{ marginRight: 6 }}><SearchOutlined /></span>}
+            placeholder="Buscar pelo nome" style={{ width: 280, paddingLeft: 12 }}
             className={buscaAberta ? undefined : "sd-busca-recolhida"}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -117,23 +138,29 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
         dataSource={items}
         scroll={{ x: 800 }}
         columns={[
-          { title: "Nome", dataIndex: "name" },
+          {
+            title: "Nome",
+            dataIndex: "name",
+            render: (v: string) => {
+              const partes = (v || "").trim().split(/\s+/);
+              const curto = partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0];
+              return (
+                <span
+                  title={v}
+                  style={{ cursor: "pointer", color: "var(--cor-primaria)", fontWeight: 600 }}
+                  onClick={() => antdMessage.info(v)}
+                >
+                  {curto}
+                </span>
+              );
+            },
+          },
           { title: "Telefone", dataIndex: "phone" },
           { title: "CPF", dataIndex: "document" },
           {
             title: "Convênio",
             dataIndex: "insurance_provider",
-            render: (v: string) => (v ? <Tag color="blue">{v}</Tag> : <Tag>particular</Tag>),
-          },
-          { title: "Tratamento", dataIndex: "treatment" },
-          {
-            title: "Canais",
-            render: (_: unknown, row: Patient) => (
-              <Space size={4}>
-                {row.telegram_id && <Tag color="#229ED9">telegram</Tag>}
-                {!row.telegram_id && <Tag>web</Tag>}
-              </Space>
-            ),
+            render: (v: string) => (v ? <Tag style={{ fontWeight: 700, background: corConvenio(v), color: "#fff", border: "none" }}>{v}</Tag> : <Tag color="default" style={{ fontWeight: 700, background: "#e5e7eb", color: "#374151" }}>Particular</Tag>),
           },
           {
             title: "Ações",
@@ -149,14 +176,14 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
                 </Button>
                 <Button
                   size="small"
+                  icon={<Icone nome="editar" tam={14} />}
                   onClick={() => {
                     setEditing(row);
                     form.setFieldsValue(row);
                     setOpen(true);
                   }}
-                >
-                  Editar
-                </Button>
+                />
+
                 <Popconfirm
                   title="Remover paciente?"
                   onConfirm={async () => {
@@ -164,8 +191,8 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
                     void load();
                   }}
                 >
-                  <Button size="small" danger>
-                    Remover
+                  <Button size="small" danger icon={<Icone nome="lixeira" tam={14} />}>
+                    
                   </Button>
                 </Popconfirm>
               </Space>
@@ -184,19 +211,19 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item name="name" label="Nome completo" rules={[{ required: true }]}>
-            <Input />
+            <Input placeholder="Seu nome completo" />
           </Form.Item>
           <Form.Item name="phone" label="Telefone">
-            <Input placeholder="(11) 90000-0000" />
+            <InputMascarado tipo="telefone" placeholder="(11) 90000-0000" />
           </Form.Item>
           <Form.Item name="email" label="E-mail">
-            <Input />
+            <Input placeholder="voce@email.com" />
           </Form.Item>
           <Form.Item name="document" label="CPF">
-            <Input />
+            <InputMascarado tipo="cpf" placeholder="000.000.000-00" />
           </Form.Item>
-          <Form.Item name="birth_date" label="Nascimento (AAAA-MM-DD)">
-            <Input placeholder="1990-05-20" />
+          <Form.Item name="birth_date" label="Data de Nascimento">
+            <Input placeholder="dd/mm/yyyy" />
           </Form.Item>
           <Form.Item name="insurance_provider" label="Convênio">
             <Input placeholder="Amil Dental / particular" />
@@ -233,7 +260,7 @@ export default function PatientsTab({ prontuarioBase }: { prontuarioBase?: strin
               <Typography.Text>{detail.document || "—"}</Typography.Text>
               <Typography.Text type="secondary">Convênio / carteirinha</Typography.Text>
               <Typography.Text>
-                {detail.insurance_provider || "particular"}
+                <span style={{ fontWeight: 700, color: "#d46b08" }}>{detail.insurance_provider || "Particular"}</span>
                 {detail.insurance_card ? ` · ${detail.insurance_card}` : ""}
               </Typography.Text>
               <Typography.Text type="secondary">Tratamento</Typography.Text>

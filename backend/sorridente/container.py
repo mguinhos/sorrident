@@ -16,6 +16,7 @@ from .agent.prompt import ClinicPromptBuilder
 from .agent.task import TaskTracker
 from .agent.tools import (
     AgendarEncaixeUrgenciaTool,
+    ConfirmarPresencaTool,
     AtualizarInformacoesClienteTool,
     AvailableSlotsTool,
     CadastrarClienteTool,
@@ -74,10 +75,11 @@ from .infrastructure.credentials import JsonCredentialStore
 from .infrastructure.database import TinyDBDatabase
 from .infrastructure.email import EmailSender
 from .infrastructure.event_bus import InMemoryEventBus
-from .infrastructure.llm import OpenCodeGoLLMProvider
+from .infrastructure.llm import OpenRouterLLMProvider
 from .integrations import (
+    GeminiInferenceIntegration,
     GoogleCalendarIntegration,
-    OpenCodeGoInferenceIntegration,
+    OpenRouterInferenceIntegration,
     IntegrationRegistry,
     RoutingLLMProvider,
     TelegramIntegration,
@@ -203,7 +205,7 @@ class ApplicationContainer:
         self.model_catalog = ModelCatalog()
         self.task_tracker = TaskTracker()
         self.context_policy = CompositePolicy(
-            SlidingWindowPolicy(max_messages=24), TokenBudgetPolicy(usage_ratio=0.6)
+            SlidingWindowPolicy(max_messages=12), TokenBudgetPolicy(usage_ratio=0.6)
         )
         self.agent = SorriDenteAgent(
             llm=self.llm,
@@ -214,11 +216,19 @@ class ApplicationContainer:
             policy=self.context_policy,
             tracker=self.task_tracker,
             max_iterations=self.config.agent_max_iterations,
+            history_limit=12,
         )
 
         # Canais
         self.dispatcher = MessageDispatcher(
-            self.agent, self.conversation_service, self.patient_service, self.settings_service
+            self.agent,
+            self.conversation_service,
+            self.patient_service,
+            self.settings_service,
+            scheduling=self.scheduling_service,
+            procedures=self.procedure_service,
+            dentists=self.dentist_service,
+            appointments=self.appointment_service,
         )
         self.web_channel = WebChannel(self.dispatcher)
         self.telegram_channel = TelegramChannel(self.dispatcher)
@@ -231,15 +241,39 @@ class ApplicationContainer:
         )
 
         # Registro das integrações concretas (único ponto que as conhece).
-        self.opencode_go_integration = OpenCodeGoInferenceIntegration(
-            OpenCodeGoLLMProvider(
-                self.config.opencode_go_api_key,
-                self.config.opencode_go_model,
-                reasoning_effort=self.config.opencode_go_reasoning_effort,
+        self.openrouter_integration = OpenRouterInferenceIntegration(
+            OpenRouterLLMProvider(
+                self.config.openrouter_api_key,
+                self.config.openrouter_model,
+                reasoning_effort=self.config.openrouter_reasoning_effort,
+                base_url=self.config.openrouter_base_url,
             ),
-            self.config.opencode_go_model,
+            self.config.openrouter_model,
         )
-        self.integrations.register(self.opencode_go_integration, activate=True)
+        _gemini_ativo = bool(self.config.gemini_api_key)
+
+        self.openrouter_integration = OpenRouterInferenceIntegration(
+            OpenRouterLLMProvider(
+                self.config.openrouter_api_key,
+                self.config.openrouter_model,
+                reasoning_effort=self.config.openrouter_reasoning_effort,
+                base_url=self.config.openrouter_base_url,
+            ),
+            self.config.openrouter_model,
+        )
+        self.integrations.register(self.openrouter_integration, activate=not _gemini_ativo)
+
+        self.gemini_integration = GeminiInferenceIntegration(
+            OpenRouterLLMProvider(
+                self.config.gemini_api_key,
+                self.config.gemini_model,
+                reasoning_effort=self.config.gemini_reasoning_effort,
+                base_url=self.config.gemini_base_url,
+                api_key_env="GEMINI_API_KEY",
+            ),
+            self.config.gemini_model,
+        )
+        self.integrations.register(self.gemini_integration, activate=_gemini_ativo)
         self.integrations.register(TelegramIntegration(self.telegram_channel))
         self.integrations.register(WhatsAppIntegration(self.whatsapp_channel))
         self.integrations.register(self.google_calendar)
@@ -320,6 +354,9 @@ class ApplicationContainer:
                 ),
                 RescheduleAppointmentTool(self.appointment_service),
                 CancelAppointmentTool(self.appointment_service),
+                ConfirmarPresencaTool(
+                    self.appointment_service, self.patient_service, self.conversation_service
+                ),
                 # Conhecimento (RAG) e suporte
                 KnowledgeBaseTool(self.knowledge_service),
                 ClinicInfoTool(self.settings_service),

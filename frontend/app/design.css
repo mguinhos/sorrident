@@ -330,9 +330,9 @@ h5 {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .sd-sair:hover {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
 }
 
 /* ---------- topo da página ---------- */
@@ -396,19 +396,20 @@ h5 {
 }
 .sd-sino-qtd {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 18px;
-  height: 18px;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
   border-radius: 999px;
   background: #ef4444;
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #fff;
+  padding: 0 4px;
 }
 
 /* ---------- kpi ---------- */
@@ -757,6 +758,10 @@ h5 {
     flex-direction: column;
   }
 }
+@media (min-width: 768px) {
+  .sd-login-cartao { width: 520px; }
+}
+
 @media (max-width: 860px) {
   .sd-lateral {
     position: fixed;
@@ -1064,7 +1069,13 @@ h5 {
   box-shadow: 0 10px 30px rgba(4, 22, 64, 0.16);
   transition: none;
 }
-.sd-login-voltar:hover {
+.sd-login-voltar:hover,
+.sd-login-voltar:focus,
+.sd-login-voltar:active,
+.sd-login-voltar-mobile:hover,
+.sd-login-voltar-mobile:focus,
+.sd-login-voltar-mobile:active {
+  text-decoration: none !important;
   color: var(--cor-primaria-escura);
   box-shadow: 0 12px 32px rgba(4, 22, 64, 0.22);
 }
@@ -1636,6 +1647,19 @@ h5 {
 }
 .sd-apresentacao-secundario:hover {
   border-bottom-color: var(--cor-primaria);
+}
+button.sd-apresentacao-secundario {
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+button.sd-apresentacao-secundario:active,
+button.sd-apresentacao-secundario:focus {
+  transform: none;
+  box-shadow: none;
+  outline: none;
 }
 /* Atalhos no canto superior direito (links simples, sem caixa). */
 .sd-apresentacao-atalhos {
@@ -2393,4 +2417,76 @@ h5 {
   .sd-expediente {
     display: none !important;
   }
+}
+
+/* números dos badges (não lidas, etc.) em negrito */
+.ant-scroll-number-only-unit,
+.ant-badge-count,
+.sd-sino-qtd {
+  font-weight: 700 !important;
+}
+
+/* toast de mensagem (nome completo do paciente) com fonte maior */
+.ant-message-custom-content,
+.ant-message-notice-content {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+}
+
+/* badge de contagem (conversas não lidas) no mesmo estilo do sino */
+.ant-badge-count,
+.ant-scroll-number {
+  min-width: 22px !important;
+  height: 22px !important;
+  padding: 0 4px !important;
+  border-radius: 999px !important;
+  background: #ef4444 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border: 2px solid #fff !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 22px !important;
+  vertical-align: middle !important;
+}
+
+@media (max-width: 1100px) {
+  .sd-medico-sidebar { width: 100% !important; }
+}
+
+@media (max-width: 640px) {
+  .sd-agenda-item { flex-direction: column !important; gap: 4px !important; }
+  .sd-agenda-hora { width: auto !important; padding-top: 0 !important; }
+}
+
+
+@media (max-width: 563px) {
+  .sd-login-voltar {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 4px;
+  }
+}
+
+
+@media (max-width: 563px) {
+  .sd-login-voltar { display: none !important; }
+  .sd-login-voltar-mobile { display: none !important; }
+}
+
+/* mensagem de erro de login (credenciais inválidas) */
+.ant-alert-message {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

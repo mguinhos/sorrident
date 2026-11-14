@@ -15,15 +15,16 @@ import {
   message as antdMessage,
 } from "antd";
 import { api } from "@/lib/api";
+import InputMascarado from "@/components/ui/InputMascarado";
 
 const DIAS = [
-  { label: "Segunda", value: 0 },
-  { label: "Terça", value: 1 },
-  { label: "Quarta", value: 2 },
-  { label: "Quinta", value: 3 },
-  { label: "Sexta", value: 4 },
-  { label: "Sábado", value: 5 },
-  { label: "Domingo", value: 6 },
+  { label: "Seg", value: 0 },
+  { label: "Ter", value: 1 },
+  { label: "Qua", value: 2 },
+  { label: "Qui", value: 3 },
+  { label: "Sex", value: 4 },
+  { label: "Sáb", value: 5 },
+  { label: "Dom", value: 6 },
 ];
 
 /** Dados da clínica, expediente e persona do agente. */
@@ -50,26 +51,28 @@ export default function SettingsTab() {
 
   return (
     <Form form={form} layout="vertical">
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} align="stretch">
         <Col xs={24} lg={12}>
-          <Card title="Dados da clínica">
-            <Form.Item name="clinic_name" label="Nome">
-              <Input />
-            </Form.Item>
-            <Form.Item name="address" label="Endereço">
-              <Input />
-            </Form.Item>
-            <Form.Item name="phone" label="Telefone">
-              <Input />
-            </Form.Item>
-            <Form.Item name="email" label="E-mail">
-              <Input />
-            </Form.Item>
+          <Card title="Dados da clínica" style={{ height: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 42 }}>
+              <Form.Item name="clinic_name" label="Nome" style={{ marginBottom: 0 }}>
+                <Input placeholder="Clínica Ortodôntica SorriDente" />
+              </Form.Item>
+              <Form.Item name="address" label="Endereço" style={{ marginBottom: 0 }}>
+                <Input placeholder="R. Enesto de Paula Santos, 960" />
+              </Form.Item>
+              <Form.Item name="phone" label="Telefone" style={{ marginBottom: 0 }}>
+                <InputMascarado tipo="telefone" placeholder="(11) 4002-8922" />
+              </Form.Item>
+              <Form.Item name="email" label="E-mail" style={{ marginBottom: 0 }}>
+                <Input placeholder="contato@sorridente.com.br" />
+              </Form.Item>
+            </div>
           </Card>
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card title="Expediente e agenda">
+          <Card title="Expediente e agenda" style={{ height: "100%" }}>
             <Row gutter={12}>
               <Col span={12}>
                 <Form.Item name="opening_hour" label="Abertura">
@@ -98,12 +101,11 @@ export default function SettingsTab() {
             <Form.Item
               name="inactivity_minutes"
               label="Encerrar atendimento após (minutos sem interação)"
-              extra="O agente se despede e fecha a conversa; o paciente pode reabrir escrevendo de novo."
             >
               <InputNumber min={1} max={240} step={5} style={{ width: "100%" }} />
             </Form.Item>
             <Form.Item name="working_days" label="Dias de atendimento">
-              <Checkbox.Group options={DIAS} />
+              <Checkbox.Group options={DIAS} style={{ display: "flex", flexWrap: "wrap", rowGap: 10, columnGap: 12 }} />
             </Form.Item>
           </Card>
         </Col>
@@ -111,29 +113,26 @@ export default function SettingsTab() {
         <Col span={24}>
           <Card title="Atendimento humano">
             <Row gutter={12}>
-              <Col xs={24} lg={8}>
+              <Col xs={24} md={12} xl={8}>
                 <Form.Item
                   name="notify_whatsapp_phone"
-                  label="WhatsApp da recepção para avisos"
-                  extra="Recebe alerta quando o paciente pedir para falar com um atendente."
+                  label="WhatsApp"
                 >
                   <Input placeholder="5511999999999" />
                 </Form.Item>
               </Col>
-              <Col xs={24} lg={8}>
+              <Col xs={24} md={12} xl={8}>
                 <Form.Item
                   name="handoff_eta_minutes"
-                  label="Prazo prometido no aviso de espera (minutos)"
-                  extra="Aparece no chat: “um atendente responde em até X minutos”."
+                  label="Tempo de espera (minutos)"
                 >
                   <InputNumber min={1} max={60} step={1} style={{ width: "100%" }} />
                 </Form.Item>
               </Col>
-              <Col xs={24} lg={8}>
+              <Col xs={24} md={24} xl={8}>
                 <Form.Item
                   name="handoff_notice_cooldown_minutes"
-                  label="Intervalo entre avisos de espera (minutos)"
-                  extra="Evita repetir o aviso a cada mensagem do paciente."
+                  label="Intervalo entre os avisos (minutos)"
                 >
                   <InputNumber min={1} max={240} step={5} style={{ width: "100%" }} />
                 </Form.Item>
@@ -144,9 +143,6 @@ export default function SettingsTab() {
 
         <Col span={24}>
           <Card title="Persona do agente SorriDente">
-            <Typography.Paragraph type="secondary">
-              Esta instrução entra no início do prompt de sistema, antes das regras de atendimento.
-            </Typography.Paragraph>
             <Form.Item name="persona">
               <Input.TextArea rows={4} />
             </Form.Item>

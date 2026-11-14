@@ -19,7 +19,8 @@ async def client(tmp_path) -> AsyncIterator[httpx.AsyncClient]:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        opencode_go_api_key="",
+        openrouter_api_key="",
+        gemini_api_key="",
         autostart_telegram=False,
     )
     app = ApplicationFactory(config).create()
@@ -39,7 +40,8 @@ async def test_resumo_de_cadastro_completo_orienta_o_agente(tmp_path) -> None:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        opencode_go_api_key="",
+        openrouter_api_key="",
+        gemini_api_key="",
         autostart_telegram=False,
     )
     from sorridente.container import ApplicationContainer
@@ -117,7 +119,8 @@ async def test_marcar_agendamento_usa_paciente_ja_vinculado(tmp_path) -> None:
     config = AppConfig(
         database_path=tmp_path / "db.json",
         credentials_path=tmp_path / "credentials.json",
-        opencode_go_api_key="",
+        openrouter_api_key="",
+        gemini_api_key="",
         autostart_telegram=False,
     )
     container = ApplicationContainer(config)

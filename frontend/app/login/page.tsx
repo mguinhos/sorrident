@@ -28,10 +28,6 @@ export default function LoginPage() {
 
   const perfilAtual = PERFIS.find((p) => p.value === perfil)!;
 
-  useEffect(() => {
-    form.setFieldsValue({ username: perfilAtual.demo[0], password: perfilAtual.demo[1] });
-  }, [perfil, form, perfilAtual]);
-
   // já autenticado: não pisca o formulário antes do redirect
   if (user) return null;
 
@@ -89,7 +85,7 @@ export default function LoginPage() {
             Entrar como {perfilAtual.label.toLowerCase()}
           </Button>
           <p style={{ margin: 0, fontSize: 13, color: "var(--cor-suave)", textAlign: "center" }}>
-            Ainda não tem conta? <Link href="/cadastro" className="sd-link">Criar conta</Link>
+            {perfil === "medico" ? "Use as credenciais fornecidas" : <>Ainda não tem conta? <Link href="/cadastro" className="sd-link">Criar conta</Link></>}
           </p>
         </Form>
       </section>

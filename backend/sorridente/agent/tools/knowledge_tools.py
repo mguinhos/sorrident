@@ -21,20 +21,15 @@ class KnowledgeBaseTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return (
-            "Busca na base de conhecimento da clínica (dúvidas frequentes, procedimentos, "
-            "valores, convênios, cuidados, orientações pré e pós-consulta, dados da clínica). "
-            "Use SEMPRE antes de responder qualquer pergunta sobre a clínica ou o tratamento, "
-            "e baseie a resposta apenas nos trechos retornados."
-        )
+        return "Busca na base da clínica (FAQ, procedimentos, valores, convênios, cuidados). Use antes de responder sobre a clínica/tratamento."
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
-                "pergunta": {"type": "string", "description": "Pergunta do paciente, com as palavras dele."},
-                "limite": {"type": "integer", "description": "Quantidade de trechos (padrão 4)."},
+                "pergunta": {"type": "string", "description": "Pergunta do paciente."},
+                "limite": {"type": "integer", "description": "Trechos (padrão 4, máx 5)."},
             },
             "required": ["pergunta"],
         }
@@ -42,7 +37,7 @@ class KnowledgeBaseTool(BaseTool):
     async def run(
         self, context: AgentContext, pergunta: str = "", limite: int = 4, **kwargs: Any
     ) -> Any:
-        return await self._knowledge.answer_context(pergunta, max(1, min(int(limite or 4), 8)))
+        return await self._knowledge.answer_context(pergunta, max(1, min(int(limite or 4), 5)))
 
 
 class ClinicInfoTool(BaseTool):

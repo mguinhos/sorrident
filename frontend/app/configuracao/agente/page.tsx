@@ -22,15 +22,15 @@ const TONS = {
 type Tom = keyof typeof TONS;
 
 const MODELOS = [
-  { id: "kimi-k2.5", nome: "Kimi K2.5", desc: "Padrão do SorriDente. Equilibra qualidade e rapidez. Via OpenCode Go (nuvem).", icone: "estrela", selo: "Recomendado" },
-  { id: "glm-5", nome: "GLM-5", desc: "Alternativa mais econômica. Via OpenCode Go (nuvem).", icone: "cerebro" },
+  { id: "gemini-3.5-flash-lite", nome: "Gemini Flash Lite (Google)", desc: "Padrão do SorriDente. Rápido e econômico. Via OpenCode Go (nuvem).", icone: "estrela", selo: "Recomendado" },
+  { id: "gpt-6-luna", nome: "GPT-6 Luna", desc: "Alternativa de alta qualidade. Via OpenRouter (nuvem).", icone: "cerebro" },
 ];
 
 const REGRAS = [
-  { id: "clinica", titulo: "Nunca dar orientação clínica", desc: "Dúvida de saúde vai direto para uma pessoa da equipe", icone: "escudo", travado: true },
-  { id: "lgpd", titulo: "Aviso de privacidade (LGPD)", desc: "Mostra o aviso no primeiro contato e registra o aceite", icone: "cadeado", travado: true },
-  { id: "cancelar", titulo: "Cancelar só com 4 h de antecedência", desc: "Menos que isso, passa para a recepção", icone: "relogio" },
-  { id: "maximo", titulo: "No máximo 2 consultas futuras", desc: "Por paciente, pelo atendimento automático", icone: "agenda" },
+  { id: "clinica", titulo: "Nunca dar orientação clínica", desc: "Dúvidas técnicas de saúde vão direto para um atendente humano", icone: "escudo", travado: true },
+  { id: "lgpd", titulo: "Aviso de privacidade (LGPD)", desc: "Mostra o aviso no primeiro contato e registra", icone: "cadeado", travado: true },
+  { id: "cancelar", titulo: "Cancelar só com 4 h de antecedência", desc: "Limite para cancelamento", icone: "relogio" },
+  { id: "maximo", titulo: "No máximo 2 consultas futuras", desc: "Limite para Consultas", icone: "agenda" },
   { id: "humano", titulo: "Passar para humano após 2 tentativas", desc: "Quando o assistente não entender a mensagem", icone: "pessoas" },
 ];
 
@@ -61,7 +61,7 @@ export default function ConfigAgente() {
       setFecha(s.closing_hour || "18:00");
       if (s.working_days?.length) setDias(s.working_days);
     }).catch(() => undefined);
-    api.getIntegration("opencode_go").then((g) => {
+    api.getIntegration("openrouter").then((g) => {
       const m = g.values?.model;
       if (typeof m === "string" && m) setModelo(m);
     }).catch(() => undefined);
@@ -84,7 +84,7 @@ export default function ConfigAgente() {
     setSalvando(true);
     try {
       await api.updateSettings({ persona: persona(), opening_hour: abre, closing_hour: fecha, working_days: dias });
-      await api.saveIntegration("opencode_go", chave ? { model: modelo, api_key: chave } : { model: modelo });
+      await api.saveIntegration("openrouter", chave ? { model: modelo, api_key: chave } : { model: modelo });
       message.success(`${nome} está ativo e pronto para atender.`);
       router.push("/gestor/agente");
     } catch (e) {
@@ -111,13 +111,13 @@ export default function ConfigAgente() {
 
   if (passo === 1) {
     return (
-      <Casca {...comum} titulo="Como o assistente se apresenta" descricao="Dê um nome e escolha o jeito de falar. A conversa de exemplo ao lado muda conforme a escolha." previa={<Celular3D tela={chat(<>{oi}{resposta}</>)} />} previaRotulo="Conversa de exemplo">
+      <Casca {...comum} titulo="Como o assistente se apresenta" descricao="" previa={<Celular3D tela={chat(<>{oi}{resposta}</>)} />} previaRotulo="Conversa de exemplo">
         <div style={{ display: "flex", gap: 14 }}>
           <Campo rotulo="Nome do assistente" id="nome" style={{ flex: 1 }}>
             <Input id="nome" size="large" autoFocus prefix={<Icone nome="robo" tam={18} cor="var(--cor-sutil)" />} value={nome} onChange={(e) => setNome(e.target.value)} />
           </Campo>
           <Campo rotulo="Assina como" id="assina" style={{ flex: 1.4 }}>
-            <Input id="assina" size="large" value={assina} onChange={(e) => setAssina(e.target.value)} placeholder="Nome da clínica" />
+            <Input id="assina" size="large" value={assina} onChange={(e) => setAssina(e.target.value)} />
           </Campo>
         </div>
         <GrupoEscolha rotulo="Tom de voz">
@@ -131,15 +131,15 @@ export default function ConfigAgente() {
 
   if (passo === 2) {
     return (
-      <Casca {...comum} titulo="Qual cérebro o assistente usa" descricao="O modelo de linguagem é quem entende a mensagem do paciente e escreve a resposta." previa={<Celular3D tela={chat(<>{oi}{resposta}<AvisoChat texto="Respondeu em 1,2 s" tom="ok" icone="raio" /></>)} />} previaRotulo="Teste de velocidade">
+      <Casca {...comum} titulo="Qual cérebro o assistente usa" descricao="O modelo de Inteligência Artificial é quem entende a mensagem do paciente e escreve a resposta." previa={<Celular3D tela={chat(<>{oi}{resposta}<AvisoChat texto="Respondeu em 1,2 s" tom="ok" icone="raio" /></>)} />} previaRotulo="Teste de velocidade">
         <GrupoEscolha>
           {MODELOS.map((m) => <Escolha key={m.id} titulo={m.nome} desc={m.desc} icone={m.icone} selo={m.selo} ativo={modelo === m.id} onClick={() => setModelo(m.id)} />)}
           <div style={{ opacity: 0.55 }} aria-disabled>
-            <Escolha titulo="Modelo local (Ollama)" desc="Roda no computador da clínica. Ainda não integrado ao SorriDente." icone="servidor" ativo={false} />
+            <Escolha titulo="Modelo local" desc="Roda no computador da clínica. Ainda não integrado ao SorriDente." icone="servidor" ativo={false} />
           </div>
         </GrupoEscolha>
-        <Campo rotulo="Chave de acesso OpenCode Go" id="chave" ajuda="Deixe em branco para manter a chave atual. Guardada no cofre de segredos.">
-          <Input.Password id="chave" size="large" prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={chave} onChange={(e) => setChave(e.target.value)} placeholder="sk-…" style={{ fontFamily: "var(--fonte-mono)" }} />
+        <Campo rotulo="Chave de acesso" id="chave" ajuda="Deixe em branco para manter a chave anterior.">
+          <Input.Password id="chave" size="large" prefix={<Icone nome="chave" tam={18} cor="var(--cor-sutil)" />} value={chave} onChange={(e) => setChave(e.target.value)} style={{ fontFamily: "var(--fonte-mono)" }} />
         </Campo>
         <Aviso icone="ok" tom="ok">Na dúvida, mantenha o recomendado. Dá para trocar depois sem perder as conversas.</Aviso>
       </Casca>
@@ -153,7 +153,7 @@ export default function ConfigAgente() {
       <AvisoChat texto="Transferido para a recepção" icone="pessoas" />
     </>);
     return (
-      <Casca {...comum} titulo="Regras que o assistente segue" descricao="As duas primeiras são exigidas por lei e pela ética da profissão. As demais você ajusta." previa={<Celular3D tela={tela} />} previaRotulo="Regra em ação">
+      <Casca {...comum} titulo="Regras que o assistente segue" descricao="Ajuste de acordo com sua necessidade" previa={<Celular3D tela={tela} />} previaRotulo="Regra em ação">
         {REGRAS.map((r) => (
           <Opcao key={r.id} titulo={r.titulo} desc={r.desc} icone={r.icone} travado={r.travado} ligado={regras[r.id]} onChange={(v) => setRegras({ ...regras, [r.id]: v })} />
         ))}
@@ -171,7 +171,7 @@ export default function ConfigAgente() {
       {foraHorario && <AvisoChat texto="Na fila da recepção" tom="alerta" icone="relogio" />}
     </>);
     return (
-      <Casca {...comum} titulo="Horário de atendimento da clínica" descricao="O assistente funciona 24 horas, mas precisa saber quando há gente na recepção." previa={<Celular3D tela={tela} />} previaRotulo="Mensagem às 23h">
+      <Casca {...comum} titulo="Horário de atendimento da clínica" descricao="O assistente funciona por 24 horas, mas tem que saber quando há atendimento na clínica" previa={<Celular3D tela={tela} />} previaRotulo="Mensagem às 23h">
         <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", border: "1px solid var(--cor-borda)", borderRadius: 14 }}>
           <div className="sd-campo-rotulo">Dias de atendimento</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} role="group" aria-label="Dias de atendimento">
@@ -220,7 +220,7 @@ export default function ConfigAgente() {
         irPara={setPasso}
         itens={[
           ["Nome e tom", `${nome} · ${tom}`, 1],
-          ["Modelo", `${MODELOS.find((m) => m.id === modelo)?.nome ?? modelo} (OpenCode Go)`, 2],
+          ["Modelo", `${MODELOS.find((m) => m.id === modelo)?.nome ?? modelo}`, 2],
           ["Regras", `${nRegras} ativas · 2 obrigatórias`, 3],
           ["Horário", `${dias.map((d) => DIAS[d]).join(", ")} · ${abre}–${fecha}`, 4],
           ["Fora do horário", foraHorario ? "Atende e deixa na fila da recepção" : "Só avisa que está fechada", 4],

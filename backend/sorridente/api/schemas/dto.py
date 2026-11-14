@@ -20,6 +20,7 @@ class RegisterRequest(BaseModel):
     email: str = ""
     phone: str = ""
     document: str = ""
+    insurance_provider: str = ""
 
 
 class UserCreateRequest(BaseModel):

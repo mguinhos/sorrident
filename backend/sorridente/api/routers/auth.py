@@ -38,6 +38,7 @@ async def register(
         email=payload.email,
         phone=payload.phone,
         document=payload.document,
+        insurance_provider=payload.insurance_provider,
     )
     return _public(user)
 

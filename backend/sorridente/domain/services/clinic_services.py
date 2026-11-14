@@ -258,12 +258,13 @@ class SchedulingService(ISchedulingService):
             ]
             if livres:
                 return {**livres[0], "encaixe": False, "duracao_minutos": duration}
-            if offset == 0 and day.weekday() in settings.working_days:
-                # Grade cheia hoje: encaixa ao fim do expediente.
+            if day.weekday() in settings.working_days:
+                # Grade cheia neste dia: encaixa ao fim do expediente.
                 closing = self._parse_time(settings.closing_hour, time(18, 0))
+                referencia = now if offset == 0 else datetime.combine(day, time(0, 0))
                 start = max(
                     datetime.combine(day, closing) - timedelta(minutes=duration),
-                    now + timedelta(minutes=30),
+                    referencia + timedelta(minutes=30 if offset == 0 else 0),
                 )
                 return {
                     "start": start.isoformat(timespec="minutes"),
@@ -476,7 +477,7 @@ class AppointmentService(IAppointmentService):
             )
 
         procedure = await self._procedures.find_by_name("Urgência ortodôntica")
-        return await self.schedule(
+        appointment = await self.schedule(
             patient_id=patient_id,
             start=start,
             dentist_id=dentist_id,
@@ -486,6 +487,10 @@ class AppointmentService(IAppointmentService):
             allow_overbook=True,
             priority=Priority.URGENTE.value,
         )
+        # Encaixe de urgência confirmado pelo paciente no ato: já entra como confirmado.
+        appointment.status = AppointmentStatus.CONFIRMADO.value
+        await self._appointments.update(appointment)
+        return appointment
 
     async def reschedule(self, appointment_id: str, start: datetime) -> Appointment:
         appointment = await self.get(appointment_id)
@@ -507,6 +512,10 @@ class AppointmentService(IAppointmentService):
         await self._send_email(appointment, "remarcada")
         await self._sync_calendar(appointment, "remarcado")
         return appointment
+
+    async def delete(self, appointment_id: str) -> bool:
+        appointment = await self.get(appointment_id)
+        return await self._appointments.remove(appointment_id)
 
     async def cancel(self, appointment_id: str, reason: str = "") -> Appointment:
         appointment = await self.get(appointment_id)
@@ -538,12 +547,27 @@ class AppointmentService(IAppointmentService):
             raise NotFoundError(f"Agendamento {appointment_id} não encontrado.")
         return appointment
 
+    async def cleanup_past(self) -> int:
+        now = datetime.now()
+        items = await self._appointments.list()
+        deleted = 0
+        for appt in items:
+            try:
+                if getattr(appt, "end_dt", None) and appt.end_dt < now:
+                    await self._appointments.remove(appt.id)
+                    deleted += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return deleted
+
     async def list_all(self, **filters: Any) -> list[Appointment]:
+        await self.cleanup_past()
         clean = {k: v for k, v in filters.items() if v not in (None, "")}
         items = await self._appointments.list(clean or None)
         return sorted(items, key=lambda a: a.start)
 
     async def agenda(self, start: date, end: date) -> list[Appointment]:
+        await self.cleanup_past()
         return await self._appointments.in_range(
             datetime.combine(start, time.min), datetime.combine(end, time.max)
         )
@@ -780,7 +804,7 @@ class AuthService(IAuthService):
     def hash_password(password: str, salt: str = "sorridente") -> str:
         return hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
 
-    async def _create_own_patient(self, user: User, email: str, phone: str, document: str, name: str) -> User:
+    async def _create_own_patient(self, user: User, email: str, phone: str, document: str, name: str, insurance_provider: str = "") -> User:
         """Cria uma entidade de paciente exclusiva para o usuário da conta.
 
         Cada usuário cadastrado tem sua própria entidade no banco: nunca
@@ -807,6 +831,8 @@ class AuthService(IAuthService):
             patient.phone = phone
         if document:
             patient.document = document
+        if insurance_provider:
+            patient.insurance_provider = insurance_provider
         patient = await self._patients.add(patient)
         if self._notifications is not None:
             await self._notifications.notify(
@@ -829,6 +855,7 @@ class AuthService(IAuthService):
         email: str = "",
         phone: str = "",
         document: str = "",
+        insurance_provider: str = "",
     ) -> User:
         username = (username or "").strip().lower()
         if not username or not password:
@@ -845,7 +872,7 @@ class AuthService(IAuthService):
         )
         user = await self._users.add(user)
         if role == Role.CLIENTE.value:
-            user = await self._create_own_patient(user, email, phone, document, display_name)
+            user = await self._create_own_patient(user, email, phone, document, display_name, insurance_provider)
         return user
 
     async def get_user(self, user_id: str) -> User:

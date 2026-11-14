@@ -9,6 +9,7 @@ import { MiniQuiosque } from "@/components/assistente/Miniaturas";
 import { SeloFlutuante, Totem3D } from "@/components/assistente/Modelos3D";
 import Resumo from "@/components/assistente/Resumo";
 import { Botao, Campo, Escolha, GrupoEscolha, Icone, Opcao } from "@/components/ui";
+import InputMascarado from "@/components/ui/InputMascarado";
 import { api } from "@/lib/api";
 import { CONFIG_PADRAO, CORES_QUIOSQUE, gravarConfigQuiosque, lerConfigQuiosque, type ConfigQuiosque } from "@/lib/senhas";
 
@@ -100,14 +101,14 @@ export default function PrimeiroAcesso() {
     return (
       <Casca {...comum} titulo="Dados da clínica" descricao="Essas informações aparecem para o paciente no quiosque, no chat e nos lembretes." previa={<Totem3D tela={tela} retrato={cfg.retrato} />} previaRotulo="Quiosque com o nome da clínica">
         <Campo rotulo="Nome da clínica" id="clinica" ajuda="Aparece no topo do quiosque e nas mensagens.">
-          <Input id="clinica" size="large" autoFocus prefix={<Icone nome="predio" tam={18} cor="var(--cor-sutil)" />} value={clinica.nome} onChange={(e) => setClinica({ ...clinica, nome: e.target.value })} placeholder="Clínica Sorriso Boa Vista" />
+          <Input id="clinica" size="large" autoFocus prefix={<Icone nome="predio" tam={18} cor="var(--cor-sutil)" />} value={clinica.nome} onChange={(e) => setClinica({ ...clinica, nome: e.target.value })} />
         </Campo>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           <Campo rotulo="CNPJ" id="cnpj" style={{ flex: "1 1 220px", minWidth: 0 }}>
-            <Input id="cnpj" size="large" value={clinica.cnpj} onChange={(e) => setClinica({ ...clinica, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+            <Input id="cnpj" size="large" value={clinica.cnpj} onChange={(e) => setClinica({ ...clinica, cnpj: e.target.value })} />
           </Campo>
           <Campo rotulo="Telefone / WhatsApp" id="tel" style={{ flex: "1 1 220px", minWidth: 0 }}>
-            <Input id="tel" size="large" prefix={<Icone nome="telefone" tam={18} cor="var(--cor-sutil)" />} value={clinica.telefone} onChange={(e) => setClinica({ ...clinica, telefone: e.target.value })} />
+            <InputMascarado id="tel" tipo="telefone" size="large" prefix={<Icone nome="telefone" tam={18} cor="var(--cor-sutil)" />} value={clinica.telefone} onChange={(e) => setClinica({ ...clinica, telefone: e.target.value })} />
           </Campo>
         </div>
         <Campo rotulo="Endereço" id="end">
@@ -142,7 +143,7 @@ export default function PrimeiroAcesso() {
             );
           })}
         </GrupoEscolha>
-        <Campo rotulo="Mensagem de boas-vindas" id="msg" ajuda="Curta e direta: o paciente lê em pé, a um passo da tela.">
+        <Campo rotulo="Mensagem de boas-vindas" id="msg">
           <Input id="msg" size="large" maxLength={60} value={cfg.mensagem} onChange={(e) => setCfg({ ...cfg, mensagem: e.target.value })} />
         </Campo>
         <GrupoEscolha rotulo="Orientação da tela" linha>
@@ -177,7 +178,6 @@ export default function PrimeiroAcesso() {
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <Botao tipo="suave" icone="mais" style={{ height: 44 }} onClick={() => message.info("Novos tipos de atendimento chegam com o cadastro de serviços da API.")}>Adicionar tipo</Botao>
-          <div style={{ fontSize: 12.5, color: "var(--cor-suave)" }}>A sigla vira o começo da senha: AV01, MA02…</div>
         </div>
       </Casca>
     );

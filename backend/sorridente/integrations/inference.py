@@ -12,7 +12,7 @@ from typing import Any, AsyncIterator, Optional, Sequence
 
 from ..core.exceptions import LLMError
 from ..core.interfaces import ILLMProvider
-from ..infrastructure.llm import OpenCodeGoLLMProvider
+from ..infrastructure.llm import OpenRouterLLMProvider
 from .base import BaseIntegration, CredentialField, IntegrationKind, IntegrationStatus
 
 
@@ -43,14 +43,14 @@ class BaseInferenceIntegration(BaseIntegration, ABC):
             return {"ok": False, "erro": exc.message}
 
 
-class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
-    """OpenCode Go — inferência via `openai.AsyncOpenAI` na API Zen."""
+class OpenRouterInferenceIntegration(BaseInferenceIntegration):
+    """OpenRouter — inferência via `openai.AsyncOpenAI` na API do OpenRouter."""
 
-    KEY = "opencode_go"
+    KEY = "openrouter"
 
-    def __init__(self, provider: Optional[OpenCodeGoLLMProvider] = None, default_model: str = "kimi-k2.5") -> None:
+    def __init__(self, provider: Optional[OpenRouterLLMProvider] = None, default_model: str = "openai/gpt-4o-mini") -> None:
         super().__init__()
-        self._provider = provider or OpenCodeGoLLMProvider(model=default_model)
+        self._provider = provider or OpenRouterLLMProvider(model=default_model)
         self._default_model = default_model
         self._enabled = True
 
@@ -60,11 +60,11 @@ class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
 
     @property
     def name(self) -> str:
-        return "OpenCode Go"
+        return "OpenRouter"
 
     @property
     def description(self) -> str:
-        return "Provedor de inferência do agente SorriDente (modelos Kimi, GLM, MiniMax e outros)."
+        return "Provedor de inferência do agente SorriDente via OpenRouter (modelos OpenAI, Anthropic, Meta e outros)."
 
     @property
     def default_model(self) -> str:
@@ -79,10 +79,10 @@ class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
         return (
             CredentialField(
                 key="api_key",
-                label="API key do OpenCode Go",
+                label="API key do OpenRouter",
                 secret=True,
-                placeholder="sk-…",
-                help_text="Também pode vir da variável de ambiente OPENCODE_GO_API_KEY.",
+                placeholder="sk-or-…",
+                help_text="Também pode vir da variável de ambiente OPENROUTER_API_KEY.",
             ),
             CredentialField(
                 key="model",
@@ -90,7 +90,7 @@ class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
                 required=False,
                 placeholder=self._default_model,
                 default=self._default_model,
-                help_text="Identificador do modelo no OpenCode Go (Zen).",
+                help_text="Identificador do modelo no OpenRouter (ex.: openai/gpt-4o-mini).",
             ),
         )
 
@@ -99,6 +99,93 @@ class OpenCodeGoInferenceIntegration(BaseInferenceIntegration):
         self._provider.configure(
             self._credentials.get("api_key", ""),
             self._credentials.get("model") or None,
+        )
+
+    async def enable(self) -> None:
+        self._enabled = True
+
+    async def disable(self) -> None:
+        self._enabled = False
+
+    def is_configured(self) -> bool:
+        return self._provider.configured
+
+    def status(self) -> IntegrationStatus:
+        return IntegrationStatus(
+            key=self.key,
+            kind=self.kind.value,
+            name=self.name,
+            description=self.description,
+            configured=self.is_configured(),
+            enabled=self._enabled,
+            running=self._enabled and self.is_configured(),
+            detail=f"Modelo: {self._provider.model}",
+            last_error=self._last_error,
+            extra={"model": self._provider.model, "credentials": self.masked_credentials()},
+        )
+
+
+class GeminiInferenceIntegration(BaseInferenceIntegration):
+    """Google Gemini — inferência via endpoint compatível com OpenAI."""
+
+    KEY = "gemini"
+
+    GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+
+    def __init__(self, provider: Optional[OpenRouterLLMProvider] = None, default_model: str = "gemini-2.0-flash") -> None:
+        super().__init__()
+        self._provider = provider or OpenRouterLLMProvider(
+            model=default_model, base_url=self.GEMINI_BASE_URL
+        )
+        self._default_model = default_model
+        self._enabled = True
+
+    @property
+    def key(self) -> str:
+        return self.KEY
+
+    @property
+    def name(self) -> str:
+        return "Google Gemini"
+
+    @property
+    def description(self) -> str:
+        return "Provedor de inferência do agente SorriDente via Google Gemini (API compatível com OpenAI)."
+
+    @property
+    def default_model(self) -> str:
+        return self._default_model
+
+    @property
+    def provider(self) -> ILLMProvider:
+        return self._provider
+
+    @property
+    def credential_fields(self) -> tuple[CredentialField, ...]:
+        return (
+            CredentialField(
+                key="api_key",
+                label="API key do Google Gemini",
+                secret=True,
+                placeholder="AIza…",
+                help_text="Crie em https://aistudio.google.com/apikey. Também pode vir de GEMINI_API_KEY.",
+            ),
+            CredentialField(
+                key="model",
+                label="Modelo",
+                required=False,
+                placeholder=self._default_model,
+                default=self._default_model,
+                help_text="Ex.: gemini-2.0-flash, gemini-2.5-flash, gemini-2.5-pro.",
+            ),
+        )
+
+    async def configure(self, credentials: dict[str, Any]) -> None:
+        self._remember(credentials)
+        self._provider.configure(
+            self._credentials.get("api_key", ""),
+            self._credentials.get("model") or None,
+            base_url=self.GEMINI_BASE_URL,
         )
 
     async def enable(self) -> None:

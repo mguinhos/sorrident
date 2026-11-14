@@ -57,6 +57,10 @@ const SIMBOLOS: Record<string, string> = {
   "raio": "bolt",
   "servidor": "dns",
   "lua": "dark_mode",
+  "lixeira": "delete",
+  "excluir": "delete",
+  "editar": "edit",
+  "edit": "edit",
 };
 
 export type NomeIcone = keyof typeof SIMBOLOS;

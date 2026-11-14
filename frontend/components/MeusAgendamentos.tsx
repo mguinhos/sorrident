@@ -92,7 +92,7 @@ export default function MeusAgendamentos() {
                   {c.procedure_name || "Consulta"} · {c.dentist_name || "Equipe SorriDente"}
                 </div>
               </div>
-              <Etiqueta texto={c.status} />
+              <Etiqueta texto={c.status === "agendado" ? "a confirmar" : c.status} />
             </div>
           ))}
         </div>

@@ -77,6 +77,17 @@ export class ApiClient {
       },
       cache: "no-store",
     });
+    if (response.status === 401) {
+      // Sessão expirada ou inválida: limpa e manda para o login.
+      this.session.clear();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/chat")) {
+        try {
+          window.location.replace("/login");
+        } catch {
+          window.location.href = "/login";
+        }
+      }
+    }
     if (!response.ok) {
       let detail = `Erro ${response.status}`;
       try {
@@ -127,6 +138,7 @@ export class ApiClient {
     email?: string;
     phone?: string;
     document?: string;
+    insurance_provider?: string;
   }): Promise<User> {
     return this.send<User>("POST", "/auth/register", data);
   }
@@ -227,6 +239,9 @@ export class ApiClient {
   }
   cancelAppointment(id: string, reason = ""): Promise<Appointment> {
     return this.send("POST", `/appointments/${id}/cancel`, { reason });
+  }
+  deleteAppointment(id: string): Promise<{ deleted: boolean }> {
+    return this.send<{ deleted: boolean }>("DELETE", `/appointments/${id}`);
   }
 
   // Conversas

@@ -14,7 +14,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--fonte-inter", display: "s
 const poppins = Poppins({ subsets: ["latin"], variable: "--fonte-poppins", weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "SorriDente — Clínica Ortodôntica",
+  title: "SorriDente",
   description: "Atendimento e agendamento inteligente da clínica ortodôntica SorriDente.",
   icons: { icon: "/logo.svg" },
 };

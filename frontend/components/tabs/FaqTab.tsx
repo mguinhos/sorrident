@@ -151,7 +151,7 @@ export default function FaqTab() {
             <Input.TextArea rows={4} />
           </Form.Item>
           <Form.Item name="tags" label="Tags (ajudam o agente a encontrar)">
-            <Select mode="tags" tokenSeparators={[","]} placeholder="preço, convênio, aparelho" />
+            <Select mode="tags" tokenSeparators={[","]} />
           </Form.Item>
         </Form>
       </Modal>

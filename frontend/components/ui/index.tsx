@@ -8,6 +8,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Icone from "./Icone";
 
 export { default as Icone, MarcaCanal } from "./Icone";
+export { default as InputMascarado } from "./InputMascarado";
 
 /* ---------------------------------------------------------------- etiqueta */
 export type Tom = "ok" | "info" | "alerta" | "erro" | "neutro";
@@ -157,7 +158,7 @@ export function Campo({ rotulo, ajuda, children, style, id }: { rotulo: string; 
 
 interface EscolhaProps {
   titulo: string;
-  desc: string;
+  desc?: string;
   icone?: string;
   lateral?: ReactNode;
   ativo: boolean;
@@ -173,7 +174,6 @@ export function Escolha({ titulo, desc, icone, lateral, ativo, selo, onClick, al
       {lateral ?? (icone && <span className="sd-escolha-icone"><Icone nome={icone} tam={20} /></span>)}
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         <span className="sd-escolha-titulo">{titulo}{selo && <span className="sd-selo">{selo}</span>}</span>
-        <span className="sd-escolha-desc">{desc}</span>
       </span>
       <span className="sd-radio" aria-hidden />
     </button>
@@ -193,7 +193,7 @@ export function GrupoEscolha({ rotulo, children, linha }: { rotulo?: string; chi
 
 interface OpcaoProps {
   titulo: string;
-  desc: string;
+  desc?: string;
   ligado: boolean;
   icone?: string;
   travado?: boolean;
@@ -215,7 +215,7 @@ export function Opcao({ titulo, desc, ligado, icone, travado, onChange, extra }:
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12.5, color: "var(--cor-suave)", lineHeight: 1.4 }}>{desc}</div>
+        {desc && <div style={{ fontSize: 12.5, color: "var(--cor-suave)", lineHeight: 1.4 }}>{desc}</div>}
       </div>
       {extra}
       <Switch checked={ligado} disabled={travado} onChange={onChange} aria-label={titulo} />

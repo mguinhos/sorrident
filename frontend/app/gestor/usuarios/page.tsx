@@ -176,17 +176,17 @@ export default function UsuariosPage() {
         >
           <Form form={form} layout="vertical" requiredMark={false} style={{ marginTop: 16 }}>
             <Form.Item name="display_name" label="Nome de exibição" rules={[{ required: true, message: "Informe o nome" }]}>
-              <Input placeholder="Ex.: Maria da Silva" />
+              <Input />
             </Form.Item>
             <Form.Item name="username" label="Usuário (login)" rules={[{ required: true, message: "Informe o usuário" }]}>
-              <Input placeholder="ex.: maria.silva ou email" autoComplete="off" />
+              <Input autoComplete="off" />
             </Form.Item>
             <Form.Item
               name="password"
               label={editando ? "Nova senha (deixe em branco para manter)" : "Senha"}
               rules={editando ? [] : [{ required: true, message: "Defina uma senha" }, { min: 6, message: "Mínimo de 6 caracteres" }]}
             >
-              <Input.Password placeholder="senha" autoComplete="new-password" />
+              <Input.Password autoComplete="new-password" />
             </Form.Item>
             <Form.Item name="role" label="Perfil" rules={[{ required: true }]}>
               <Select
