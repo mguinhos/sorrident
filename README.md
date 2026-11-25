@@ -40,6 +40,10 @@ consulta, receber um lembrete antes do dia e falar com a equipe quando
 precisar. Tudo isso sem depender da recepção, que ganha um painel para
 acompanhar a fila de pendências e ver o histórico de cada conversa.
 
+## Deploy
+
+> 🌐️ https://sorridente.app/
+
 ## Evidências de uso do cliente
 
 > 📷 [OneDrive](https://1drv.ms/f/c/b1599c0a0d00128c/IgAu7l75oxCaSapcLsuT5AceAb0798_LWUo8DwCGe3IPhmg?e=s9qXX3)
