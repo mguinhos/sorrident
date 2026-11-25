@@ -1,0 +1,68 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "${SORRIDENTE_PORT:-8000}:8000"
+    environment:
+      TZ: America/Recife
+      SORRIDENTE_HOST: 0.0.0.0
+      SORRIDENTE_PORT: 8000
+      SORRIDENTE_DB: /app/data/sorridente.json
+      SORRIDENTE_CREDENTIALS: /app/data/credentials.json
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      OPENROUTER_REASONING_EFFORT: ${OPENROUTER_REASONING_EFFORT:-low}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_REASONING_EFFORT: ${GEMINI_REASONING_EFFORT:-off}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      SORRIDENTE_REMINDER_INTERVAL: ${SORRIDENTE_REMINDER_INTERVAL:-900}
+      SORRIDENTE_REMINDER_WINDOW: ${SORRIDENTE_REMINDER_WINDOW:-24}
+      SORRIDENTE_AGENT_MAX_ITERATIONS: ${SORRIDENTE_AGENT_MAX_ITERATIONS:-5}
+      SORRIDENTE_INACTIVITY_CHECK: ${SORRIDENTE_INACTIVITY_CHECK:-120}
+      SORRIDENTE_REINDEX_INTERVAL: ${SORRIDENTE_REINDEX_INTERVAL:-1800}
+      SORRIDENTE_AUTOSTART_TELEGRAM: ${SORRIDENTE_AUTOSTART_TELEGRAM:-1}
+      SORRIDENTE_SMTP_HOST: ${SORRIDENTE_SMTP_HOST:-}
+      SORRIDENTE_SMTP_PORT: ${SORRIDENTE_SMTP_PORT:-587}
+      SORRIDENTE_SMTP_USER: ${SORRIDENTE_SMTP_USER:-}
+      SORRIDENTE_SMTP_PASSWORD: ${SORRIDENTE_SMTP_PASSWORD:-}
+      SORRIDENTE_SMTP_FROM: ${SORRIDENTE_SMTP_FROM:-}
+      SORRIDENTE_SMTP_STARTTLS: ${SORRIDENTE_SMTP_STARTTLS:-1}
+      SORRIDENTE_SMTP_SSL: ${SORRIDENTE_SMTP_SSL:-0}
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON:-}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api
+    ports:
+      - "3000:3000"
+    environment:
+      API_INTERNO: http://backend:8000
+      NEXT_PUBLIC_API_URL: /api
+      NODE_OPTIONS: --no-deprecation
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

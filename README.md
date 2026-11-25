@@ -57,6 +57,43 @@ atendimentos pendentes e a base de conhecimento.
 
 ## Passos de instalação
 
+### Com Docker (recomendado)
+
+Pré-requisitos: [Docker](https://docs.docker.com/get-docker/) com Docker Compose.
+
+Copie o `.env.example` para `.env` e preencha sua chave de IA (opcional para abrir o sistema, obrigatório para o agente responder):
+
+```bash
+cp .env.example .env
+```
+
+Suba o backend e o frontend automaticamente com um único comando:
+
+```bash
+docker compose up -d --build
+```
+
+A interface abre em `http://localhost:3000` e a API em `http://localhost:8000` (documentação em `/docs`). Os dados do banco e credenciais salvas ficam persistidos em `./data/`.
+
+Para acompanhar os logs ou parar os serviços:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+### Deploy no Render
+
+O repositório inclui o Blueprint [render.yaml](render.yaml) e proxy em runtime (`API_INTERNO`), então você pode subir direto do GitHub:
+
+1. No painel do Render, clique em **New + → Blueprint** e conecte este repositório.
+2. Preencha `OPENROUTER_API_KEY` (ou `GEMINI_API_KEY`) para o `sorridente-backend` e deixe `API_INTERNO` em branco inicialmente (ou ajuste depois).
+3. Após o `sorridente-backend` concluir o primeiro deploy, copie a URL gerada (ex.: `https://sorridente-backend.onrender.com`) e configure em `API_INTERNO` nas variáveis de ambiente do `sorridente-frontend`.
+
+> No plano gratuito do Render o disco é efêmero; para manter `sorridente.json` e `credentials.json` entre reinicializações, use um Persistent Disk em `/app/data` com `SORRIDENTE_DB=/app/data/sorridente.json` e `SORRIDENTE_CREDENTIALS=/app/data/credentials.json`.
+
+### Instalação manual
+
 | Você precisa de | Para quê |
 |---|---|
 | Python 3.12+ | o backend |

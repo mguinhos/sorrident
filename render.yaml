@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sorridente-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: TZ
+        value: America/Recife
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      - key: OPENROUTER_REASONING_EFFORT
+        value: low
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: sorridente-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: NODE_OPTIONS
+        value: --no-deprecation
+      - key: NEXT_PUBLIC_API_URL
+        value: /api
+      - key: API_INTERNO
+        sync: false
